@@ -18,6 +18,7 @@
     "ios:live:sync": "node scripts/capacitor-live-sync.mjs ios",
     "ios:open": "npx cap open ios",
     "verify:pmo-list": "node scripts/verify-pmo-list-parity.mjs",
+    "verify:schedule": "node scripts/verify-detailed-schedule.mjs",
     "verify:director-logs": "node scripts/verify-director-workflow-logs.mjs",
     "verify:mobile-my": "node scripts/verify-mobile-my-activity.mjs",
     "android:sync": "npm run build && npx cap sync android",

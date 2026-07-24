@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../../../utils/supabaseClient';
 import { useAuth } from '../../../context/AuthContext';
 import { normalizeIotaOrganization } from '../../../utils/iotaOrganizations.js';
+import PmoDetailedSchedule from './PmoDetailedSchedule';
 
 const COLUMNS = [
     { key: 'm06', labelTop: '~2026', labelBottom: '06' },
@@ -80,6 +81,7 @@ const normalizeRrItem = (item, index) => ({
 });
 
 export default function PmoScheduleGate() {
+    const [timelineView, setTimelineView] = useState('detail');
     const [filterCategory, setFilterCategory] = React.useState('All'); // All, Gate, Task
     const [selectedRrMajorCategory, setSelectedRrMajorCategory] = React.useState('전체보기');
     const [selectedRrCategory, setSelectedRrCategory] = React.useState('전체보기');
@@ -336,8 +338,31 @@ export default function PmoScheduleGate() {
                     <h1 className="text-[32px] font-bold text-white tracking-tight leading-none">마일스톤</h1>
                     <p className="text-[15px] text-[#86868B] leading-none">마일스톤의 최종 목표는 준공 및 Take-out/운영 전환입니다.</p>
                 </div>
-                {/* Legend info */}
                 <div className="flex items-center gap-4 text-[12px] font-bold pr-[10px]">
+                    <div className="flex h-[34px] items-center rounded-[9px] border border-[#3c3c3c] bg-[#252524] p-0.5">
+                        <button
+                            type="button"
+                            onClick={() => setTimelineView('detail')}
+                            className={`h-[28px] rounded-[7px] px-3 text-[11px] font-bold transition-colors ${
+                                timelineView === 'detail'
+                                    ? 'bg-[#3b4f68] text-white'
+                                    : 'text-[#86868B] hover:text-white'
+                            }`}
+                        >
+                            상세 일정
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setTimelineView('summary')}
+                            className={`h-[28px] rounded-[7px] px-3 text-[11px] font-bold transition-colors ${
+                                timelineView === 'summary'
+                                    ? 'bg-[#3b4f68] text-white'
+                                    : 'text-[#86868B] hover:text-white'
+                            }`}
+                        >
+                            Gate 요약
+                        </button>
+                    </div>
                     <div className="flex items-center gap-1.5">
                         <span className="w-2.5 h-2.5 rounded-full bg-[#2997ff] inline-block"></span>
                         <span className="text-[#E5E5E5]">수행 진행 기간</span>
@@ -349,8 +374,11 @@ export default function PmoScheduleGate() {
                 </div>
             </div>
 
-            {/* Timeline Matrix Grid */}
-            <div className="w-[1290px] border border-[#3c3c3c] bg-[#272726] rounded-[32px] overflow-visible relative">
+            {timelineView === 'detail' ? (
+                <PmoDetailedSchedule />
+            ) : (
+                /* Timeline Matrix Grid */
+                <div className="w-[1290px] border border-[#3c3c3c] bg-[#272726] rounded-[32px] overflow-visible relative">
                 
                 {/* Speech Bubbles Overlay */}
                 <div className="absolute top-[-68px] left-0 w-full h-[36px] pointer-events-none z-50 overflow-visible">
@@ -477,7 +505,8 @@ export default function PmoScheduleGate() {
                         </table>
                     </div>
                 </div>
-            </div>
+                </div>
+            )}
 
             {/* Category Map & R&R Section */}
             <div className="w-full flex items-end justify-between mt-[41px] mb-[16px]">
