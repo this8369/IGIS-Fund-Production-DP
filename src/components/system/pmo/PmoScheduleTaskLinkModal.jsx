@@ -260,7 +260,7 @@ const LinkedTaskList = ({
     onUnlink,
     onOpenTask
 }) => (
-    <section>
+    <section data-linked-task-list>
         <div className="mb-2 flex items-center justify-between">
             <h4 className="text-[12px] font-bold text-white">연결된 통합업무</h4>
             <span className="text-[13px] font-bold text-[#4ade80]">{linkedTasks.length}건</span>
@@ -531,30 +531,72 @@ export default function PmoScheduleTaskLinkModal({
                         )}
                     </div>
                 ) : activeTab === 'existing' ? (
-                    <div className="timeline-scrollbar min-h-0 flex-1 overflow-y-auto p-5">
-                        <LinkedTaskList
-                            linkedTasks={linkedTasks}
-                            canManage={canManage}
-                            busy={busy}
-                            onUnlink={onUnlink}
-                            onOpenTask={onOpenTask}
-                        />
+                    <div className="flex min-h-0 flex-1 flex-col">
+                        <div
+                            className="shrink-0 border-b border-[#393939] bg-[#20201f] p-5 pb-4"
+                            data-fixed-linked-tasks
+                        >
+                            <div className="timeline-scrollbar max-h-[220px] overflow-y-auto pr-1">
+                                <LinkedTaskList
+                                    linkedTasks={linkedTasks}
+                                    canManage={canManage}
+                                    busy={busy}
+                                    onUnlink={onUnlink}
+                                    onOpenTask={onOpenTask}
+                                />
+                            </div>
+                        </div>
 
-                        {recommendations.length > 0 && (
-                            <section className="mt-5">
-                                <div className="mb-2">
-                                    <h4 className="text-[12px] font-bold text-white">추천 업무</h4>
-                                    <p className="mt-0.5 text-[13px] text-[#86868B]">
-                                        업무명·주관 조직·업무분류·프로젝트 문맥을 기준으로 제안합니다.
-                                    </p>
+                        <div className="timeline-scrollbar min-h-0 flex-1 overflow-y-auto p-5" data-task-candidate-scroll>
+                            {recommendations.length > 0 && (
+                                <section>
+                                    <div className="mb-2">
+                                        <h4 className="text-[12px] font-bold text-white">추천 업무</h4>
+                                        <p className="mt-0.5 text-[13px] text-[#86868B]">
+                                            업무명·주관 조직·업무분류·프로젝트 문맥을 기준으로 제안합니다.
+                                        </p>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-2.5">
+                                        {recommendations.map(({ task, reasons }) => (
+                                            <TaskCard
+                                                key={task.id}
+                                                task={task}
+                                                reasons={reasons}
+                                                linked={false}
+                                                busy={busy}
+                                                canManage={canManage}
+                                                onLink={onLink}
+                                                onOpenTask={onOpenTask}
+                                            />
+                                        ))}
+                                    </div>
+                                </section>
+                            )}
+
+                            <section className={recommendations.length ? 'mt-5' : ''}>
+                                <div className="mb-2 flex items-end justify-between gap-4">
+                                    <div>
+                                        <h4 className="text-[12px] font-bold text-white">전체 통합업무</h4>
+                                        <p className="mt-0.5 text-[13px] text-[#86868B]">
+                                            검색하지 않아도 전체 업무를 우선순위 순으로 표시합니다.
+                                        </p>
+                                    </div>
+                                    <label className="relative w-[310px]">
+                                        <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[17px] text-[#86868B]">⌕</span>
+                                        <input
+                                            value={searchTerm}
+                                            onChange={(event) => setSearchTerm(event.target.value)}
+                                            placeholder="업무명·담당자·주관·분류 검색"
+                                            className="h-9 w-full rounded-[8px] border border-[#444] bg-[#292929] pl-9 pr-3 text-[14px] text-white outline-none placeholder:text-[#68686d] focus:border-[#2997ff]"
+                                        />
+                                    </label>
                                 </div>
                                 <div className="grid grid-cols-2 gap-2.5">
-                                    {recommendations.map(({ task, reasons }) => (
+                                    {filteredTasks.map((task) => (
                                         <TaskCard
                                             key={task.id}
                                             task={task}
-                                            reasons={reasons}
-                                            linked={false}
+                                            linked={linkedTaskIds.has(task.id)}
                                             busy={busy}
                                             canManage={canManage}
                                             onLink={onLink}
@@ -562,46 +604,13 @@ export default function PmoScheduleTaskLinkModal({
                                         />
                                     ))}
                                 </div>
+                                {!filteredTasks.length && (
+                                    <div className="rounded-[12px] border border-[#3c3c3c] py-8 text-center text-[14px] text-[#86868B]">
+                                        검색 조건에 맞는 통합업무가 없습니다.
+                                    </div>
+                                )}
                             </section>
-                        )}
-
-                        <section className={linkedTasks.length || recommendations.length ? 'mt-5' : ''}>
-                            <div className="mb-2 flex items-end justify-between gap-4">
-                                <div>
-                                    <h4 className="text-[12px] font-bold text-white">전체 통합업무</h4>
-                                    <p className="mt-0.5 text-[13px] text-[#86868B]">
-                                        검색하지 않아도 전체 업무를 우선순위 순으로 표시합니다.
-                                    </p>
-                                </div>
-                                <label className="relative w-[310px]">
-                                    <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[17px] text-[#86868B]">⌕</span>
-                                    <input
-                                        value={searchTerm}
-                                        onChange={(event) => setSearchTerm(event.target.value)}
-                                        placeholder="업무명·담당자·주관·분류 검색"
-                                        className="h-9 w-full rounded-[8px] border border-[#444] bg-[#292929] pl-9 pr-3 text-[14px] text-white outline-none placeholder:text-[#68686d] focus:border-[#2997ff]"
-                                    />
-                                </label>
-                            </div>
-                            <div className="grid grid-cols-2 gap-2.5">
-                                {filteredTasks.map((task) => (
-                                    <TaskCard
-                                        key={task.id}
-                                        task={task}
-                                        linked={linkedTaskIds.has(task.id)}
-                                        busy={busy}
-                                        canManage={canManage}
-                                        onLink={onLink}
-                                        onOpenTask={onOpenTask}
-                                    />
-                                ))}
-                            </div>
-                            {!filteredTasks.length && (
-                                <div className="rounded-[12px] border border-[#3c3c3c] py-8 text-center text-[14px] text-[#86868B]">
-                                    검색 조건에 맞는 통합업무가 없습니다.
-                                </div>
-                            )}
-                        </section>
+                        </div>
                     </div>
                 ) : (
                     <form onSubmit={submitNewTask} className="timeline-scrollbar min-h-0 flex-1 overflow-y-auto">
