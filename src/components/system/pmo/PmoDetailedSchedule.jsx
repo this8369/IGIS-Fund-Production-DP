@@ -43,18 +43,20 @@ const getTodayScheduleMarker = () => {
     if (!period) return null;
 
     const periodStartDay = (weekIndex * 7) + 1;
+    const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
     const periodEndDay = weekIndex < 3
         ? periodStartDay + 6
-        : new Date(Date.UTC(year, month, 0)).getUTCDate();
+        : daysInMonth;
     const periodDayCount = periodEndDay - periodStartDay + 1;
     const periodProgress = (day - periodStartDay + 0.5) / periodDayCount;
 
     return {
-        dateLabel: `오늘 ${month}/${day}`,
+        dateLabel: `오늘 ${month}.${day}`,
         isoDate: `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`,
         left: SCHEDULE_LABEL_COLUMN_WIDTH
             + ((periodIndex + periodProgress) * SCHEDULE_PERIOD_WIDTH),
-        periodKey: period.key
+        month,
+        monthProgress: (day - 0.5) / daysInMonth
     };
 };
 
@@ -446,9 +448,17 @@ export default function PmoDetailedSchedule() {
                                 <th
                                     key={month}
                                     colSpan={4}
-                                    className="border-r border-[#505050] text-center text-[11px] font-bold text-[#bdbba7]"
+                                    className="relative border-r border-[#505050] text-center text-[11px] font-bold text-[#bdbba7]"
                                 >
                                     {month}월
+                                    {todayMarker?.month === month && (
+                                        <span
+                                            className="absolute top-1/2 z-30 -translate-x-1/2 -translate-y-1/2 whitespace-nowrap rounded-[5px] border border-[#fbbf24]/70 bg-[#F59E0B] px-2 py-0.5 text-[9px] font-black tracking-[-0.02em] text-[#1c1c1e] shadow-[0_2px_8px_rgba(245,158,11,0.3)]"
+                                            style={{ left: `${todayMarker.monthProgress * 100}%` }}
+                                        >
+                                            {todayMarker.dateLabel}
+                                        </span>
+                                    )}
                                 </th>
                             ))}
                         </tr>
@@ -456,22 +466,14 @@ export default function PmoDetailedSchedule() {
                             {IOTA_SCHEDULE_PERIODS.map((period, index) => (
                                 <th
                                     key={period.key}
-                                    title={todayMarker?.periodKey === period.key ? `${period.label} · ${todayMarker.dateLabel}` : period.label}
-                                    className={`w-[48px] min-w-[48px] text-center text-[10px] font-bold ${
-                                        todayMarker?.periodKey === period.key
-                                            ? 'bg-[#334155]/65 text-[#7dc3ff]'
-                                            : 'text-[#86868B]'
-                                    } ${
+                                    title={period.label}
+                                    className={`w-[48px] min-w-[48px] text-center text-[10px] font-bold text-[#86868B] ${
                                         (index + 1) % 4 === 0
                                             ? 'border-r border-[#505050]'
                                             : 'border-r border-[#3a3a3a]'
                                     }`}
                                 >
-                                    {todayMarker?.periodKey === period.key ? (
-                                        <span className="whitespace-nowrap text-[8px] font-bold tracking-[-0.02em]">
-                                            {todayMarker.dateLabel}
-                                        </span>
-                                    ) : period.weekLabel}
+                                    {period.weekLabel}
                                 </th>
                             ))}
                         </tr>
@@ -626,16 +628,25 @@ export default function PmoDetailedSchedule() {
                     </tbody>
                 </table>
                 {todayMarker && (
-                    <div
-                        aria-hidden="true"
-                        data-current-date={todayMarker.isoDate}
-                        className="pointer-events-none absolute bottom-0 top-[58px] z-[5] -translate-x-1/2"
-                        style={{ left: `${todayMarker.left}px` }}
-                    >
-                        <div className="absolute inset-y-0 left-1/2 w-[5px] -translate-x-1/2 bg-white/[0.06]" />
-                        <div className="absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-white/65 shadow-[0_0_5px_rgba(255,255,255,0.2)]" />
-                        <div className="absolute left-1/2 top-0 h-[7px] w-[7px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#dbeafe] bg-[#2997ff] shadow-[0_0_6px_rgba(41,151,255,0.65)]" />
-                    </div>
+                    <>
+                        <div
+                            aria-hidden="true"
+                            className="pointer-events-none absolute top-[30px] z-[25] h-[28px] -translate-x-1/2"
+                            style={{ left: `${todayMarker.left}px` }}
+                        >
+                            <div className="absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-[#F59E0B]/80 shadow-[0_0_5px_rgba(245,158,11,0.3)]" />
+                        </div>
+                        <div
+                            aria-hidden="true"
+                            data-current-date={todayMarker.isoDate}
+                            className="pointer-events-none absolute bottom-0 top-[58px] z-[5] -translate-x-1/2"
+                            style={{ left: `${todayMarker.left}px` }}
+                        >
+                            <div className="absolute inset-y-0 left-1/2 w-[5px] -translate-x-1/2 bg-[#F59E0B]/10" />
+                            <div className="absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-[#F59E0B]/80 shadow-[0_0_5px_rgba(245,158,11,0.3)]" />
+                            <div className="absolute left-1/2 top-0 h-[7px] w-[7px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#fde68a] bg-[#F59E0B] shadow-[0_0_6px_rgba(245,158,11,0.65)]" />
+                        </div>
+                    </>
                 )}
                 </div>
             </div>
