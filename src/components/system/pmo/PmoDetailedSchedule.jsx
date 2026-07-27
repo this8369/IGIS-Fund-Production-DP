@@ -474,7 +474,7 @@ export default function PmoDetailedSchedule() {
                             className="absolute top-[25px] h-[33px] -translate-x-1/2"
                             style={{ left: `${todayMarker.left}px` }}
                         >
-                            <div className="absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-[#F59E0B]/80 shadow-[0_0_5px_rgba(245,158,11,0.3)]" />
+                            <div className="absolute inset-y-0 left-1/2 w-[2px] -translate-x-1/2 bg-[#F59E0B]/80 shadow-[0_0_5px_rgba(245,158,11,0.3)]" />
                         </div>
                     </div>
                 )}
@@ -497,7 +497,7 @@ export default function PmoDetailedSchedule() {
                                 </th>
                             ))}
                         </tr>
-                        <tr className="h-[28px] border-b border-[#464646] bg-[#292928]">
+                        <tr className="h-[28px] bg-[#292928]">
                             {IOTA_SCHEDULE_PERIODS.map((period, index) => (
                                 <th
                                     key={period.key}
@@ -547,7 +547,7 @@ export default function PmoDetailedSchedule() {
                                                     : 'bg-[#272726] hover:bg-[#30302f]'
                                     }`}
                                 >
-                                    <td className={`sticky left-0 z-10 w-[450px] min-w-[450px] border-r border-[#464646] px-3 ${
+                                    <td className={`sticky left-0 z-10 w-[450px] min-w-[450px] px-3 shadow-[inset_-1px_0_0_#464646] ${
                                         item.itemType === 'lv1'
                                             ? 'bg-[#2c3440] group-hover:bg-[#343e4d]'
                                             : item.itemType === 'lv2'
@@ -638,8 +638,8 @@ export default function PmoDetailedSchedule() {
                                                 key={period.key}
                                                 className={`relative h-[48px] w-[48px] min-w-[48px] ${
                                                     (periodIndex + 1) % 4 === 0
-                                                        ? 'border-r border-[#505050]'
-                                                        : 'border-r border-[#383838]'
+                                                        ? 'shadow-[inset_-1px_0_0_#505050]'
+                                                        : 'shadow-[inset_-1px_0_0_#383838]'
                                                 }`}
                                             >
                                                 {inRange && (
@@ -670,7 +670,7 @@ export default function PmoDetailedSchedule() {
                         style={{ left: `${todayMarker.left}px` }}
                     >
                         <div className="absolute inset-y-0 left-1/2 w-[5px] -translate-x-1/2 bg-[#F59E0B]/10" />
-                        <div className="absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-[#F59E0B]/80 shadow-[0_0_5px_rgba(245,158,11,0.3)]" />
+                        <div className="absolute inset-y-0 left-1/2 w-[2px] -translate-x-1/2 bg-[#F59E0B]/80 shadow-[0_0_5px_rgba(245,158,11,0.3)]" />
                     </div>
                 )}
                 </div>

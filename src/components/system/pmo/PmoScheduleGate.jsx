@@ -341,10 +341,10 @@ export default function PmoScheduleGate() {
                         <button
                             type="button"
                             onClick={() => setTimelineView('detail')}
-                            className={`h-[28px] rounded-[7px] px-3 text-[11px] font-bold transition-colors ${
+                            className={`h-[28px] rounded-[7px] border px-3 text-[11px] font-bold transition-colors ${
                                 timelineView === 'detail'
-                                    ? 'bg-[#3b4f68] text-white'
-                                    : 'text-[#86868B] hover:text-white'
+                                    ? 'border-[#31445a] bg-[#3b4f68] text-white'
+                                    : 'border-transparent text-[#86868B] hover:text-white'
                             }`}
                         >
                             상세 일정
@@ -352,10 +352,10 @@ export default function PmoScheduleGate() {
                         <button
                             type="button"
                             onClick={() => setTimelineView('summary')}
-                            className={`h-[28px] rounded-[7px] px-3 text-[11px] font-bold transition-colors ${
+                            className={`h-[28px] rounded-[7px] border px-3 text-[11px] font-bold transition-colors ${
                                 timelineView === 'summary'
-                                    ? 'bg-[#3b4f68] text-white'
-                                    : 'text-[#86868B] hover:text-white'
+                                    ? 'border-[#31445a] bg-[#3b4f68] text-white'
+                                    : 'border-transparent text-[#86868B] hover:text-white'
                             }`}
                         >
                             Gate 요약
