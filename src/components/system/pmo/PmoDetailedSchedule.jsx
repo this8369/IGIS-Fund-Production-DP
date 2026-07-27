@@ -510,7 +510,7 @@ export default function PmoDetailedSchedule() {
                                                         {item.sourceKey}
                                                     </span>
                                                 </div>
-                                                <div className="mt-1 flex items-center gap-2 pl-7 text-[10px] text-[#86868B]">
+                                                <div className="mt-0.5 flex items-center gap-2 pl-7 text-[10px] text-[#86868B]">
                                                     {showLead && (
                                                         <>
                                                             <span className={item.leadLabel === '미정' ? 'font-bold text-[#ff5f57]' : ''}>
