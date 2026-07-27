@@ -54,9 +54,7 @@ const getTodayScheduleMarker = () => {
         dateLabel: `오늘 ${month}.${day}`,
         isoDate: `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`,
         left: SCHEDULE_LABEL_COLUMN_WIDTH
-            + ((periodIndex + periodProgress) * SCHEDULE_PERIOD_WIDTH),
-        month,
-        monthProgress: (day - 0.5) / daysInMonth
+            + ((periodIndex + periodProgress) * SCHEDULE_PERIOD_WIDTH)
     };
 };
 
@@ -448,17 +446,9 @@ export default function PmoDetailedSchedule() {
                                 <th
                                     key={month}
                                     colSpan={4}
-                                    className="relative border-r border-[#505050] text-center text-[11px] font-bold text-[#bdbba7]"
+                                    className="border-r border-[#505050] text-center text-[11px] font-bold text-[#bdbba7]"
                                 >
                                     {month}월
-                                    {todayMarker?.month === month && (
-                                        <span
-                                            className="absolute top-1/2 z-30 -translate-x-1/2 -translate-y-1/2 whitespace-nowrap rounded-[5px] border border-[#fbbf24]/70 bg-[#F59E0B] px-2 py-0.5 text-[9px] font-black tracking-[-0.02em] text-[#1c1c1e] shadow-[0_2px_8px_rgba(245,158,11,0.3)]"
-                                            style={{ left: `${todayMarker.monthProgress * 100}%` }}
-                                        >
-                                            {todayMarker.dateLabel}
-                                        </span>
-                                    )}
                                 </th>
                             ))}
                         </tr>
@@ -630,8 +620,14 @@ export default function PmoDetailedSchedule() {
                 {todayMarker && (
                     <>
                         <div
+                            className="pointer-events-none absolute top-[4px] z-[40] flex h-[22px] -translate-x-1/2 items-center whitespace-nowrap rounded-[5px] border border-[#fbbf24]/70 bg-[#F59E0B] px-2 text-[10px] font-black tracking-[-0.02em] text-[#1c1c1e] shadow-[0_2px_8px_rgba(245,158,11,0.3)]"
+                            style={{ left: `${todayMarker.left}px` }}
+                        >
+                            {todayMarker.dateLabel}
+                        </div>
+                        <div
                             aria-hidden="true"
-                            className="pointer-events-none absolute top-[30px] z-[25] h-[28px] -translate-x-1/2"
+                            className="pointer-events-none absolute top-[25px] z-[25] h-[33px] -translate-x-1/2"
                             style={{ left: `${todayMarker.left}px` }}
                         >
                             <div className="absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-[#F59E0B]/80 shadow-[0_0_5px_rgba(245,158,11,0.3)]" />
@@ -644,7 +640,6 @@ export default function PmoDetailedSchedule() {
                         >
                             <div className="absolute inset-y-0 left-1/2 w-[5px] -translate-x-1/2 bg-[#F59E0B]/10" />
                             <div className="absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-[#F59E0B]/80 shadow-[0_0_5px_rgba(245,158,11,0.3)]" />
-                            <div className="absolute left-1/2 top-0 h-[7px] w-[7px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#fde68a] bg-[#F59E0B] shadow-[0_0_6px_rgba(245,158,11,0.65)]" />
                         </div>
                     </>
                 )}
