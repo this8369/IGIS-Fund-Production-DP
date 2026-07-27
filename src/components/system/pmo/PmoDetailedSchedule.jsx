@@ -950,7 +950,6 @@ export default function PmoDetailedSchedule() {
             '',
             `${url.pathname}${url.search}${url.hash}`
         );
-        setLinkingSourceKey(null);
         setEmbeddedTaskDetailOpen(true);
     }, []);
 
@@ -1480,11 +1479,12 @@ export default function PmoDetailedSchedule() {
                 />
             )}
 
-            {embeddedTaskDetailOpen && (
+            {embeddedTaskDetailOpen && createPortal(
                 <PmoTaskBoardStaging
                     embeddedDetailOnly
                     onEmbeddedDetailClose={closeEmbeddedTaskDetail}
-                />
+                />,
+                document.body
             )}
         </section>
     );
