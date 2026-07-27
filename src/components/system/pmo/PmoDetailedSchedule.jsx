@@ -10,6 +10,54 @@ const PERIOD_INDEX = new Map(
     IOTA_SCHEDULE_PERIODS.map((period, index) => [period.key, index])
 );
 
+const SCHEDULE_YEAR = 2026;
+const SCHEDULE_START_MONTH = 7;
+const SCHEDULE_END_MONTH = 12;
+const SCHEDULE_LABEL_COLUMN_WIDTH = 450;
+const SCHEDULE_PERIOD_WIDTH = 48;
+
+const getSeoulDateParts = (date = new Date()) => {
+    const parts = new Intl.DateTimeFormat('en-US', {
+        timeZone: 'Asia/Seoul',
+        year: 'numeric',
+        month: 'numeric',
+        day: 'numeric'
+    }).formatToParts(date);
+    const values = Object.fromEntries(
+        parts
+            .filter((part) => ['year', 'month', 'day'].includes(part.type))
+            .map((part) => [part.type, Number(part.value)])
+    );
+    return values;
+};
+
+const getTodayScheduleMarker = () => {
+    const { year, month, day } = getSeoulDateParts();
+    if (year !== SCHEDULE_YEAR || month < SCHEDULE_START_MONTH || month > SCHEDULE_END_MONTH) {
+        return null;
+    }
+
+    const weekIndex = Math.min(3, Math.floor((day - 1) / 7));
+    const periodIndex = ((month - SCHEDULE_START_MONTH) * 4) + weekIndex;
+    const period = IOTA_SCHEDULE_PERIODS[periodIndex];
+    if (!period) return null;
+
+    const periodStartDay = (weekIndex * 7) + 1;
+    const periodEndDay = weekIndex < 3
+        ? periodStartDay + 6
+        : new Date(Date.UTC(year, month, 0)).getUTCDate();
+    const periodDayCount = periodEndDay - periodStartDay + 1;
+    const periodProgress = (day - periodStartDay + 0.5) / periodDayCount;
+
+    return {
+        dateLabel: `오늘 ${month}/${day}`,
+        isoDate: `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`,
+        left: SCHEDULE_LABEL_COLUMN_WIDTH
+            + ((periodIndex + periodProgress) * SCHEDULE_PERIOD_WIDTH),
+        periodKey: period.key
+    };
+};
+
 const normalizeDbItem = (item) => ({
     sourceKey: item.source_key,
     sourceOrder: item.source_order,
@@ -120,6 +168,7 @@ export default function PmoDetailedSchedule() {
     const [items, setItems] = useState(IOTA_DETAILED_SCHEDULE_FALLBACK);
     const [dataSource, setDataSource] = useState('fallback');
     const [loading, setLoading] = useState(true);
+    const [todayMarker, setTodayMarker] = useState(getTodayScheduleMarker);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('전체');
     const [selectedLead, setSelectedLead] = useState('전체');
@@ -129,6 +178,13 @@ export default function PmoDetailedSchedule() {
             .filter((item) => item.itemType !== 'task')
             .map((item) => item.sourceKey)
     ));
+
+    useEffect(() => {
+        const timerId = window.setInterval(() => {
+            setTodayMarker(getTodayScheduleMarker());
+        }, 60 * 60 * 1000);
+        return () => window.clearInterval(timerId);
+    }, []);
 
     useEffect(() => {
         let isMounted = true;
@@ -376,7 +432,8 @@ export default function PmoDetailedSchedule() {
             </div>
 
             <div className="timeline-scrollbar w-full overflow-x-auto">
-                <table className="w-[1602px] min-w-[1602px] table-fixed border-collapse text-left">
+                <div className="relative w-[1602px] min-w-[1602px]">
+                <table className="w-full table-fixed border-collapse text-left">
                     <thead className="sticky top-0 z-20">
                         <tr className="h-[30px] border-b border-[#3c3c3c] bg-[#242423]">
                             <th
@@ -399,13 +456,22 @@ export default function PmoDetailedSchedule() {
                             {IOTA_SCHEDULE_PERIODS.map((period, index) => (
                                 <th
                                     key={period.key}
-                                    className={`w-[48px] min-w-[48px] text-center text-[10px] font-bold text-[#86868B] ${
+                                    title={todayMarker?.periodKey === period.key ? `${period.label} · ${todayMarker.dateLabel}` : period.label}
+                                    className={`w-[48px] min-w-[48px] text-center text-[10px] font-bold ${
+                                        todayMarker?.periodKey === period.key
+                                            ? 'bg-[#334155]/65 text-[#7dc3ff]'
+                                            : 'text-[#86868B]'
+                                    } ${
                                         (index + 1) % 4 === 0
                                             ? 'border-r border-[#505050]'
                                             : 'border-r border-[#3a3a3a]'
                                     }`}
                                 >
-                                    {period.weekLabel}
+                                    {todayMarker?.periodKey === period.key ? (
+                                        <span className="whitespace-nowrap text-[8px] font-bold tracking-[-0.02em]">
+                                            {todayMarker.dateLabel}
+                                        </span>
+                                    ) : period.weekLabel}
                                 </th>
                             ))}
                         </tr>
@@ -559,6 +625,19 @@ export default function PmoDetailedSchedule() {
                         })}
                     </tbody>
                 </table>
+                {todayMarker && (
+                    <div
+                        aria-hidden="true"
+                        data-current-date={todayMarker.isoDate}
+                        className="pointer-events-none absolute bottom-0 top-[58px] z-[5] -translate-x-1/2"
+                        style={{ left: `${todayMarker.left}px` }}
+                    >
+                        <div className="absolute inset-y-0 left-1/2 w-[5px] -translate-x-1/2 bg-white/[0.06]" />
+                        <div className="absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-white/65 shadow-[0_0_5px_rgba(255,255,255,0.2)]" />
+                        <div className="absolute left-1/2 top-0 h-[7px] w-[7px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#dbeafe] bg-[#2997ff] shadow-[0_0_6px_rgba(41,151,255,0.65)]" />
+                    </div>
+                )}
+                </div>
             </div>
 
             {!visibleItems.length && (
