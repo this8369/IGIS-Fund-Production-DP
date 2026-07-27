@@ -1268,32 +1268,27 @@ export default function PmoDetailedSchedule() {
                             const isLeadUnassigned = !item.leadLabel || item.leadLabel === '미정';
                             const showLead = !isGroup || !isLeadUnassigned;
                             const rowSurfaceClass = item.itemType === 'lv1'
-                                ? 'bg-[#2b3542] hover:bg-[#344253]'
+                                ? 'bg-[#2c3440] hover:bg-[#343e4d]'
                                 : item.itemType === 'lv2'
-                                    ? 'bg-[#242b32] hover:bg-[#2b343d]'
+                                    ? 'bg-[#2d2d2c] hover:bg-[#363635]'
                                     : scheduleAttention === 'overdue'
                                         ? 'bg-[#3a2525] hover:bg-[#482c2c]'
                                         : scheduleAttention === 'due_this_week'
                                             ? 'bg-[#393020] hover:bg-[#453923]'
                                             : state === 'unscheduled'
                                                 ? 'bg-[#342727] hover:bg-[#422e2e]'
-                                                : 'bg-[#1c1c1e] hover:bg-[#252527]';
+                                                : 'bg-[#1F1F1E] hover:bg-[#272726]';
                             const stickySurfaceClass = item.itemType === 'lv1'
-                                ? 'bg-[#2b3542] group-hover:bg-[#344253]'
+                                ? 'bg-[#2c3440] group-hover:bg-[#343e4d]'
                                 : item.itemType === 'lv2'
-                                    ? 'bg-[#242b32] group-hover:bg-[#2b343d]'
+                                    ? 'bg-[#2d2d2c] group-hover:bg-[#363635]'
                                     : scheduleAttention === 'overdue'
                                         ? 'bg-[#3a2525] group-hover:bg-[#482c2c]'
                                         : scheduleAttention === 'due_this_week'
                                             ? 'bg-[#393020] group-hover:bg-[#453923]'
                                             : state === 'unscheduled'
                                                 ? 'bg-[#342727] group-hover:bg-[#422e2e]'
-                                                : 'bg-[#1c1c1e] group-hover:bg-[#252527]';
-                            const hierarchyDividerClass = item.itemType === 'lv1'
-                                ? 'border-y border-[#465569]'
-                                : item.itemType === 'lv2'
-                                    ? 'border-b border-[#39434d]'
-                                    : 'border-b border-[#343436]';
+                                                : 'bg-[#1F1F1E] group-hover:bg-[#272726]';
 
                             return (
                                 <tr
@@ -1303,7 +1298,7 @@ export default function PmoDetailedSchedule() {
                                     }}
                                     data-task-link-source={canOpenTaskLink ? item.sourceKey : undefined}
                                     data-schedule-item-type={item.itemType}
-                                    className={`group h-[48px] ${hierarchyDividerClass} ${attentionAnimationClass} ${
+                                    className={`group h-[48px] border-b border-[#393939] ${attentionAnimationClass} ${
                                         canOpenTaskLink ? 'cursor-pointer' : ''
                                     } ${rowSurfaceClass}`}
                                 >
