@@ -3,11 +3,13 @@ import { createPortal } from 'react-dom';
 import { supabase } from '../../../utils/supabaseClient';
 import { useAuth } from '../../../context/AuthContext';
 import { getMemberIotaOrganization } from '../../../utils/iotaOrganizations';
+import { notifyMembersOnTaskCreation } from '../../../utils/notificationHelpers';
 import {
     IOTA_DETAILED_SCHEDULE_FALLBACK,
     IOTA_SCHEDULE_PERIODS,
     normalizeIotaScheduleLabel
 } from '../../../data/iotaDetailedSchedule';
+import PmoScheduleTaskLinkModal from './PmoScheduleTaskLinkModal';
 
 const PERIOD_INDEX = new Map(
     IOTA_SCHEDULE_PERIODS.map((period, index) => [period.key, index])
@@ -46,29 +48,6 @@ const PROGRESS_STATUS_STYLES = {
     in_progress: 'border-[#2997ff]/35 bg-[#2997ff]/10 text-[#60a5fa]',
     completed: 'border-[#30d158]/35 bg-[#30d158]/10 text-[#4ade80]',
     on_hold: 'border-[#f59e0b]/35 bg-[#f59e0b]/10 text-[#fbbf24]'
-};
-
-const LINK_CANDIDATE_STATUS = {
-    pending: {
-        label: '연결 후보',
-        style: 'border-[#f59e0b]/40 bg-[#f59e0b]/10 text-[#fbbf24]'
-    },
-    approved: {
-        label: '',
-        style: 'border-[#30d158]/40 bg-[#30d158]/10 text-[#4ade80]'
-    },
-    rejected: {
-        label: '',
-        style: 'border-[#666]/50 bg-white/[0.03] text-[#86868B]'
-    }
-};
-
-const TASK_PROJECT_LABELS = {
-    IOTA_SEOUL: 'IOTA 공통',
-    PFV_427: '427 PFV',
-    PFV_816: '816 PFV',
-    FUND_421: '421 Fund',
-    EXTERNAL: '외부'
 };
 
 const getSeoulDateParts = (date = new Date()) => {
@@ -115,6 +94,7 @@ const getTodayScheduleMarker = () => {
 };
 
 const normalizeDbItem = (item) => ({
+    scheduleItemId: item.id || null,
     sourceKey: item.source_key,
     sourceOrder: item.source_order,
     itemType: item.item_type,
@@ -244,165 +224,6 @@ const SelectControl = ({ value, onChange, options, label }) => (
         </select>
         <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[9px] text-[#86868B]">▼</span>
     </label>
-);
-
-const ScheduleLinkCandidateModal = ({
-    item,
-    candidates,
-    savingCandidateId,
-    errorMessage,
-    onClose,
-    onReview,
-    onOpenTask
-}) => (
-    createPortal(
-        <div
-            className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/65 px-6"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="schedule-link-review-title"
-            data-schedule-link-review-modal
-        >
-            <button
-                type="button"
-                className="absolute inset-0 cursor-default"
-                aria-label="연결 후보 검토 닫기"
-                onClick={onClose}
-            />
-            <div className="relative w-full max-w-[620px] overflow-hidden rounded-[20px] border border-[#454545] bg-[#20201f] shadow-[0_24px_70px_rgba(0,0,0,0.55)]">
-                <div className="flex items-start justify-between border-b border-[#393939] px-5 py-4">
-                    <div>
-                        <div className="mb-1 flex items-center gap-2">
-                            <span className="font-mono text-[11px] font-bold text-[#60a5fa]">
-                                {item.sourceKey}
-                            </span>
-                            <span className="text-[10px] font-bold text-[#fbbf24]">
-                                배포 전 검토
-                            </span>
-                        </div>
-                        <h3 id="schedule-link-review-title" className="text-[18px] font-bold text-white">
-                            통합업무 연결 후보
-                        </h3>
-                        <p className="mt-1 text-[12px] text-[#a1a1aa]">{item.displayName}</p>
-                    </div>
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        className="flex h-8 w-8 items-center justify-center rounded-full border border-[#444] text-[18px] text-[#a1a1aa] hover:bg-white/5 hover:text-white"
-                        aria-label="닫기"
-                    >
-                        ×
-                    </button>
-                </div>
-
-                <div className="timeline-scrollbar max-h-[65vh] space-y-3 overflow-y-auto p-5">
-                    {candidates.map((candidate) => {
-                        const status = LINK_CANDIDATE_STATUS[candidate.reviewStatus]
-                            || LINK_CANDIDATE_STATUS.pending;
-                        const task = candidate.task;
-                        return (
-                            <div
-                                key={candidate.id}
-                                className="rounded-[15px] border border-[#3d434a] bg-[#272a2e] p-4"
-                            >
-                                <div className="flex flex-wrap items-center gap-2">
-                                    <span className="font-mono text-[12px] font-black text-[#60a5fa]">
-                                        {candidate.taskDisplayId}
-                                    </span>
-                                    <span className="rounded-[6px] border border-[#474747] bg-[#343434] px-2 py-1 text-[10px] font-bold text-[#dedede]">
-                                        {TASK_PROJECT_LABELS[task?.projectCode] || task?.projectCode || 'IOTA 공통'}
-                                    </span>
-                                    {status.label && (
-                                        <span className={`rounded-full border px-2 py-1 text-[10px] font-bold ${status.style}`}>
-                                            {status.label}
-                                        </span>
-                                    )}
-                                    <span className="ml-auto text-[11px] font-black text-[#fbbf24]">
-                                        일치도 {candidate.matchScore}
-                                    </span>
-                                </div>
-
-                                <button
-                                    type="button"
-                                    onClick={() => onOpenTask(task?.id)}
-                                    className="mt-3 block w-full text-left"
-                                >
-                                    <div className="flex items-start justify-between gap-4">
-                                        <h4 className="text-[18px] font-bold leading-[1.4] text-white">
-                                            {task?.taskName || '업무 정보를 불러오지 못했습니다.'}
-                                        </h4>
-                                        <span className="mt-1 shrink-0 text-[11px] font-bold text-[#60a5fa]">
-                                            상세보기 →
-                                        </span>
-                                    </div>
-                                    {task?.taskPurpose && (
-                                        <p className="mt-2 line-clamp-2 text-[12px] leading-[1.6] text-[#a1a1aa]">
-                                            {task.taskPurpose}
-                                        </p>
-                                    )}
-                                </button>
-
-                                <div className="mt-3 rounded-[10px] border border-[#3b3b3b] bg-black/10 px-3 py-2.5">
-                                    <div className="mb-1 text-[10px] font-bold text-[#86868B]">후보 선정 근거</div>
-                                    <p className="text-[11px] leading-[1.55] text-[#c7c7c2]">
-                                        {candidate.matchReason}
-                                    </p>
-                                    <div className="mt-2 flex flex-wrap gap-1.5">
-                                        {['현재 주차', '주관 일치', '업무분류 일치', '중복 없음'].map((reason) => (
-                                            <span
-                                                key={reason}
-                                                className="rounded-[5px] border border-[#3f5265] bg-[#2997ff]/5 px-1.5 py-0.5 text-[9px] font-bold text-[#93c5fd]"
-                                            >
-                                                {reason}
-                                            </span>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                {errorMessage && (
-                                    <p className="mt-3 text-[11px] text-[#ff7169]">{errorMessage}</p>
-                                )}
-
-                                <div className="mt-4 flex justify-end gap-2">
-                                    {candidate.reviewStatus !== 'rejected' && (
-                                        <button
-                                            type="button"
-                                            disabled={savingCandidateId === candidate.id}
-                                            onClick={() => onReview(candidate.id, 'rejected')}
-                                            className="h-9 rounded-[8px] border border-[#555] px-3 text-[11px] font-bold text-[#a1a1aa] hover:bg-white/5 disabled:opacity-50"
-                                        >
-                                            제외
-                                        </button>
-                                    )}
-                                    {candidate.reviewStatus !== 'pending' && (
-                                        <button
-                                            type="button"
-                                            disabled={savingCandidateId === candidate.id}
-                                            onClick={() => onReview(candidate.id, 'pending')}
-                                            className="h-9 rounded-[8px] border border-[#555] px-3 text-[11px] font-bold text-[#c7c7c2] hover:bg-white/5 disabled:opacity-50"
-                                        >
-                                            재검토
-                                        </button>
-                                    )}
-                                    {candidate.reviewStatus !== 'approved' && (
-                                        <button
-                                            type="button"
-                                            disabled={savingCandidateId === candidate.id}
-                                            onClick={() => onReview(candidate.id, 'approved')}
-                                            className="h-9 rounded-[8px] border border-[#238744] bg-[#30d158]/15 px-3 text-[11px] font-bold text-[#4ade80] hover:bg-[#30d158]/20 disabled:opacity-50"
-                                        >
-                                            {savingCandidateId === candidate.id ? '저장 중' : '연결 승인'}
-                                        </button>
-                                    )}
-                                </div>
-                            </div>
-                        );
-                    })}
-                </div>
-            </div>
-        </div>,
-        document.body
-    )
 );
 
 const ScheduleEditModal = ({
@@ -648,10 +469,13 @@ export default function PmoDetailedSchedule() {
     const [editingItem, setEditingItem] = useState(null);
     const [savingItem, setSavingItem] = useState(false);
     const [saveError, setSaveError] = useState('');
-    const [linkCandidates, setLinkCandidates] = useState([]);
-    const [reviewingLinkSourceKey, setReviewingLinkSourceKey] = useState(null);
-    const [savingCandidateId, setSavingCandidateId] = useState(null);
-    const [candidateError, setCandidateError] = useState('');
+    const [pmoTasks, setPmoTasks] = useState([]);
+    const [projects, setProjects] = useState([]);
+    const [scheduleTaskLinks, setScheduleTaskLinks] = useState([]);
+    const [linkingSourceKey, setLinkingSourceKey] = useState(null);
+    const [linkBusy, setLinkBusy] = useState(false);
+    const [linkError, setLinkError] = useState('');
+    const [linkDataVersion, setLinkDataVersion] = useState(0);
     const [expandedGroups, setExpandedGroups] = useState(() => new Set(
         IOTA_DETAILED_SCHEDULE_FALLBACK
             .filter((item) => item.itemType !== 'task')
@@ -659,9 +483,6 @@ export default function PmoDetailedSchedule() {
     ));
     const memberOrganization = getMemberIotaOrganization(memberInfo, '');
     const canEditSchedule = ['기획추진', '사업2파트'].includes(memberOrganization);
-    const currentSchedulePeriodKey = todayMarker
-        ? IOTA_SCHEDULE_PERIODS[todayMarker.periodIndex]?.key || null
-        : null;
 
     useEffect(() => {
         const timerId = window.setInterval(() => {
@@ -677,6 +498,7 @@ export default function PmoDetailedSchedule() {
                 .schema('iota_v2')
                 .from('iota_schedule_items')
                 .select(`
+                    id,
                     source_key,
                     source_order,
                     item_type,
@@ -750,96 +572,104 @@ export default function PmoDetailedSchedule() {
     }, []);
 
     useEffect(() => {
-        if (!canEditSchedule || !currentSchedulePeriodKey) {
-            setLinkCandidates([]);
-            return undefined;
-        }
-
         let isMounted = true;
-        const loadLinkCandidates = async () => {
-            const { data: candidateRows, error: candidateLoadError } = await supabase
-                .schema('iota_v2')
-                .from('iota_schedule_task_link_candidates')
-                .select(`
-                    id,
-                    source_key,
-                    candidate_period,
-                    task_id,
-                    task_display_id,
-                    match_score,
-                    match_reason,
-                    review_status
-                `)
-                .eq('candidate_period', currentSchedulePeriodKey)
-                .order('match_score', { ascending: false });
-
-            if (!isMounted) return;
-            if (candidateLoadError) {
-                console.warn('Schedule link candidate load failed.', candidateLoadError);
-                setLinkCandidates([]);
-                return;
-            }
-
-            const taskIds = [...new Set((candidateRows || []).map((candidate) => candidate.task_id))];
-            if (!taskIds.length) {
-                setLinkCandidates([]);
-                return;
-            }
-
-            const { data: taskRows, error: taskLoadError } = await supabase
-                .schema('iota_v2')
-                .from('iota_pmo_tasks')
-                .select(`
-                    id,
-                    project_code,
-                    task_name,
-                    task_purpose,
-                    category_main,
-                    lead_dept_code,
-                    due_date,
-                    status,
-                    priority_score
-                `)
-                .in('id', taskIds);
+        const loadTaskLinkData = async () => {
+            const [
+                { data: taskRows, error: taskLoadError },
+                { data: projectRows, error: projectLoadError },
+                { data: linkRows, error: linkLoadError }
+            ] = await Promise.all([
+                supabase
+                    .schema('iota_v2')
+                    .from('iota_pmo_tasks')
+                    .select(`
+                        id,
+                        project_code,
+                        task_name,
+                        task_purpose,
+                        deliverables,
+                        category_main,
+                        lead_dept_code,
+                        assignee,
+                        due_date,
+                        status,
+                        priority_score,
+                        task_type,
+                        created_at,
+                        lead_dept:iota_departments!lead_dept_code(dept_name)
+                    `)
+                    .neq('task_type', '팝업')
+                    .order('created_at', { ascending: true })
+                    .order('id', { ascending: true }),
+                supabase
+                    .schema('iota_v2')
+                    .from('iota_projects')
+                    .select('project_code, project_name')
+                    .order('created_at', { ascending: true }),
+                supabase
+                    .schema('iota_v2')
+                    .from('iota_schedule_task_links')
+                    .select(`
+                        id,
+                        schedule_item_id,
+                        task_id,
+                        link_source,
+                        linked_by_name,
+                        created_at
+                    `)
+                    .order('created_at', { ascending: true })
+            ]);
 
             if (!isMounted) return;
             if (taskLoadError) {
-                console.warn('Candidate PMO task load failed.', taskLoadError);
-            }
-
-            const taskMap = new Map((taskRows || []).map((task) => [
-                task.id,
-                {
+                console.warn('PMO task load for schedule linking failed.', taskLoadError);
+                setPmoTasks([]);
+            } else {
+                setPmoTasks((taskRows || []).map((task, index) => ({
                     id: task.id,
+                    displayId: `T-${String(index + 1).padStart(3, '0')}`,
                     projectCode: task.project_code,
                     taskName: task.task_name,
                     taskPurpose: task.task_purpose,
+                    deliverables: task.deliverables,
                     categoryMain: task.category_main,
                     leadDeptCode: task.lead_dept_code,
+                    leadDeptName: task.lead_dept?.dept_name || '',
+                    assignee: task.assignee,
                     dueDate: task.due_date,
                     status: task.status,
-                    priorityScore: task.priority_score
-                }
-            ]));
+                    priorityScore: task.priority_score,
+                    createdAt: task.created_at
+                })));
+            }
 
-            setLinkCandidates((candidateRows || []).map((candidate) => ({
-                id: candidate.id,
-                sourceKey: candidate.source_key,
-                candidatePeriod: candidate.candidate_period,
-                taskId: candidate.task_id,
-                taskDisplayId: candidate.task_display_id,
-                matchScore: candidate.match_score,
-                matchReason: candidate.match_reason,
-                reviewStatus: candidate.review_status,
-                task: taskMap.get(candidate.task_id) || null
-            })));
+            if (projectLoadError) {
+                console.warn('PMO project load for schedule linking failed.', projectLoadError);
+                setProjects([]);
+            } else {
+                setProjects(projectRows || []);
+            }
+
+            if (linkLoadError) {
+                console.warn('Schedule task link load failed.', linkLoadError);
+                setScheduleTaskLinks([]);
+            } else {
+                setScheduleTaskLinks((linkRows || []).map((link) => ({
+                    id: link.id,
+                    scheduleItemId: link.schedule_item_id,
+                    taskId: link.task_id,
+                    linkSource: link.link_source,
+                    linkedByName: link.linked_by_name,
+                    createdAt: link.created_at
+                })));
+            }
         };
 
-        loadLinkCandidates();
+        loadTaskLinkData();
         return () => {
             isMounted = false;
         };
-    }, [canEditSchedule, currentSchedulePeriodKey]);
+    }, [linkDataVersion]);
 
     const itemMap = useMemo(
         () => new Map(items.map((item) => [item.sourceKey, item])),
@@ -944,20 +774,20 @@ export default function PmoDetailedSchedule() {
         if (!includedKeys.has(item.sourceKey)) return false;
         return getAncestors(item, itemMap).every((ancestorKey) => expandedGroups.has(ancestorKey));
     }), [expandedGroups, includedKeys, itemMap, items]);
-    const linkCandidatesBySource = useMemo(() => {
+    const linksByScheduleItemId = useMemo(() => {
         const grouped = new Map();
-        for (const candidate of linkCandidates) {
-            const sourceCandidates = grouped.get(candidate.sourceKey) || [];
-            sourceCandidates.push(candidate);
-            grouped.set(candidate.sourceKey, sourceCandidates);
+        for (const link of scheduleTaskLinks) {
+            const itemLinks = grouped.get(link.scheduleItemId) || [];
+            itemLinks.push(link);
+            grouped.set(link.scheduleItemId, itemLinks);
         }
         return grouped;
-    }, [linkCandidates]);
-    const reviewingLinkItem = reviewingLinkSourceKey
-        ? itemMap.get(reviewingLinkSourceKey)
+    }, [scheduleTaskLinks]);
+    const linkingItem = linkingSourceKey
+        ? itemMap.get(linkingSourceKey)
         : null;
-    const reviewingCandidates = reviewingLinkSourceKey
-        ? linkCandidatesBySource.get(reviewingLinkSourceKey) || []
+    const linkingItemLinks = linkingItem?.scheduleItemId
+        ? linksByScheduleItemId.get(linkingItem.scheduleItemId) || []
         : [];
 
     const toggleGroup = (sourceKey) => {
@@ -981,46 +811,116 @@ export default function PmoDetailedSchedule() {
         setEditingItem(null);
     };
 
-    const openLinkCandidateReview = (sourceKey) => {
-        if (!canEditSchedule || !linkCandidatesBySource.has(sourceKey)) return;
-        setCandidateError('');
-        setReviewingLinkSourceKey(sourceKey);
+    const openTaskLinkModal = (item) => {
+        if (dataSource !== 'database' || item.itemType !== 'task' || !item.scheduleItemId) return;
+        setLinkError('');
+        setLinkingSourceKey(item.sourceKey);
     };
 
-    const closeLinkCandidateReview = () => {
-        if (savingCandidateId) return;
-        setCandidateError('');
-        setReviewingLinkSourceKey(null);
+    const closeTaskLinkModal = () => {
+        if (linkBusy) return;
+        setLinkError('');
+        setLinkingSourceKey(null);
     };
 
-    const reviewLinkCandidate = async (candidateId, reviewStatus) => {
-        setSavingCandidateId(candidateId);
-        setCandidateError('');
+    const linkExistingTask = async (taskId) => {
+        if (!canEditSchedule || !linkingItem?.scheduleItemId) return;
+        setLinkBusy(true);
+        setLinkError('');
 
-        const { data, error } = await supabase
+        const { error } = await supabase
             .schema('iota_v2')
-            .from('iota_schedule_task_link_candidates')
-            .update({ review_status: reviewStatus })
-            .eq('id', candidateId)
-            .select('id, review_status')
-            .single();
+            .from('iota_schedule_task_links')
+            .insert({
+                schedule_item_id: linkingItem.scheduleItemId,
+                task_id: taskId,
+                link_source: 'existing'
+            });
 
-        if (error || !data) {
-            console.error('Schedule link candidate review failed.', error);
-            setCandidateError(error?.message || '검토 결과를 저장하지 못했습니다.');
-            setSavingCandidateId(null);
+        if (error) {
+            console.error('Schedule task link insert failed.', error);
+            setLinkError(
+                error.code === '23505'
+                    ? '이미 연결된 통합업무입니다.'
+                    : error.message || '통합업무를 연결하지 못했습니다.'
+            );
+            setLinkBusy(false);
             return;
         }
 
-        setLinkCandidates((current) => current.map((candidate) => (
-            candidate.id === data.id
-                ? { ...candidate, reviewStatus: data.review_status }
-                : candidate
-        )));
-        setSavingCandidateId(null);
+        setLinkDataVersion((current) => current + 1);
+        setLinkBusy(false);
     };
 
-    const openCandidateTaskDetail = (taskId) => {
+    const unlinkTask = async (linkId) => {
+        if (!canEditSchedule) return;
+        setLinkBusy(true);
+        setLinkError('');
+
+        const { error } = await supabase
+            .schema('iota_v2')
+            .from('iota_schedule_task_links')
+            .delete()
+            .eq('id', linkId);
+
+        if (error) {
+            console.error('Schedule task unlink failed.', error);
+            setLinkError(error.message || '통합업무 연결을 해제하지 못했습니다.');
+            setLinkBusy(false);
+            return;
+        }
+
+        setLinkDataVersion((current) => current + 1);
+        setLinkBusy(false);
+    };
+
+    const createAndLinkTask = async (form) => {
+        if (!canEditSchedule || !linkingItem?.scheduleItemId) return;
+        setLinkBusy(true);
+        setLinkError('');
+
+        const { data: taskId, error } = await supabase
+            .schema('iota_v2')
+            .rpc('create_pmo_task_and_link_schedule', {
+                p_schedule_item_id: linkingItem.scheduleItemId,
+                p_project_code: form.projectCode,
+                p_category_main: form.categoryMain,
+                p_task_name: form.taskName,
+                p_task_purpose: form.taskPurpose,
+                p_deliverables: form.deliverables,
+                p_target_axis: form.targetAxis,
+                p_lead_dept_code: form.leadDeptCode || null,
+                p_assignee: form.assignee,
+                p_due_date: form.dueDate || null,
+                p_status: form.status,
+                p_importance_level: form.importanceLevel,
+                p_is_blocker: form.isBlocker,
+                p_needs_decision: form.needsDecision
+            });
+
+        if (error || !taskId) {
+            console.error('PMO task create and schedule link failed.', error);
+            setLinkError(error?.message || '새 통합업무를 등록하지 못했습니다.');
+            setLinkBusy(false);
+            return;
+        }
+
+        notifyMembersOnTaskCreation(
+            taskId,
+            form.taskName,
+            {
+                code: 'WS_PMO',
+                label: '통합업무보드',
+                orgNames: ['통합업무보드']
+            },
+            memberInfo?.email || ''
+        );
+        setLinkDataVersion((current) => current + 1);
+        setLinkBusy(false);
+        setLinkingSourceKey(null);
+    };
+
+    const openTaskDetail = (taskId) => {
         if (!taskId) return;
         const base = import.meta.env.BASE_URL.endsWith('/')
             ? import.meta.env.BASE_URL.slice(0, -1)
@@ -1075,6 +975,7 @@ export default function PmoDetailedSchedule() {
             .eq('source_key', editingItem.sourceKey)
             .eq('item_type', 'task')
             .select(`
+                id,
                 source_key,
                 source_order,
                 item_type,
@@ -1148,11 +1049,6 @@ export default function PmoDetailedSchedule() {
                         }`}>
                             {loading ? '불러오는 중' : dataSource === 'database' ? 'DB 일정 원장' : '기본 일정 데이터'}
                         </span>
-                        {canEditSchedule && linkCandidates.length > 0 && (
-                            <span className="shrink-0 rounded-full border border-[#f59e0b]/35 bg-[#f59e0b]/10 px-2 py-0.5 text-[10px] font-bold text-[#fbbf24]">
-                                이번 주 연결 검토 {linkCandidates.length}
-                            </span>
-                        )}
                         <p className="truncate text-[12px] text-[#86868B]">
                             대분류·중분류를 펼쳐 세부업무의 주차별 수행기간과 마일스톤을 확인합니다.
                         </p>
@@ -1336,20 +1232,13 @@ export default function PmoDetailedSchedule() {
                                 && dataSource === 'database'
                                 && editMode
                                 && item.itemType === 'task';
-                            const itemLinkCandidates = linkCandidatesBySource.get(item.sourceKey) || [];
-                            const canReviewLink = canEditSchedule
+                            const itemLinks = item.scheduleItemId
+                                ? linksByScheduleItemId.get(item.scheduleItemId) || []
+                                : [];
+                            const canOpenTaskLink = dataSource === 'database'
                                 && !editMode
-                                && itemLinkCandidates.length > 0;
-                            const candidateReviewStatus = itemLinkCandidates.some(
-                                (candidate) => candidate.reviewStatus === 'approved'
-                            )
-                                ? 'approved'
-                                : itemLinkCandidates.some(
-                                    (candidate) => candidate.reviewStatus === 'pending'
-                                )
-                                    ? 'pending'
-                                    : 'rejected';
-                            const candidateStatus = LINK_CANDIDATE_STATUS[candidateReviewStatus];
+                                && item.itemType === 'task'
+                                && Boolean(item.scheduleItemId);
                             const hasSchedule = startIndex !== null && startIndex !== undefined;
                             const periodLabel = !hasSchedule
                                 ? isGroup ? '' : '일정 미정'
@@ -1363,11 +1252,11 @@ export default function PmoDetailedSchedule() {
                                     key={item.sourceKey}
                                     onClick={() => {
                                         if (isEditableTask) openScheduleEditor(item);
-                                        else if (canReviewLink) openLinkCandidateReview(item.sourceKey);
+                                        else if (canOpenTaskLink) openTaskLinkModal(item);
                                     }}
-                                    data-link-review-source={canReviewLink ? item.sourceKey : undefined}
+                                    data-task-link-source={canOpenTaskLink ? item.sourceKey : undefined}
                                     className={`group h-[48px] border-b border-[#393939] ${attentionAnimationClass} ${
-                                        isEditableTask || canReviewLink ? 'cursor-pointer' : ''
+                                        isEditableTask || canOpenTaskLink ? 'cursor-pointer' : ''
                                     } ${
                                         item.itemType === 'lv1'
                                             ? 'bg-[#2c3440] hover:bg-[#343e4d]'
@@ -1437,16 +1326,16 @@ export default function PmoDetailedSchedule() {
                                                             {getProgressStatusLabel(progressStatus)}
                                                         </span>
                                                     )}
-                                                    {candidateReviewStatus === 'pending' && (
+                                                    {itemLinks.length > 0 && (
                                                         <button
                                                             type="button"
                                                             onClick={(event) => {
                                                                 event.stopPropagation();
-                                                                openLinkCandidateReview(item.sourceKey);
+                                                                openTaskLinkModal(item);
                                                             }}
-                                                            className={`shrink-0 rounded-full border px-1.5 py-0.5 text-[8px] font-bold ${candidateStatus.style}`}
+                                                            className="shrink-0 rounded-full border border-[#30d158]/35 bg-[#30d158]/10 px-1.5 py-0.5 text-[8px] font-bold text-[#4ade80]"
                                                         >
-                                                            {candidateStatus.label}
+                                                            연결 {itemLinks.length}
                                                         </button>
                                                     )}
                                                 </div>
@@ -1572,15 +1461,21 @@ export default function PmoDetailedSchedule() {
                 />
             )}
 
-            {reviewingLinkItem && reviewingCandidates.length > 0 && (
-                <ScheduleLinkCandidateModal
-                    item={reviewingLinkItem}
-                    candidates={reviewingCandidates}
-                    savingCandidateId={savingCandidateId}
-                    errorMessage={candidateError}
-                    onClose={closeLinkCandidateReview}
-                    onReview={reviewLinkCandidate}
-                    onOpenTask={openCandidateTaskDetail}
+            {linkingItem && (
+                <PmoScheduleTaskLinkModal
+                    item={linkingItem}
+                    tasks={pmoTasks}
+                    links={linkingItemLinks}
+                    projects={projects}
+                    departments={departments}
+                    canManage={canEditSchedule}
+                    busy={linkBusy}
+                    errorMessage={linkError}
+                    onClose={closeTaskLinkModal}
+                    onLink={linkExistingTask}
+                    onUnlink={unlinkTask}
+                    onCreateTask={createAndLinkTask}
+                    onOpenTask={openTaskDetail}
                 />
             )}
         </section>
