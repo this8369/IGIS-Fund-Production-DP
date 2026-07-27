@@ -479,11 +479,11 @@ export default function PmoDetailedSchedule() {
                     </div>
                 )}
                 <table className="w-full table-fixed border-collapse text-left">
-                    <thead className="sticky top-0 z-20">
+                    <thead className="sticky top-0 z-20 bg-[#242423] shadow-[0_1px_0_#464646]">
                         <tr className="h-[30px] border-b border-[#3c3c3c] bg-[#242423]">
                             <th
                                 rowSpan={2}
-                                className="sticky left-0 z-30 w-[450px] min-w-[450px] border-r border-[#464646] bg-[#242423] px-4 text-[12px] font-bold text-[#86868B]"
+                                className="sticky left-0 z-30 w-[450px] min-w-[450px] bg-[#242423] px-4 text-[12px] font-bold text-[#86868B] shadow-[inset_-1px_0_0_#464646]"
                             >
                                 업무명 / 주관 조직 / 기간
                             </th>
@@ -491,7 +491,7 @@ export default function PmoDetailedSchedule() {
                                 <th
                                     key={month}
                                     colSpan={4}
-                                    className="border-r border-[#505050] text-center text-[11px] font-bold text-[#bdbba7]"
+                                    className="bg-[#242423] text-center text-[11px] font-bold text-[#bdbba7] shadow-[inset_-1px_0_0_#505050]"
                                 >
                                     {month}월
                                 </th>
@@ -502,10 +502,10 @@ export default function PmoDetailedSchedule() {
                                 <th
                                     key={period.key}
                                     title={period.label}
-                                    className={`w-[48px] min-w-[48px] text-center text-[10px] font-bold text-[#86868B] ${
+                                    className={`w-[48px] min-w-[48px] bg-[#292928] text-center text-[10px] font-bold text-[#86868B] ${
                                         (index + 1) % 4 === 0
-                                            ? 'border-r border-[#505050]'
-                                            : 'border-r border-[#3a3a3a]'
+                                            ? 'shadow-[inset_-1px_0_0_#505050]'
+                                            : 'shadow-[inset_-1px_0_0_#3a3a3a]'
                                     }`}
                                 >
                                     {period.weekLabel}
