@@ -253,9 +253,10 @@ export default function PmoDetailedSchedule() {
     ));
 
     return (
-        <section className="-mr-[calc(50vw-50%)] overflow-hidden rounded-l-[24px] border border-r-0 border-[#3c3c3c] bg-[#272726] shadow-sm">
-            <div className="border-b border-[#3c3c3c] bg-[#242423] px-5 py-4">
-                <div className="flex items-start justify-between gap-5 pr-[60px]">
+        <section className="w-full">
+            <div className="w-full overflow-hidden rounded-[24px] border border-[#3c3c3c] bg-[#242423] shadow-sm">
+                <div className="px-5 py-3">
+                <div className="flex items-center justify-between gap-5">
                     <div>
                         <div className="flex items-center gap-2.5">
                             <h2 className="text-[17px] font-bold text-white">2026 통합 상세 일정</h2>
@@ -267,9 +268,6 @@ export default function PmoDetailedSchedule() {
                                 {loading ? '불러오는 중' : dataSource === 'database' ? 'DB 일정 원장' : '기본 일정 데이터'}
                             </span>
                         </div>
-                        <p className="mt-1 text-[12px] text-[#86868B]">
-                            원본의 Lv1·Lv2·표시업무·주관·연동대분류와 주차별 일정을 조회합니다.
-                        </p>
                     </div>
                     <div className="flex items-center gap-2">
                         <button
@@ -289,27 +287,27 @@ export default function PmoDetailedSchedule() {
                     </div>
                 </div>
 
-                <div className="mt-4 grid grid-cols-4 gap-2 pr-[60px]">
+                <div className="mt-3 grid grid-cols-4 gap-2">
                     {[
                         ['전체 세부업무', statistics.total, '#E5E5E5'],
                         ['일정 등록', statistics.scheduled, '#60a5fa'],
                         ['일정 미정', statistics.unscheduled, '#a1a1aa'],
                         ['마일스톤', statistics.milestones, '#F59E0B']
                     ].map(([label, value, color]) => (
-                        <div key={label} className="rounded-[10px] border border-[#363636] bg-[#2b2b2a] px-3 py-2">
-                            <div className="text-[10px] font-bold text-[#86868B]">{label}</div>
-                            <div className="mt-0.5 text-[18px] font-bold" style={{ color }}>{value}</div>
+                        <div key={label} className="flex h-[42px] items-center gap-2 rounded-[9px] border border-[#363636] bg-[#2b2b2a] px-3">
+                            <div className="whitespace-nowrap text-[11px] font-bold text-[#86868B]">{label}</div>
+                            <div className="text-[16px] font-bold" style={{ color }}>{value}</div>
                         </div>
                     ))}
                 </div>
 
-                <div className="mt-3 flex items-center gap-2 pr-[60px]">
+                <div className="mt-2.5 flex items-center gap-2">
                     <div className="relative h-[34px] min-w-[220px] flex-1">
                         <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[13px] text-[#86868B]">⌕</span>
                         <input
                             value={searchTerm}
                             onChange={(event) => setSearchTerm(event.target.value)}
-                            placeholder="Lv1, Lv2, 표시업무, 주관 검색"
+                            placeholder="Lv1, Lv2, 업무명, 주관 검색"
                             className="h-full w-full rounded-[8px] border border-[#3c3c3c] bg-[#2c2c2b] pl-8 pr-3 text-[12px] text-white outline-none placeholder:text-[#68686d] focus:border-[#2997ff]"
                         />
                     </div>
@@ -352,42 +350,42 @@ export default function PmoDetailedSchedule() {
                         ]}
                     />
                 </div>
+                </div>
             </div>
 
+            <div className="-mr-[calc(50vw-50%)] mt-[10px] overflow-hidden rounded-l-[24px] border border-r-0 border-[#3f4143] bg-[#252525] shadow-sm">
             <div className="timeline-scrollbar w-full overflow-x-auto pb-1">
                 <div className="w-fit">
-                    <table className="w-[2802px] min-w-[2802px] table-fixed border-collapse text-left">
+                    <table className="w-[2742px] min-w-[2742px] table-fixed border-collapse text-left">
                         <thead>
-                            <tr className="h-[30px] border-b border-[#3c3c3c] bg-[#242423] text-[11px] font-bold text-[#86868B]">
-                                <th rowSpan={2} className="sticky left-0 z-40 w-[50px] min-w-[50px] bg-[#242423] text-center">NO</th>
-                                <th rowSpan={2} className="sticky left-[50px] z-40 w-[130px] min-w-[130px] bg-[#242423] px-3">Lv1</th>
-                                <th rowSpan={2} className="sticky left-[180px] z-40 w-[150px] min-w-[150px] bg-[#242423] px-3">Lv2</th>
-                                <th rowSpan={2} className="sticky left-[330px] z-40 w-[280px] min-w-[280px] border-r border-[#464646] bg-[#242423] px-4 shadow-[inset_-1px_0_0_0_#3c3c3c]">
-                                    업무명(표시업무)
+                            <tr className="h-[30px] border-b border-[#43474a] bg-[#222324] text-[11px] font-bold text-[#92979c]">
+                                <th rowSpan={2} className="sticky left-0 z-40 w-[50px] min-w-[50px] bg-[#222324] text-center">NO</th>
+                                <th rowSpan={2} className="sticky left-[50px] z-40 w-[120px] min-w-[120px] bg-[#222324] px-3">Lv1</th>
+                                <th rowSpan={2} className="sticky left-[170px] z-40 w-[140px] min-w-[140px] bg-[#222324] px-3">Lv2</th>
+                                <th rowSpan={2} className="sticky left-[310px] z-40 w-[300px] min-w-[300px] border-r border-[#4b4f52] bg-[#222324] px-4 shadow-[inset_-1px_0_0_0_#45494c]">
+                                    업무명
                                 </th>
-                                <th rowSpan={2} className="w-[110px] min-w-[110px] bg-[#242423] px-3 text-center">주관</th>
-                                <th rowSpan={2} className="w-[130px] min-w-[130px] border-r border-[#505050] bg-[#242423] px-3 text-center">
-                                    대분류<br /><span className="text-[10px] font-medium">(연동대분류)</span>
-                                </th>
+                                <th rowSpan={2} className="w-[80px] min-w-[80px] bg-[#222324] px-2 text-center">주관</th>
+                                <th rowSpan={2} className="w-[100px] min-w-[100px] border-r border-[#4b4f52] bg-[#222324] px-2 text-center">대분류</th>
                                 {[7, 8, 9, 10, 11, 12].map((month) => (
                                     <th
                                         key={month}
                                         colSpan={4}
-                                        className="border-r border-[#505050] text-center text-[11px] font-bold text-[#bdbba7]"
+                                        className="border-r border-[#4b4f52] text-center text-[11px] font-bold text-[#c7c6ba]"
                                     >
                                         {month}월
                                     </th>
                                 ))}
-                                <th rowSpan={2} className="w-[800px] min-w-[800px] bg-[#272726]" />
+                                <th rowSpan={2} className="w-[800px] min-w-[800px] bg-[#252525]" />
                             </tr>
-                            <tr className="h-[28px] border-b border-[#464646] bg-[#292928]">
+                            <tr className="h-[28px] border-b border-[#43474a] bg-[#26282a]">
                                 {IOTA_SCHEDULE_PERIODS.map((period, index) => (
                                     <th
                                         key={period.key}
                                         className={`w-[48px] min-w-[48px] text-center text-[10px] font-bold text-[#86868B] ${
                                             (index + 1) % 4 === 0
-                                                ? 'border-r border-[#505050]'
-                                                : 'border-r border-[#3a3a3a]'
+                                                ? 'border-r border-[#4b4f52]'
+                                                : 'border-r border-[#383c3f]'
                                         }`}
                                     >
                                         {period.weekLabel}
@@ -407,15 +405,15 @@ export default function PmoDetailedSchedule() {
                                     ? PERIOD_INDEX.get(item.endPeriod)
                                     : undefined;
                                 const stickyBackground = item.itemType === 'lv1'
-                                    ? 'bg-[#2c3440] group-hover:bg-[#344052]'
+                                    ? 'bg-[#25313b] group-hover:bg-[#2b3b48]'
                                     : item.itemType === 'lv2'
-                                        ? 'bg-[#2d2d2c] group-hover:bg-[#343433]'
-                                        : 'bg-[#272726] group-hover:bg-[#30302f]';
+                                        ? 'bg-[#292c2f] group-hover:bg-[#303438]'
+                                        : 'bg-[#252525] group-hover:bg-[#2b2c2d]';
                                 const rowBackground = item.itemType === 'lv1'
-                                    ? 'bg-[#2c3440]'
+                                    ? 'bg-[#25313b]'
                                     : item.itemType === 'lv2'
-                                        ? 'bg-[#2d2d2c]'
-                                        : 'bg-[#272726] hover:bg-[#30302f]';
+                                        ? 'bg-[#292c2f]'
+                                        : 'bg-[#252525] hover:bg-[#2b2c2d]';
                                 const displayedLead = item.leadLabel === '미정'
                                     ? ''
                                     : item.leadLabel;
@@ -423,22 +421,22 @@ export default function PmoDetailedSchedule() {
                                 return (
                                     <tr
                                         key={item.sourceKey}
-                                        className={`group h-[50px] border-b border-[#393939] ${rowBackground}`}
+                                        className={`group h-[42px] border-b border-[#414548] ${rowBackground}`}
                                     >
                                         <td className={`sticky left-0 z-20 w-[50px] min-w-[50px] text-center font-mono text-[11px] text-[#86868B] transition-colors ${stickyBackground}`}>
                                             {item.sourceOrder}
                                         </td>
-                                        <td className={`sticky left-[50px] z-20 w-[130px] min-w-[130px] px-3 text-[12px] transition-colors ${stickyBackground}`}>
+                                        <td className={`sticky left-[50px] z-20 w-[120px] min-w-[120px] px-3 text-[12px] transition-colors ${stickyBackground}`}>
                                             <span className="block truncate font-bold text-[#E5E5E5]" title={item.lv1 || ''}>
                                                 {item.lv1 || ''}
                                             </span>
                                         </td>
-                                        <td className={`sticky left-[180px] z-20 w-[150px] min-w-[150px] px-3 text-[12px] transition-colors ${stickyBackground}`}>
+                                        <td className={`sticky left-[170px] z-20 w-[140px] min-w-[140px] px-3 text-[12px] transition-colors ${stickyBackground}`}>
                                             <span className="block truncate font-medium text-[#c7c7c2]" title={item.lv2 || ''}>
                                                 {item.lv2 || ''}
                                             </span>
                                         </td>
-                                        <td className={`sticky left-[330px] z-20 w-[280px] min-w-[280px] border-r border-[#464646] px-4 text-[12px] font-medium text-[#E5E5E5] shadow-[inset_-1px_0_0_0_#3c3c3c] transition-colors ${stickyBackground}`}>
+                                        <td className={`sticky left-[310px] z-20 w-[300px] min-w-[300px] border-r border-[#4b4f52] px-4 text-[12px] font-medium text-[#E5E5E5] shadow-[inset_-1px_0_0_0_#45494c] transition-colors ${stickyBackground}`}>
                                             <div
                                                 className="flex min-w-0 items-center gap-2"
                                                 style={{ paddingLeft: `${depth * 18}px` }}
@@ -466,10 +464,10 @@ export default function PmoDetailedSchedule() {
                                                 </span>
                                             </div>
                                         </td>
-                                        <td className="w-[110px] min-w-[110px] px-3 text-center text-[12px] font-semibold text-[#E5E5E5]">
+                                        <td className="w-[80px] min-w-[80px] px-2 text-center text-[11px] font-semibold text-[#E5E5E5]">
                                             {displayedLead}
                                         </td>
-                                        <td className="w-[130px] min-w-[130px] border-r border-[#505050] px-3 text-center text-[11px] text-[#bdbba7]">
+                                        <td className="w-[100px] min-w-[100px] border-r border-[#4b4f52] px-2 text-center text-[10px] text-[#c7c6ba]">
                                             {item.categoryMain || ''}
                                         </td>
 
@@ -484,10 +482,10 @@ export default function PmoDetailedSchedule() {
                                             return (
                                                 <td
                                                     key={period.key}
-                                                    className={`relative h-[50px] w-[48px] min-w-[48px] ${
+                                                    className={`relative h-[42px] w-[48px] min-w-[48px] ${
                                                         (periodIndex + 1) % 4 === 0
-                                                            ? 'border-r border-[#505050]'
-                                                            : 'border-r border-[#383838]'
+                                                            ? 'border-r border-[#4b4f52]'
+                                                            : 'border-r border-[#383c3f]'
                                                     }`}
                                                 >
                                                     {inRange && (
@@ -508,7 +506,7 @@ export default function PmoDetailedSchedule() {
                                         {itemIndex === 0 && (
                                             <td
                                                 rowSpan={visibleItems.length}
-                                                className="w-[800px] min-w-[800px] bg-[#272726] px-20 align-top"
+                                                className="w-[800px] min-w-[800px] bg-[#252525] px-20 align-top"
                                             >
                                                 <div
                                                     className="sticky top-[20px] flex h-[500px] w-full select-none items-center whitespace-nowrap font-bold leading-[0.9] tracking-tighter text-white opacity-[0.04] pointer-events-none"
@@ -532,6 +530,7 @@ export default function PmoDetailedSchedule() {
                 </div>
             )}
 
+            </div>
         </section>
     );
 }
