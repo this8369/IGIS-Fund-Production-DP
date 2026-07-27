@@ -1318,6 +1318,20 @@ const gradeMapToUi = (dbVal) => {
     return dbVal || 'B_회의점검';
 };
 
+const getPmoTaskDisplayId = (task, taskList = []) => {
+    const directDisplayId = String(task?.displayId || '').trim();
+    if (directDisplayId) return directDisplayId;
+
+    const matchedTask = taskList.find((candidate) => (
+        String(candidate.id) === String(task?.id)
+    ));
+    const matchedDisplayId = String(matchedTask?.displayId || '').trim();
+    if (matchedDisplayId) return matchedDisplayId;
+
+    const legacyTaskId = String(task?.id || '').trim();
+    return /^T-\d+$/i.test(legacyTaskId) ? legacyTaskId : '';
+};
+
 export default function PmoTaskBoardStaging({ searchQuery: propSearchQuery, setSearchQuery: propSetSearchQuery, viewMode: propViewMode, setViewMode: propSetViewMode, pageSize = 10, setPageSize, addNewTaskTrigger = 0 }) {
     const { memberInfo } = useAuth();
     const [tasks, setTasks] = useState([]);
@@ -1917,7 +1931,7 @@ export default function PmoTaskBoardStaging({ searchQuery: propSearchQuery, setS
                         // It is a normal Integration Board task! Show the detail modal.
                         const matched = tasks.find(item => String(item.id) === String(targetTaskId));
                         if (matched) {
-                            if (!currentDetail || String(currentDetail.id) !== String(targetTaskId)) {
+                            if (currentDetail !== matched) {
                                 setSelectedTaskDetail(matched);
                             }
                         } else {
@@ -3714,7 +3728,7 @@ export default function PmoTaskBoardStaging({ searchQuery: propSearchQuery, setS
                                     <div className="flex items-center gap-1.5">
                                         <span className="text-[#86868B]">업무 ID:</span>
                                         <span className="font-mono px-2 py-0.5 rounded bg-white/10 text-gray-300">
-                                            {editingItem ? (editingItem.displayId || editingItem.id) : '신규'}
+                                            {editingItem ? (getPmoTaskDisplayId(editingItem, tasks) || '확인 중') : '신규'}
                                         </span>
                                     </div>
                                     
@@ -4159,6 +4173,7 @@ export default function PmoTaskBoardStaging({ searchQuery: propSearchQuery, setS
                 </div>
             )}            {selectedTaskDetail && (() => {
                 const t = selectedTaskDetail;
+                const taskDisplayId = getPmoTaskDisplayId(t, tasks);
                 const fallbackItem = FALLBACK_BOARD_TASKS.find(fb => fb.task_name === t.task_name) || {};
                 
                 const isBlockerVal = parseBool(t.is_blocker !== undefined ? t.is_blocker : fallbackItem.is_blocker);
@@ -4187,9 +4202,11 @@ export default function PmoTaskBoardStaging({ searchQuery: propSearchQuery, setS
                                 {/* Header */}
                                 <div className="px-[10px] py-3 border-b border-[#3c3c3c]/80 flex items-center justify-between bg-[#1c1c1e]/80 sticky top-0 z-20">
                                     <div className="flex items-center gap-3 flex-wrap">
-                                        <span className="font-mono text-[12px] font-bold px-2 py-0.5 rounded bg-white/10 text-[#86868B]">
-                                            {t.displayId || t.id || 'T-NEW'}
-                                        </span>
+                                        {taskDisplayId && (
+                                            <span className="font-mono text-[12px] font-bold px-2 py-0.5 rounded bg-white/10 text-[#86868B]">
+                                                {taskDisplayId}
+                                            </span>
+                                        )}
                                         <span className="text-[12px] font-bold px-2 py-0.5 rounded border border-[#3c3c3c] bg-[#3A3A3C] text-white">
                                             {normalizeProjectName(projObj ? projObj.project_name : (t.project || fallbackItem.project || 'IOTA_SEOUL'))}
                                         </span>
