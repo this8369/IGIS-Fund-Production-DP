@@ -2,7 +2,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { supabase } from '../../../utils/supabaseClient';
 import {
     IOTA_DETAILED_SCHEDULE_FALLBACK,
-    IOTA_SCHEDULE_PERIODS
+    IOTA_SCHEDULE_PERIODS,
+    normalizeIotaScheduleLabel
 } from '../../../data/iotaDetailedSchedule';
 
 const PERIOD_INDEX = new Map(
@@ -14,10 +15,10 @@ const normalizeDbItem = (item) => ({
     sourceOrder: item.source_order,
     itemType: item.item_type,
     parentSourceKey: item.parent_source_key,
-    lv1: item.lv1,
-    lv2: item.lv2,
-    taskName: item.task_name,
-    displayName: item.display_name,
+    lv1: normalizeIotaScheduleLabel(item.lv1),
+    lv2: normalizeIotaScheduleLabel(item.lv2),
+    taskName: normalizeIotaScheduleLabel(item.task_name),
+    displayName: normalizeIotaScheduleLabel(item.display_name),
     leadDeptCode: item.lead_dept_code,
     leadLabel: item.lead_label || '미정',
     categoryMain: item.category_main,
@@ -30,12 +31,6 @@ const getScheduleState = (item) => {
     if (item.milestonePeriod) return 'milestone';
     if (item.startPeriod && item.endPeriod) return 'scheduled';
     return item.itemType === 'task' ? 'unscheduled' : 'group';
-};
-
-const getDepth = (item) => {
-    if (item.itemType === 'lv1') return 0;
-    if (item.itemType === 'lv2') return 1;
-    return 2;
 };
 
 const getAncestors = (item, itemMap) => {
@@ -66,12 +61,31 @@ const SelectControl = ({ value, onChange, options, label }) => (
     </label>
 );
 
+const TableHeaderSelect = ({ value, onChange, options, label }) => (
+    <label className="relative block h-[26px] w-full">
+        <span className="sr-only">{label}</span>
+        <select
+            value={value}
+            onChange={(event) => onChange(event.target.value)}
+            className="h-full w-full appearance-none rounded-[6px] border border-[#3a3c3e] bg-[#292a2b] pl-2 pr-5 text-[10px] font-bold text-[#c2c5c8] outline-none transition-colors hover:border-[#505357] focus:border-[#2997ff]"
+        >
+            {options.map((option) => (
+                <option key={option.value} value={option.value} className="bg-[#222] text-white">
+                    {option.label}
+                </option>
+            ))}
+        </select>
+        <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[8px] text-[#777c81]">▼</span>
+    </label>
+);
+
 export default function PmoDetailedSchedule() {
     const [items, setItems] = useState(IOTA_DETAILED_SCHEDULE_FALLBACK);
     const [dataSource, setDataSource] = useState('fallback');
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedLv1, setSelectedLv1] = useState('전체');
+    const [selectedLv2, setSelectedLv2] = useState('전체');
     const [selectedCategory, setSelectedCategory] = useState('전체');
     const [selectedLead, setSelectedLead] = useState('전체');
     const [selectedState, setSelectedState] = useState('전체');
@@ -136,15 +150,10 @@ export default function PmoDetailedSchedule() {
         () => items.filter((item) => item.itemType === 'task'),
         [items]
     );
-    const statistics = useMemo(() => ({
-        total: taskItems.length,
-        scheduled: taskItems.filter((item) => item.startPeriod && item.endPeriod).length,
-        unscheduled: taskItems.filter((item) => !item.startPeriod || !item.endPeriod).length,
-        milestones: items.filter((item) => item.milestonePeriod).length
-    }), [items, taskItems]);
 
     const filterOptions = useMemo(() => ({
         lv1: [...new Set(items.map((item) => item.lv1).filter(Boolean))],
+        lv2: [...new Set(items.map((item) => item.lv2).filter(Boolean))],
         category: [...new Set(items.map((item) => item.categoryMain).filter(Boolean))],
         lead: [...new Set(items
             .map((item) => item.leadLabel)
@@ -155,6 +164,7 @@ export default function PmoDetailedSchedule() {
         const normalizedSearch = searchTerm.trim().toLowerCase();
         const hasFilters = normalizedSearch
             || selectedLv1 !== '전체'
+            || selectedLv2 !== '전체'
             || selectedCategory !== '전체'
             || selectedLead !== '전체'
             || selectedState !== '전체';
@@ -182,6 +192,7 @@ export default function PmoDetailedSchedule() {
             const state = getScheduleState(item);
             const matches = (!normalizedSearch || searchable.includes(normalizedSearch))
                 && (selectedLv1 === '전체' || item.lv1 === selectedLv1)
+                && (selectedLv2 === '전체' || item.lv2 === selectedLv2)
                 && (selectedCategory === '전체' || item.categoryMain === selectedCategory)
                 && (selectedLead === '전체' || item.leadLabel === selectedLead)
                 && (
@@ -204,6 +215,7 @@ export default function PmoDetailedSchedule() {
             ].filter(Boolean).join(' ').toLowerCase();
             const matchesCommonFilters = (!normalizedSearch || searchable.includes(normalizedSearch))
                 && (selectedLv1 === '전체' || item.lv1 === selectedLv1)
+                && (selectedLv2 === '전체' || item.lv2 === selectedLv2)
                 && (selectedCategory === '전체' || item.categoryMain === selectedCategory)
                 && (selectedLead === '전체' || item.leadLabel === selectedLead);
             const matchesSearchGroup = Boolean(normalizedSearch) && matchesCommonFilters;
@@ -228,6 +240,7 @@ export default function PmoDetailedSchedule() {
         selectedCategory,
         selectedLead,
         selectedLv1,
+        selectedLv2,
         selectedState
     ]);
 
@@ -287,21 +300,11 @@ export default function PmoDetailedSchedule() {
                     </div>
                 </div>
 
-                <div className="mt-3 grid grid-cols-4 gap-2">
-                    {[
-                        ['전체 세부업무', statistics.total, '#E5E5E5'],
-                        ['일정 등록', statistics.scheduled, '#60a5fa'],
-                        ['일정 미정', statistics.unscheduled, '#a1a1aa'],
-                        ['마일스톤', statistics.milestones, '#F59E0B']
-                    ].map(([label, value, color]) => (
-                        <div key={label} className="flex h-[42px] items-center gap-2 rounded-[9px] border border-[#363636] bg-[#2b2b2a] px-3">
-                            <div className="whitespace-nowrap text-[11px] font-bold text-[#86868B]">{label}</div>
-                            <div className="text-[16px] font-bold" style={{ color }}>{value}</div>
-                        </div>
-                    ))}
-                </div>
-
-                <div className="mt-2.5 flex items-center gap-2">
+                <div className="mt-3 flex items-center gap-2">
+                    <div className="flex h-[34px] w-fit shrink-0 items-center gap-2 whitespace-nowrap rounded-[8px] border border-[#36383a] bg-[#2b2b2a] px-3">
+                        <div className="text-[11px] font-bold text-[#86868B]">전체 세부업무</div>
+                        <div className="text-[15px] font-bold text-[#E5E5E5]">{taskItems.length}</div>
+                    </div>
                     <div className="relative h-[34px] min-w-[220px] flex-1">
                         <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[13px] text-[#86868B]">⌕</span>
                         <input
@@ -311,33 +314,6 @@ export default function PmoDetailedSchedule() {
                             className="h-full w-full rounded-[8px] border border-[#3c3c3c] bg-[#2c2c2b] pl-8 pr-3 text-[12px] text-white outline-none placeholder:text-[#68686d] focus:border-[#2997ff]"
                         />
                     </div>
-                    <SelectControl
-                        label="Lv1"
-                        value={selectedLv1}
-                        onChange={setSelectedLv1}
-                        options={[
-                            { value: '전체', label: 'Lv1 전체' },
-                            ...filterOptions.lv1.map((value) => ({ value, label: value }))
-                        ]}
-                    />
-                    <SelectControl
-                        label="연동대분류"
-                        value={selectedCategory}
-                        onChange={setSelectedCategory}
-                        options={[
-                            { value: '전체', label: '연동대분류 전체' },
-                            ...filterOptions.category.map((value) => ({ value, label: value }))
-                        ]}
-                    />
-                    <SelectControl
-                        label="주관"
-                        value={selectedLead}
-                        onChange={setSelectedLead}
-                        options={[
-                            { value: '전체', label: '주관 전체' },
-                            ...filterOptions.lead.map((value) => ({ value, label: value }))
-                        ]}
-                    />
                     <SelectControl
                         label="일정 상태"
                         value={selectedState}
@@ -353,40 +329,76 @@ export default function PmoDetailedSchedule() {
                 </div>
             </div>
 
-            <div className="-mr-[calc(50vw-50%)] mt-[10px] overflow-hidden rounded-l-[24px] border border-r-0 border-[#3f4143] bg-[#252525] shadow-sm">
+            <div className="-mr-[calc(50vw-50%)] mt-[10px] overflow-hidden rounded-l-[24px] border border-r-0 border-[#36383a] bg-[#252525] shadow-sm">
             <div className="timeline-scrollbar w-full overflow-x-auto pb-1">
                 <div className="w-fit">
                     <table className="w-[2742px] min-w-[2742px] table-fixed border-collapse text-left">
                         <thead>
-                            <tr className="h-[30px] border-b border-[#43474a] bg-[#222324] text-[11px] font-bold text-[#92979c]">
+                            <tr className="h-[28px] border-b border-[#36383a] bg-[#222324] text-[11px] font-bold text-[#92979c]">
                                 <th rowSpan={2} className="sticky left-0 z-40 w-[50px] min-w-[50px] bg-[#222324] text-center">NO</th>
-                                <th rowSpan={2} className="sticky left-[50px] z-40 w-[120px] min-w-[120px] bg-[#222324] px-3">Lv1</th>
-                                <th rowSpan={2} className="sticky left-[170px] z-40 w-[140px] min-w-[140px] bg-[#222324] px-3">Lv2</th>
-                                <th rowSpan={2} className="sticky left-[310px] z-40 w-[300px] min-w-[300px] border-r border-[#4b4f52] bg-[#222324] px-4 shadow-[inset_-1px_0_0_0_#45494c]">
+                                <th rowSpan={2} className="sticky left-[50px] z-40 w-[120px] min-w-[120px] bg-[#222324] px-1.5">
+                                    <TableHeaderSelect
+                                        label="Lv1"
+                                        value={selectedLv1}
+                                        onChange={setSelectedLv1}
+                                        options={[
+                                            { value: '전체', label: 'Lv1 전체' },
+                                            ...filterOptions.lv1.map((value) => ({ value, label: value }))
+                                        ]}
+                                    />
+                                </th>
+                                <th rowSpan={2} className="sticky left-[170px] z-40 w-[130px] min-w-[130px] bg-[#222324] px-1.5">
+                                    <TableHeaderSelect
+                                        label="Lv2"
+                                        value={selectedLv2}
+                                        onChange={setSelectedLv2}
+                                        options={[
+                                            { value: '전체', label: 'Lv2 전체' },
+                                            ...filterOptions.lv2.map((value) => ({ value, label: value }))
+                                        ]}
+                                    />
+                                </th>
+                                <th rowSpan={2} className="sticky left-[300px] z-40 w-[310px] min-w-[310px] border-r border-[#36383a] bg-[#222324] px-4">
                                     업무명
                                 </th>
-                                <th rowSpan={2} className="w-[80px] min-w-[80px] bg-[#222324] px-2 text-center">주관</th>
-                                <th rowSpan={2} className="w-[100px] min-w-[100px] border-r border-[#4b4f52] bg-[#222324] px-2 text-center">대분류</th>
+                                <th rowSpan={2} className="w-[80px] min-w-[80px] bg-[#222324] px-1.5">
+                                    <TableHeaderSelect
+                                        label="주관"
+                                        value={selectedLead}
+                                        onChange={setSelectedLead}
+                                        options={[
+                                            { value: '전체', label: '주관 전체' },
+                                            ...filterOptions.lead.map((value) => ({ value, label: value }))
+                                        ]}
+                                    />
+                                </th>
+                                <th rowSpan={2} className="w-[100px] min-w-[100px] border-r border-[#36383a] bg-[#222324] px-1.5">
+                                    <TableHeaderSelect
+                                        label="대분류"
+                                        value={selectedCategory}
+                                        onChange={setSelectedCategory}
+                                        options={[
+                                            { value: '전체', label: '대분류 전체' },
+                                            ...filterOptions.category.map((value) => ({ value, label: value }))
+                                        ]}
+                                    />
+                                </th>
                                 {[7, 8, 9, 10, 11, 12].map((month) => (
                                     <th
                                         key={month}
                                         colSpan={4}
-                                        className="border-r border-[#4b4f52] text-center text-[11px] font-bold text-[#c7c6ba]"
+                                        className="border-r border-[#36383a] text-center text-[11px] font-bold text-[#c7c6ba]"
                                     >
                                         {month}월
                                     </th>
                                 ))}
                                 <th rowSpan={2} className="w-[800px] min-w-[800px] bg-[#252525]" />
                             </tr>
-                            <tr className="h-[28px] border-b border-[#43474a] bg-[#26282a]">
-                                {IOTA_SCHEDULE_PERIODS.map((period, index) => (
+                            <tr className="h-[28px] border-b border-[#36383a] bg-[#26282a]">
+                                {IOTA_SCHEDULE_PERIODS.map((period) => (
                                     <th
                                         key={period.key}
-                                        className={`w-[48px] min-w-[48px] text-center text-[10px] font-bold text-[#86868B] ${
-                                            (index + 1) % 4 === 0
-                                                ? 'border-r border-[#4b4f52]'
-                                                : 'border-r border-[#383c3f]'
-                                        }`}
+                                        className="w-[48px] min-w-[48px] border-r border-[#36383a] text-center text-[10px] font-bold text-[#86868B]"
                                     >
                                         {period.weekLabel}
                                     </th>
@@ -396,8 +408,6 @@ export default function PmoDetailedSchedule() {
                         <tbody>
                             {visibleItems.map((item, itemIndex) => {
                                 const isExpanded = expandedGroups.has(item.sourceKey);
-                                const isGroup = item.itemType !== 'task';
-                                const depth = getDepth(item);
                                 const startIndex = item.startPeriod
                                     ? PERIOD_INDEX.get(item.startPeriod)
                                     : undefined;
@@ -421,53 +431,60 @@ export default function PmoDetailedSchedule() {
                                 return (
                                     <tr
                                         key={item.sourceKey}
-                                        className={`group h-[42px] border-b border-[#414548] ${rowBackground}`}
+                                        className={`group h-[42px] border-b border-[#36383a] ${rowBackground}`}
                                     >
                                         <td className={`sticky left-0 z-20 w-[50px] min-w-[50px] text-center font-mono text-[11px] text-[#86868B] transition-colors ${stickyBackground}`}>
                                             {item.sourceOrder}
                                         </td>
-                                        <td className={`sticky left-[50px] z-20 w-[120px] min-w-[120px] px-3 text-[12px] transition-colors ${stickyBackground}`}>
-                                            <span className="block truncate font-bold text-[#E5E5E5]" title={item.lv1 || ''}>
-                                                {item.lv1 || ''}
-                                            </span>
-                                        </td>
-                                        <td className={`sticky left-[170px] z-20 w-[140px] min-w-[140px] px-3 text-[12px] transition-colors ${stickyBackground}`}>
-                                            <span className="block truncate font-medium text-[#c7c7c2]" title={item.lv2 || ''}>
-                                                {item.lv2 || ''}
-                                            </span>
-                                        </td>
-                                        <td className={`sticky left-[310px] z-20 w-[300px] min-w-[300px] border-r border-[#4b4f52] px-4 text-[12px] font-medium text-[#E5E5E5] shadow-[inset_-1px_0_0_0_#45494c] transition-colors ${stickyBackground}`}>
-                                            <div
-                                                className="flex min-w-0 items-center gap-2"
-                                                style={{ paddingLeft: `${depth * 18}px` }}
-                                            >
-                                                {isGroup ? (
+                                        <td className={`sticky left-[50px] z-20 w-[120px] min-w-[120px] px-2 text-[12px] transition-colors ${stickyBackground}`}>
+                                            <div className="flex min-w-0 items-center gap-1.5">
+                                                {item.itemType === 'lv1' && (
                                                     <button
                                                         type="button"
                                                         onClick={() => toggleGroup(item.sourceKey)}
-                                                        className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-[10px] text-[#a1a1aa] hover:bg-white/10 hover:text-white"
+                                                        className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-[9px] text-[#a1a1aa] hover:bg-white/10 hover:text-white"
                                                         aria-label={`${item.displayName} ${isExpanded ? '접기' : '펼치기'}`}
                                                     >
                                                         {isExpanded ? '▼' : '▶'}
                                                     </button>
-                                                ) : (
-                                                    <span className="w-5 shrink-0 text-center font-mono text-[8px] text-[#666]">•</span>
                                                 )}
-                                                <span className={`block truncate ${
+                                                <span className="block truncate font-bold text-[#E5E5E5]" title={item.lv1 || ''}>
+                                                    {item.lv1 || ''}
+                                                </span>
+                                            </div>
+                                        </td>
+                                        <td className={`sticky left-[170px] z-20 w-[130px] min-w-[130px] px-2 text-[12px] transition-colors ${stickyBackground}`}>
+                                            <div className="flex min-w-0 items-center gap-1.5">
+                                                {item.itemType === 'lv2' && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => toggleGroup(item.sourceKey)}
+                                                        className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-[9px] text-[#a1a1aa] hover:bg-white/10 hover:text-white"
+                                                        aria-label={`${item.displayName} ${isExpanded ? '접기' : '펼치기'}`}
+                                                    >
+                                                        {isExpanded ? '▼' : '▶'}
+                                                    </button>
+                                                )}
+                                                <span className="block truncate font-medium text-[#c7c7c2]" title={item.lv2 || ''}>
+                                                    {item.lv2 || ''}
+                                                </span>
+                                            </div>
+                                        </td>
+                                        <td className={`sticky left-[300px] z-20 w-[310px] min-w-[310px] border-r border-[#36383a] px-4 text-[12px] font-medium text-[#E5E5E5] transition-colors ${stickyBackground}`}>
+                                            <span className={`block truncate ${
                                                     item.itemType === 'lv1'
                                                         ? 'font-bold text-white'
                                                         : item.itemType === 'lv2'
                                                             ? 'font-bold text-[#E5E5E5]'
                                                             : 'font-medium text-[#c7c7c2]'
-                                                }`} title={item.displayName || ''}>
-                                                    {item.displayName || ''}
-                                                </span>
-                                            </div>
+                                            }`} title={item.displayName || ''}>
+                                                {item.displayName || ''}
+                                            </span>
                                         </td>
-                                        <td className="w-[80px] min-w-[80px] px-2 text-center text-[11px] font-semibold text-[#E5E5E5]">
+                                        <td className="w-[80px] min-w-[80px] px-2 text-left text-[11px] font-semibold text-[#E5E5E5]">
                                             {displayedLead}
                                         </td>
-                                        <td className="w-[100px] min-w-[100px] border-r border-[#4b4f52] px-2 text-center text-[10px] text-[#c7c6ba]">
+                                        <td className="w-[100px] min-w-[100px] border-r border-[#36383a] px-2 text-left text-[10px] text-[#c7c6ba]">
                                             {item.categoryMain || ''}
                                         </td>
 
@@ -482,11 +499,7 @@ export default function PmoDetailedSchedule() {
                                             return (
                                                 <td
                                                     key={period.key}
-                                                    className={`relative h-[42px] w-[48px] min-w-[48px] ${
-                                                        (periodIndex + 1) % 4 === 0
-                                                            ? 'border-r border-[#4b4f52]'
-                                                            : 'border-r border-[#383c3f]'
-                                                    }`}
+                                                    className="relative h-[42px] w-[48px] min-w-[48px] border-r border-[#36383a]"
                                                 >
                                                     {inRange && (
                                                         <div

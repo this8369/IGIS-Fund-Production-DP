@@ -20,6 +20,9 @@ assert.equal(tasks.length, 67);
 assert.equal(tasks.filter((item) => item.startPeriod && item.endPeriod).length, 41);
 assert.equal(tasks.filter((item) => !item.startPeriod || !item.endPeriod).length, 26);
 assert.equal(items.filter((item) => item.milestonePeriod).length, 5);
+assert.ok(items.some((item) => item.lv1 === '주주/수익자 설명회'));
+assert.ok(items.some((item) => item.lv1 === '427 설계/시공'));
+assert.ok(items.some((item) => item.lv1 === '816 설계/시공'));
 
 items.forEach((item, index) => {
     assert.equal(item.sourceOrder, index + 1);
@@ -46,6 +49,11 @@ items.forEach((item, index) => {
         item.leadLabel || '',
         /사업(?:그룹|관리)\d파트|사업파트\d|개발관리실|공간솔루션실|기업마케팅실/,
         `${item.sourceKey} has a legacy organization label`,
+    );
+    assert.doesNotMatch(
+        [item.lv1, item.lv2, item.taskName, item.displayName].filter(Boolean).join(' '),
+        /주주사 및 수익자 설명회|\[YD427\]설계 및 시공|\[YD816\] 설계 및 시공/,
+        `${item.sourceKey} has a legacy schedule label`,
     );
 });
 

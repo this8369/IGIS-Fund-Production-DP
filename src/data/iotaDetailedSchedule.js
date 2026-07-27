@@ -26,7 +26,17 @@ export const IOTA_SCHEDULE_PERIODS = [
   {"key":"2026-12-W4","label":"12월 4W","monthLabel":"12월","weekLabel":"4W"}
 ];
 
-export const IOTA_DETAILED_SCHEDULE_FALLBACK = [
+const SCHEDULE_LABEL_RENAMES = {
+  '주주사 및 수익자 설명회': '주주/수익자 설명회',
+  '[YD427]설계 및 시공': '427 설계/시공',
+  '[YD816] 설계 및 시공': '816 설계/시공'
+};
+
+export const normalizeIotaScheduleLabel = (value) => (
+  value ? SCHEDULE_LABEL_RENAMES[value] || value : value
+);
+
+const IOTA_DETAILED_SCHEDULE_SOURCE = [
   {"sourceKey":"S-001","sourceOrder":1,"sourceRow":4,"itemType":"lv1","parentSourceKey":null,"lv1":"금융","lv2":null,"taskName":null,"displayName":"금융","leadDeptCode":null,"leadLabel":"미정","categoryMain":"PF/금융","startPeriod":null,"endPeriod":null,"milestonePeriod":null,"managementNote":"구분행","boardLinkState":"카테고리/요약행","linkedTaskId":null},
   {"sourceKey":"S-002","sourceOrder":2,"sourceRow":5,"itemType":"lv2","parentSourceKey":"S-001","lv1":"금융","lv2":"PF준비","taskName":null,"displayName":"PF준비","leadDeptCode":null,"leadLabel":"미정","categoryMain":"PF/금융","startPeriod":"2026-11-W1","endPeriod":"2026-11-W1","milestonePeriod":"2026-11-W1","managementNote":"마일스톤 반영","boardLinkState":"카테고리/요약행","linkedTaskId":null},
   {"sourceKey":"S-003","sourceOrder":3,"sourceRow":6,"itemType":"task","parentSourceKey":"S-002","lv1":"금융","lv2":"PF준비","taskName":"PF 구조협의 (427/816 단독 PF Term)","displayName":"PF 구조협의 (427/816 단독 PF Term)","leadDeptCode":"DEPT_PM2","leadLabel":"사업2파트","categoryMain":"PF/금융","startPeriod":"2026-07-W3","endPeriod":"2026-08-W4","milestonePeriod":null,"managementNote":"일정구간 반영","boardLinkState":"업무판 등록/매칭 확인","linkedTaskId":null},
@@ -119,3 +129,11 @@ export const IOTA_DETAILED_SCHEDULE_FALLBACK = [
   {"sourceKey":"S-090","sourceOrder":90,"sourceRow":93,"itemType":"task","parentSourceKey":"S-088","lv1":"[YD816] 설계 및 시공","lv2":"시공","taskName":"지하 해체공사","displayName":"지하 해체공사","leadDeptCode":"DEPT_DEV","leadLabel":"개발솔루션","categoryMain":"도면/설계","startPeriod":"2026-12-W1","endPeriod":"2026-12-W4","milestonePeriod":null,"managementNote":"일정구간 반영","boardLinkState":"업무판 등록/매칭 확인","linkedTaskId":null},
   {"sourceKey":"S-091","sourceOrder":91,"sourceRow":94,"itemType":"task","parentSourceKey":"S-088","lv1":"[YD816] 설계 및 시공","lv2":"시공","taskName":"본공사","displayName":"본공사","leadDeptCode":"DEPT_DEV","leadLabel":"개발솔루션","categoryMain":"도면/설계","startPeriod":null,"endPeriod":null,"milestonePeriod":null,"managementNote":"일정 미기재 - 추후 보완","boardLinkState":"업무판 등록/매칭 확인","linkedTaskId":null}
 ];
+
+export const IOTA_DETAILED_SCHEDULE_FALLBACK = IOTA_DETAILED_SCHEDULE_SOURCE.map((item) => ({
+  ...item,
+  lv1: normalizeIotaScheduleLabel(item.lv1),
+  lv2: normalizeIotaScheduleLabel(item.lv2),
+  taskName: normalizeIotaScheduleLabel(item.taskName),
+  displayName: normalizeIotaScheduleLabel(item.displayName)
+}));
