@@ -49,6 +49,55 @@ const getAncestors = (item, itemMap) => {
     return ancestors;
 };
 
+const buildScheduleSummaries = (items) => {
+    const children = new Map();
+    for (const item of items) {
+        if (!item.parentSourceKey) continue;
+        const siblings = children.get(item.parentSourceKey) || [];
+        siblings.push(item);
+        children.set(item.parentSourceKey, siblings);
+    }
+
+    const summaries = new Map();
+    const visit = (item) => {
+        const descendants = children.get(item.sourceKey) || [];
+        const childSummaries = descendants.map(visit);
+        const ownStart = PERIOD_INDEX.get(item.startPeriod);
+        const ownEnd = PERIOD_INDEX.get(item.endPeriod);
+        const starts = [
+            ...(ownStart === undefined ? [] : [ownStart]),
+            ...childSummaries.flatMap((summary) => (
+                summary.startIndex === null ? [] : [summary.startIndex]
+            ))
+        ];
+        const ends = [
+            ...(ownEnd === undefined ? [] : [ownEnd]),
+            ...childSummaries.flatMap((summary) => (
+                summary.endIndex === null ? [] : [summary.endIndex]
+            ))
+        ];
+        const ownTask = item.itemType === 'task';
+        const scheduledTaskCount = (ownTask && item.startPeriod && item.endPeriod ? 1 : 0)
+            + childSummaries.reduce((sum, summary) => sum + summary.scheduledTaskCount, 0);
+        const unscheduledTaskCount = (ownTask && (!item.startPeriod || !item.endPeriod) ? 1 : 0)
+            + childSummaries.reduce((sum, summary) => sum + summary.unscheduledTaskCount, 0);
+        const milestoneCount = (item.milestonePeriod ? 1 : 0)
+            + childSummaries.reduce((sum, summary) => sum + summary.milestoneCount, 0);
+        const summary = {
+            startIndex: starts.length ? Math.min(...starts) : null,
+            endIndex: ends.length ? Math.max(...ends) : null,
+            scheduledTaskCount,
+            unscheduledTaskCount,
+            milestoneCount
+        };
+        summaries.set(item.sourceKey, summary);
+        return summary;
+    };
+
+    items.filter((item) => item.itemType === 'lv1').forEach(visit);
+    return summaries;
+};
+
 const SelectControl = ({ value, onChange, options, label }) => (
     <label className="relative h-[34px] min-w-[126px]">
         <span className="sr-only">{label}</span>
@@ -67,29 +116,12 @@ const SelectControl = ({ value, onChange, options, label }) => (
     </label>
 );
 
-const TableHeaderSelect = ({ value, onChange, options, label }) => (
-    <label className="relative block h-[26px] w-full">
-        <span className="sr-only">{label}</span>
-        <select
-            value={value}
-            onChange={(event) => onChange(event.target.value)}
-            className="h-full w-full appearance-none rounded-[6px] border border-[#3a3c3e] bg-[#292a2b] pl-2 pr-5 text-[10px] font-bold text-[#c2c5c8] outline-none transition-colors hover:border-[#505357] focus:border-[#2997ff]"
-        >
-            {options.map((option) => (
-                <option key={option.value} value={option.value} className="bg-[#222] text-white">
-                    {option.label}
-                </option>
-            ))}
-        </select>
-        <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[8px] text-[#777c81]">▼</span>
-    </label>
-);
-
 export default function PmoDetailedSchedule() {
     const [items, setItems] = useState(IOTA_DETAILED_SCHEDULE_FALLBACK);
+    const [dataSource, setDataSource] = useState('fallback');
+    const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedLv1, setSelectedLv1] = useState('전체');
-    const [selectedLv2, setSelectedLv2] = useState('전체');
     const [selectedCategory, setSelectedCategory] = useState('전체');
     const [selectedLead, setSelectedLead] = useState('전체');
     const [selectedState, setSelectedState] = useState('전체');
@@ -133,9 +165,11 @@ export default function PmoDetailedSchedule() {
                         .filter((item) => item.itemType !== 'task')
                         .map((item) => item.sourceKey)
                 ));
+                setDataSource('database');
             } else if (error) {
                 console.warn('Detailed schedule DB load failed; using fallback data.', error);
             }
+            setLoading(false);
         };
 
         loadSchedule();
@@ -148,6 +182,7 @@ export default function PmoDetailedSchedule() {
         () => new Map(items.map((item) => [item.sourceKey, item])),
         [items]
     );
+    const summaries = useMemo(() => buildScheduleSummaries(items), [items]);
     const taskItems = useMemo(
         () => items.filter((item) => item.itemType === 'task'),
         [items]
@@ -161,7 +196,6 @@ export default function PmoDetailedSchedule() {
 
     const filterOptions = useMemo(() => ({
         lv1: [...new Set(items.map((item) => item.lv1).filter(Boolean))],
-        lv2: [...new Set(items.map((item) => item.lv2).filter(Boolean))],
         category: [...new Set(items.map((item) => item.categoryMain).filter(Boolean))],
         lead: [...new Set(items
             .map((item) => item.leadLabel)
@@ -172,7 +206,6 @@ export default function PmoDetailedSchedule() {
         const normalizedSearch = searchTerm.trim().toLowerCase();
         const hasFilters = normalizedSearch
             || selectedLv1 !== '전체'
-            || selectedLv2 !== '전체'
             || selectedCategory !== '전체'
             || selectedLead !== '전체'
             || selectedState !== '전체';
@@ -200,7 +233,6 @@ export default function PmoDetailedSchedule() {
             const state = getScheduleState(item);
             const matches = (!normalizedSearch || searchable.includes(normalizedSearch))
                 && (selectedLv1 === '전체' || item.lv1 === selectedLv1)
-                && (selectedLv2 === '전체' || item.lv2 === selectedLv2)
                 && (selectedCategory === '전체' || item.categoryMain === selectedCategory)
                 && (selectedLead === '전체' || item.leadLabel === selectedLead)
                 && (
@@ -223,7 +255,6 @@ export default function PmoDetailedSchedule() {
             ].filter(Boolean).join(' ').toLowerCase();
             const matchesCommonFilters = (!normalizedSearch || searchable.includes(normalizedSearch))
                 && (selectedLv1 === '전체' || item.lv1 === selectedLv1)
-                && (selectedLv2 === '전체' || item.lv2 === selectedLv2)
                 && (selectedCategory === '전체' || item.categoryMain === selectedCategory)
                 && (selectedLead === '전체' || item.leadLabel === selectedLead);
             const matchesSearchGroup = Boolean(normalizedSearch) && matchesCommonFilters;
@@ -248,7 +279,6 @@ export default function PmoDetailedSchedule() {
         selectedCategory,
         selectedLead,
         selectedLv1,
-        selectedLv2,
         selectedState
     ]);
 
@@ -266,23 +296,101 @@ export default function PmoDetailedSchedule() {
         });
     };
 
+    const expandAll = () => setExpandedGroups(new Set(
+        items.filter((item) => item.itemType !== 'task').map((item) => item.sourceKey)
+    ));
+    const collapseDetails = () => setExpandedGroups(new Set(
+        items.filter((item) => item.itemType === 'lv1').map((item) => item.sourceKey)
+    ));
+
     return (
-        <section className="w-full">
-            <div className="flex w-full items-center gap-2">
+        <section className="w-full overflow-hidden rounded-[32px] border border-[#3c3c3c] bg-[#272726] shadow-sm">
+            <div className="border-b border-[#3c3c3c] bg-[#242423] px-5 py-4">
+                <div className="flex items-start justify-between gap-5">
+                    <div>
+                        <div className="flex items-center gap-2.5">
+                            <h2 className="text-[17px] font-bold text-white">2026 통합 상세 일정</h2>
+                            <span className={`rounded-full border px-2 py-0.5 text-[10px] font-bold ${
+                                dataSource === 'database'
+                                    ? 'border-[#2997ff]/30 bg-[#2997ff]/10 text-[#60a5fa]'
+                                    : 'border-[#555]/60 bg-white/[0.04] text-[#a1a1aa]'
+                            }`}>
+                                {loading ? '불러오는 중' : dataSource === 'database' ? 'DB 일정 원장' : '기본 일정 데이터'}
+                            </span>
+                        </div>
+                        <p className="mt-1 text-[12px] text-[#86868B]">
+                            대분류·중분류를 펼쳐 세부업무의 주차별 수행기간과 마일스톤을 확인합니다.
+                        </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <button
+                            type="button"
+                            onClick={collapseDetails}
+                            className="h-[32px] rounded-[8px] border border-[#3c3c3c] bg-[#2c2c2b] px-3 text-[11px] font-bold text-[#a1a1aa] transition-colors hover:text-white"
+                        >
+                            세부 접기
+                        </button>
+                        <button
+                            type="button"
+                            onClick={expandAll}
+                            className="h-[32px] rounded-[8px] border border-[#3c3c3c] bg-[#2c2c2b] px-3 text-[11px] font-bold text-[#a1a1aa] transition-colors hover:text-white"
+                        >
+                            모두 펼치기
+                        </button>
+                    </div>
+                </div>
+
+                <div className="mt-4 grid grid-cols-4 gap-2">
                     {[
                         ['전체 세부업무', statistics.total, '#E5E5E5'],
                         ['일정 등록', statistics.scheduled, '#60a5fa'],
                         ['일정 미정', statistics.unscheduled, '#ff5f57'],
                         ['마일스톤', statistics.milestones, '#F59E0B']
                     ].map(([label, value, color]) => (
-                        <div
-                            key={label}
-                            className="flex h-[34px] w-fit shrink-0 items-center gap-1.5 whitespace-nowrap rounded-[8px] border border-[#36383a] bg-[#2b2b2a] px-2.5"
-                        >
+                        <div key={label} className="rounded-[10px] border border-[#363636] bg-[#2b2b2a] px-3 py-2">
                             <div className="text-[12px] font-bold text-[#86868B]">{label}</div>
-                            <div className="text-[18px] font-bold" style={{ color }}>{value}</div>
+                            <div className="mt-0.5 text-[22px] font-bold" style={{ color }}>{value}</div>
                         </div>
                     ))}
+                </div>
+
+                <div className="mt-3 flex items-center gap-2">
+                    <div className="relative h-[34px] min-w-[220px] flex-1">
+                        <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[13px] text-[#86868B]">⌕</span>
+                        <input
+                            value={searchTerm}
+                            onChange={(event) => setSearchTerm(event.target.value)}
+                            placeholder="일정·업무·주관 검색"
+                            className="h-full w-full rounded-[8px] border border-[#3c3c3c] bg-[#2c2c2b] pl-8 pr-3 text-[12px] text-white outline-none placeholder:text-[#68686d] focus:border-[#2997ff]"
+                        />
+                    </div>
+                    <SelectControl
+                        label="대분류"
+                        value={selectedLv1}
+                        onChange={setSelectedLv1}
+                        options={[
+                            { value: '전체', label: '대분류 전체' },
+                            ...filterOptions.lv1.map((value) => ({ value, label: value }))
+                        ]}
+                    />
+                    <SelectControl
+                        label="연동분류"
+                        value={selectedCategory}
+                        onChange={setSelectedCategory}
+                        options={[
+                            { value: '전체', label: '연동분류 전체' },
+                            ...filterOptions.category.map((value) => ({ value, label: value }))
+                        ]}
+                    />
+                    <SelectControl
+                        label="주관"
+                        value={selectedLead}
+                        onChange={setSelectedLead}
+                        options={[
+                            { value: '전체', label: '주관 전체' },
+                            ...filterOptions.lead.map((value) => ({ value, label: value }))
+                        ]}
+                    />
                     <SelectControl
                         label="일정 상태"
                         value={selectedState}
@@ -294,218 +402,185 @@ export default function PmoDetailedSchedule() {
                             { value: 'milestone', label: '마일스톤' }
                         ]}
                     />
-                    <div className="relative h-[34px] min-w-[220px] flex-1">
-                        <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[13px] text-[#86868B]">⌕</span>
-                        <input
-                            value={searchTerm}
-                            onChange={(event) => setSearchTerm(event.target.value)}
-                            placeholder="Lv1, Lv2, 업무명, 주관 검색"
-                            className="h-full w-full rounded-[8px] border border-[#3c3c3c] bg-[#2c2c2b] pl-8 pr-3 text-[12px] text-white outline-none placeholder:text-[#68686d] focus:border-[#2997ff]"
-                        />
-                    </div>
+                </div>
             </div>
 
-            <div className="-mr-[calc(50vw-50%)] mt-[10px] overflow-hidden rounded-l-[24px] border border-r-0 border-[#36383a] bg-[#252525] shadow-sm">
-            <div className="timeline-scrollbar w-full overflow-x-auto pb-1">
-                <div className="w-fit">
-                    <table className="w-[2742px] min-w-[2742px] table-fixed border-collapse text-left">
-                        <thead>
-                            <tr className="h-[28px] border-b border-[#36383a] bg-[#222324] text-[11px] font-bold text-[#92979c]">
-                                <th rowSpan={2} className="sticky left-0 z-40 w-[50px] min-w-[50px] bg-[#222324] text-center">NO</th>
-                                <th rowSpan={2} className="sticky left-[50px] z-40 w-[310px] min-w-[310px] bg-[#222324] px-4">
-                                    업무명
+            <div className="timeline-scrollbar w-full overflow-x-auto">
+                <table className="w-[1602px] min-w-[1602px] table-fixed border-collapse text-left">
+                    <thead className="sticky top-0 z-20">
+                        <tr className="h-[30px] border-b border-[#3c3c3c] bg-[#242423]">
+                            <th
+                                rowSpan={2}
+                                className="sticky left-0 z-30 w-[450px] min-w-[450px] border-r border-[#464646] bg-[#242423] px-4 text-[11px] font-bold text-[#86868B]"
+                            >
+                                업무명 / 주관 조직 / 기간
+                            </th>
+                            {[7, 8, 9, 10, 11, 12].map((month) => (
+                                <th
+                                    key={month}
+                                    colSpan={4}
+                                    className="border-r border-[#505050] text-center text-[11px] font-bold text-[#bdbba7]"
+                                >
+                                    {month}월
                                 </th>
-                                <th rowSpan={2} className="sticky left-[360px] z-40 w-[120px] min-w-[120px] bg-[#222324] px-1.5">
-                                    <TableHeaderSelect
-                                        label="Lv1"
-                                        value={selectedLv1}
-                                        onChange={setSelectedLv1}
-                                        options={[
-                                            { value: '전체', label: 'Lv1 전체' },
-                                            ...filterOptions.lv1.map((value) => ({ value, label: value }))
-                                        ]}
-                                    />
+                            ))}
+                        </tr>
+                        <tr className="h-[28px] border-b border-[#464646] bg-[#292928]">
+                            {IOTA_SCHEDULE_PERIODS.map((period, index) => (
+                                <th
+                                    key={period.key}
+                                    className={`w-[48px] min-w-[48px] text-center text-[10px] font-bold text-[#86868B] ${
+                                        (index + 1) % 4 === 0
+                                            ? 'border-r border-[#505050]'
+                                            : 'border-r border-[#3a3a3a]'
+                                    }`}
+                                >
+                                    {period.weekLabel}
                                 </th>
-                                <th rowSpan={2} className="sticky left-[480px] z-40 w-[130px] min-w-[130px] border-r border-[#36383a] bg-[#222324] px-1.5">
-                                    <TableHeaderSelect
-                                        label="Lv2"
-                                        value={selectedLv2}
-                                        onChange={setSelectedLv2}
-                                        options={[
-                                            { value: '전체', label: 'Lv2 전체' },
-                                            ...filterOptions.lv2.map((value) => ({ value, label: value }))
-                                        ]}
-                                    />
-                                </th>
-                                <th rowSpan={2} className="w-[80px] min-w-[80px] bg-[#222324] px-1.5">
-                                    <TableHeaderSelect
-                                        label="주관"
-                                        value={selectedLead}
-                                        onChange={setSelectedLead}
-                                        options={[
-                                            { value: '전체', label: '주관 전체' },
-                                            ...filterOptions.lead.map((value) => ({ value, label: value }))
-                                        ]}
-                                    />
-                                </th>
-                                <th rowSpan={2} className="w-[100px] min-w-[100px] border-r border-[#36383a] bg-[#222324] px-1.5">
-                                    <TableHeaderSelect
-                                        label="대분류"
-                                        value={selectedCategory}
-                                        onChange={setSelectedCategory}
-                                        options={[
-                                            { value: '전체', label: '대분류 전체' },
-                                            ...filterOptions.category.map((value) => ({ value, label: value }))
-                                        ]}
-                                    />
-                                </th>
-                                {[7, 8, 9, 10, 11, 12].map((month) => (
-                                    <th
-                                        key={month}
-                                        colSpan={4}
-                                        className="border-r border-[#36383a] text-center text-[11px] font-bold text-[#c7c6ba]"
-                                    >
-                                        {month}월
-                                    </th>
-                                ))}
-                                <th rowSpan={2} className="w-[800px] min-w-[800px] bg-[#252525]" />
-                            </tr>
-                            <tr className="h-[28px] border-b border-[#36383a] bg-[#26282a]">
-                                {IOTA_SCHEDULE_PERIODS.map((period) => (
-                                    <th
-                                        key={period.key}
-                                        className="w-[48px] min-w-[48px] border-r border-[#36383a] text-center text-[10px] font-bold text-[#86868B]"
-                                    >
-                                        {period.weekLabel}
-                                    </th>
-                                ))}
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {visibleItems.map((item, itemIndex) => {
-                                const isExpanded = expandedGroups.has(item.sourceKey);
-                                const isGroup = item.itemType !== 'task';
-                                const depth = getDepth(item);
-                                const startIndex = item.startPeriod
-                                    ? PERIOD_INDEX.get(item.startPeriod)
-                                    : undefined;
-                                const endIndex = item.endPeriod
-                                    ? PERIOD_INDEX.get(item.endPeriod)
-                                    : undefined;
-                                const stickyBackground = item.itemType === 'lv1'
-                                    ? 'bg-[#252b30] group-hover:bg-[#293139]'
-                                    : item.itemType === 'lv2'
-                                        ? 'bg-[#27292a] group-hover:bg-[#2c3033]'
-                                        : 'bg-[#252525] group-hover:bg-[#2b2c2d]';
-                                const rowBackground = item.itemType === 'lv1'
-                                    ? 'bg-[#252b30]'
-                                    : item.itemType === 'lv2'
-                                        ? 'bg-[#27292a]'
-                                        : 'bg-[#252525] hover:bg-[#2b2c2d]';
-                                const displayedLead = item.leadLabel === '미정'
-                                    ? ''
-                                    : item.leadLabel;
+                            ))}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {visibleItems.map((item) => {
+                            const depth = getDepth(item);
+                            const isGroup = item.itemType !== 'task';
+                            const isExpanded = expandedGroups.has(item.sourceKey);
+                            const summary = summaries.get(item.sourceKey) || {};
+                            const startIndex = item.startPeriod
+                                ? PERIOD_INDEX.get(item.startPeriod)
+                                : summary.startIndex;
+                            const endIndex = item.endPeriod
+                                ? PERIOD_INDEX.get(item.endPeriod)
+                                : summary.endIndex;
+                            const state = getScheduleState(item);
+                            const hasSchedule = startIndex !== null && startIndex !== undefined;
+                            const periodLabel = !hasSchedule
+                                ? isGroup ? '' : '미정'
+                                : startIndex === endIndex
+                                    ? IOTA_SCHEDULE_PERIODS[startIndex]?.label
+                                    : `${IOTA_SCHEDULE_PERIODS[startIndex]?.label} ~ ${IOTA_SCHEDULE_PERIODS[endIndex]?.label}`;
+                            const showLead = !isGroup || item.leadLabel !== '미정';
 
-                                return (
-                                    <tr
-                                        key={item.sourceKey}
-                                        className={`group h-[42px] border-b border-[#36383a] ${rowBackground}`}
-                                    >
-                                        <td className={`sticky left-0 z-20 w-[50px] min-w-[50px] text-center font-mono text-[11px] text-[#86868B] transition-colors ${stickyBackground}`}>
-                                            {item.sourceOrder}
-                                        </td>
-                                        <td className={`sticky left-[50px] z-20 w-[310px] min-w-[310px] px-4 text-[12px] font-medium text-[#E5E5E5] transition-colors ${stickyBackground}`}>
+                            return (
+                                <tr
+                                    key={item.sourceKey}
+                                    className={`h-[48px] border-b border-[#393939] ${
+                                        item.itemType === 'lv1'
+                                            ? 'bg-[#2c3440]'
+                                            : item.itemType === 'lv2'
+                                                ? 'bg-[#2d2d2c]'
+                                                : 'bg-[#272726] hover:bg-[#30302f]'
+                                    }`}
+                                >
+                                    <td className={`sticky left-0 z-10 w-[450px] min-w-[450px] border-r border-[#464646] px-3 ${
+                                        item.itemType === 'lv1'
+                                            ? 'bg-[#2c3440]'
+                                            : item.itemType === 'lv2'
+                                                ? 'bg-[#2d2d2c]'
+                                                : 'bg-[#272726]'
+                                    }`}>
+                                        <div className="flex items-center justify-between gap-3">
                                             <div
-                                                className="flex min-w-0 items-center gap-2"
-                                                style={{ paddingLeft: `${depth * 14}px` }}
+                                                className="min-w-0 flex-1"
+                                                style={{ paddingLeft: `${depth * 18}px` }}
                                             >
-                                                {isGroup ? (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => toggleGroup(item.sourceKey)}
-                                                        className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-[10px] text-[#a1a1aa] hover:bg-white/10 hover:text-white"
-                                                        aria-label={`${item.displayName} ${isExpanded ? '접기' : '펼치기'}`}
-                                                    >
-                                                        {isExpanded ? '▼' : '▶'}
-                                                    </button>
-                                                ) : (
-                                                    <span className="w-5 shrink-0 text-center font-mono text-[8px] text-[#666]">•</span>
-                                                )}
-                                                <span className={`block truncate ${
-                                                    item.itemType === 'lv1'
-                                                        ? 'font-bold text-white'
-                                                        : item.itemType === 'lv2'
-                                                            ? 'font-bold text-[#E5E5E5]'
-                                                            : 'font-medium text-[#c7c7c2]'
-                                                }`} title={item.displayName || ''}>
-                                                    {item.displayName || ''}
-                                                </span>
-                                            </div>
-                                        </td>
-                                        <td className={`sticky left-[360px] z-20 w-[120px] min-w-[120px] px-2 text-[12px] transition-colors ${stickyBackground}`}>
-                                            <span className="block truncate font-bold text-[#E5E5E5]" title={item.lv1 || ''}>
-                                                {item.lv1 || ''}
-                                            </span>
-                                        </td>
-                                        <td className={`sticky left-[480px] z-20 w-[130px] min-w-[130px] border-r border-[#36383a] px-2 text-[12px] transition-colors ${stickyBackground}`}>
-                                            <span className="block truncate font-medium text-[#c7c7c2]" title={item.lv2 || ''}>
-                                                {item.lv2 || ''}
-                                            </span>
-                                        </td>
-                                        <td className="w-[80px] min-w-[80px] px-2 text-left text-[11px] font-semibold text-[#E5E5E5]">
-                                            {displayedLead}
-                                        </td>
-                                        <td className="w-[100px] min-w-[100px] border-r border-[#36383a] px-2 text-left text-[10px] text-[#c7c6ba]">
-                                            {item.categoryMain || ''}
-                                        </td>
-
-                                        {IOTA_SCHEDULE_PERIODS.map((period, periodIndex) => {
-                                            const inRange = startIndex !== undefined
-                                                && endIndex !== undefined
-                                                && periodIndex >= startIndex
-                                                && periodIndex <= endIndex;
-                                            const isStart = inRange && periodIndex === startIndex;
-                                            const isEnd = inRange && periodIndex === endIndex;
-                                            const isMilestone = item.milestonePeriod === period.key;
-                                            return (
-                                                <td
-                                                    key={period.key}
-                                                    className="relative h-[42px] w-[48px] min-w-[48px] border-r border-[#36383a]"
-                                                >
-                                                    {inRange && (
-                                                        <div
-                                                            className={`absolute left-0 right-0 top-1/2 h-[12px] -translate-y-1/2 bg-[#2997ff]/70 ${
-                                                                isStart ? 'rounded-l-full' : ''
-                                                            } ${isEnd ? 'rounded-r-full' : ''}`}
-                                                        />
+                                                <div className="flex min-w-0 items-center gap-2">
+                                                    {isGroup ? (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => toggleGroup(item.sourceKey)}
+                                                            className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-[10px] text-[#a1a1aa] hover:bg-white/10 hover:text-white"
+                                                            aria-label={`${item.displayName} ${isExpanded ? '접기' : '펼치기'}`}
+                                                        >
+                                                            {isExpanded ? '▼' : '▶'}
+                                                        </button>
+                                                    ) : (
+                                                        <span className="w-5 shrink-0 text-center font-mono text-[8px] text-[#666]">•</span>
                                                     )}
-                                                    {isMilestone && (
-                                                        <span className="absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2 text-[20px] font-black leading-none text-[#F59E0B] drop-shadow-[0_0_5px_rgba(245,158,11,0.45)]">
-                                                            ◆
-                                                        </span>
-                                                    )}
-                                                </td>
-                                            );
-                                        })}
-                                        {itemIndex === 0 && (
-                                            <td
-                                                rowSpan={visibleItems.length}
-                                                className="w-[800px] min-w-[800px] bg-[#252525] px-20 align-top"
-                                            >
-                                                <div
-                                                    className="sticky top-[20px] flex h-[500px] w-full select-none items-center whitespace-nowrap font-bold leading-[0.9] tracking-tighter text-white opacity-[0.04] pointer-events-none"
-                                                    style={{ fontSize: 'clamp(45px, 8.5vw, 135px)' }}
-                                                >
-                                                    IOTA Seoul<br />Cross Functional<br />Team
+                                                    <span className={`truncate ${
+                                                        item.itemType === 'lv1'
+                                                            ? 'text-[14px] font-bold text-white'
+                                                            : item.itemType === 'lv2'
+                                                                ? 'text-[13px] font-bold text-[#E5E5E5]'
+                                                                : 'text-[13px] font-medium text-[#c7c7c2]'
+                                                    }`}>
+                                                        {item.displayName}
+                                                    </span>
+                                                    <span className="shrink-0 font-mono text-[9px] text-[#68686d]">
+                                                        {item.sourceKey}
+                                                    </span>
                                                 </div>
+                                                <div className="mt-1 flex items-center gap-2 pl-7 text-[10px] text-[#86868B]">
+                                                    {showLead && (
+                                                        <>
+                                                            <span className={item.leadLabel === '미정' ? 'font-bold text-[#ff5f57]' : ''}>
+                                                                {item.leadLabel}
+                                                            </span>
+                                                            <span className="text-[#4f4f52]">·</span>
+                                                        </>
+                                                    )}
+                                                    <span>{item.categoryMain}</span>
+                                                    {isGroup && (
+                                                        <>
+                                                            <span className="text-[#4f4f52]">·</span>
+                                                            <span>일정 {summary.scheduledTaskCount || 0}</span>
+                                                        </>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <div className="w-[108px] shrink-0 text-right">
+                                                <div className={`text-[10px] font-bold ${
+                                                    state === 'milestone'
+                                                        ? 'text-[#F59E0B]'
+                                                        : !hasSchedule
+                                                            ? 'text-[#ff5f57]'
+                                                            : 'text-[#60a5fa]'
+                                                }`}>
+                                                    {periodLabel}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+
+                                    {IOTA_SCHEDULE_PERIODS.map((period, periodIndex) => {
+                                        const inRange = startIndex !== null
+                                            && startIndex !== undefined
+                                            && endIndex !== null
+                                            && endIndex !== undefined
+                                            && periodIndex >= startIndex
+                                            && periodIndex <= endIndex;
+                                        const isStart = inRange && periodIndex === startIndex;
+                                        const isEnd = inRange && periodIndex === endIndex;
+                                        const isMilestone = item.milestonePeriod === period.key;
+                                        return (
+                                            <td
+                                                key={period.key}
+                                                className={`relative h-[48px] w-[48px] min-w-[48px] ${
+                                                    (periodIndex + 1) % 4 === 0
+                                                        ? 'border-r border-[#505050]'
+                                                        : 'border-r border-[#383838]'
+                                                }`}
+                                            >
+                                                {inRange && (
+                                                    <div
+                                                        className={`absolute left-0 right-0 top-1/2 h-[12px] -translate-y-1/2 ${
+                                                            isGroup ? 'bg-[#5279a5]/55' : 'bg-[#2997ff]/70'
+                                                        } ${isStart ? 'rounded-l-full' : ''} ${isEnd ? 'rounded-r-full' : ''}`}
+                                                    />
+                                                )}
+                                                {isMilestone && (
+                                                    <span className="absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2 text-[20px] font-black leading-none text-[#F59E0B] drop-shadow-[0_0_5px_rgba(245,158,11,0.45)]">
+                                                        ◆
+                                                    </span>
+                                                )}
                                             </td>
-                                        )}
-                                    </tr>
-                                );
-                            })}
-                        </tbody>
-                    </table>
-                </div>
+                                        );
+                                    })}
+                                </tr>
+                            );
+                        })}
+                    </tbody>
+                </table>
             </div>
 
             {!visibleItems.length && (
@@ -513,8 +588,6 @@ export default function PmoDetailedSchedule() {
                     조건에 맞는 일정이 없습니다.
                 </div>
             )}
-
-            </div>
         </section>
     );
 }
