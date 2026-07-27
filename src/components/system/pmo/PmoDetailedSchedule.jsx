@@ -48,25 +48,6 @@ const PROGRESS_STATUS_STYLES = {
     on_hold: 'border-[#f59e0b]/35 bg-[#f59e0b]/10 text-[#fbbf24]'
 };
 
-const LINKED_TASK_STATUS_STYLES = {
-    미착수: 'border-[#555]/60 bg-white/[0.04] text-[#a1a1aa]',
-    진행중: 'border-[#2997ff]/35 bg-[#2997ff]/10 text-[#60a5fa]',
-    검토중: 'border-[#bf5af2]/35 bg-[#bf5af2]/10 text-[#d8a4f4]',
-    대기: 'border-[#f59e0b]/35 bg-[#f59e0b]/10 text-[#fbbf24]',
-    지연: 'border-[#ff5f57]/40 bg-[#ff5f57]/10 text-[#ff7169]',
-    완료: 'border-[#30d158]/35 bg-[#30d158]/10 text-[#4ade80]',
-    보류: 'border-[#8e8e93]/35 bg-[#8e8e93]/10 text-[#b8b8bd]',
-    중단: 'border-[#ff453a]/40 bg-[#ff453a]/10 text-[#ff6961]'
-};
-
-const LINKED_TASK_PROJECT_LABELS = {
-    IOTA_SEOUL: 'IOTA 공통',
-    PFV_427: '427 PFV',
-    PFV_816: '816 PFV',
-    FUND_421: '421 Fund',
-    EXTERNAL: '외부'
-};
-
 const getSeoulDateParts = (date = new Date()) => {
     const parts = new Intl.DateTimeFormat('en-US', {
         timeZone: 'Asia/Seoul',
@@ -110,7 +91,7 @@ const getTodayScheduleMarker = () => {
     };
 };
 
-const normalizeDbItem = (item, linkedTask = null) => ({
+const normalizeDbItem = (item) => ({
     sourceKey: item.source_key,
     sourceOrder: item.source_order,
     itemType: item.item_type,
@@ -128,9 +109,7 @@ const normalizeDbItem = (item, linkedTask = null) => ({
     progressStatus: item.progress_status || DEFAULT_PROGRESS_STATUS,
     actualCompletedDate: item.actual_completed_date || null,
     updatedByName: item.updated_by_name || null,
-    updatedAt: item.updated_at || null,
-    linkedTaskId: item.linked_task_id || null,
-    linkedTask
+    updatedAt: item.updated_at || null
 });
 
 const getProgressStatusLabel = (status) => (
@@ -243,124 +222,6 @@ const SelectControl = ({ value, onChange, options, label }) => (
         <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[9px] text-[#86868B]">▼</span>
     </label>
 );
-
-const LinkedTaskPreviewModal = ({ scheduleItem, onClose, onOpenDetail }) => {
-    const task = scheduleItem.linkedTask;
-    if (!task) return null;
-
-    const projectLabel = LINKED_TASK_PROJECT_LABELS[task.projectCode]
-        || task.projectCode
-        || 'IOTA 공통';
-    const statusStyle = LINKED_TASK_STATUS_STYLES[task.status]
-        || LINKED_TASK_STATUS_STYLES.미착수;
-    const priorityScore = Number(task.priorityScore) || 0;
-
-    return createPortal(
-        <div
-            className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/65 px-6"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="linked-task-preview-title"
-            data-linked-task-preview
-        >
-            <button
-                type="button"
-                className="absolute inset-0 cursor-default"
-                aria-label="연결 업무 닫기"
-                onClick={onClose}
-            />
-            <div className="relative w-full max-w-[560px] overflow-hidden rounded-[20px] border border-[#3e4650] bg-[#20201f] shadow-[0_24px_70px_rgba(0,0,0,0.55)]">
-                <div className="flex items-start justify-between border-b border-[#373737] px-5 py-4">
-                    <div>
-                        <div className="mb-1 flex items-center gap-2">
-                            <span className="font-mono text-[11px] font-bold text-[#60a5fa]">
-                                {scheduleItem.sourceKey}
-                            </span>
-                            <span className="text-[10px] text-[#68686d]">마일스톤 연결 업무</span>
-                        </div>
-                        <h3 id="linked-task-preview-title" className="text-[17px] font-bold text-white">
-                            통합업무 미리보기
-                        </h3>
-                    </div>
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        className="flex h-8 w-8 items-center justify-center rounded-full border border-[#414141] text-[18px] text-[#a1a1aa] hover:bg-white/5 hover:text-white"
-                        aria-label="닫기"
-                    >
-                        ×
-                    </button>
-                </div>
-
-                <button
-                    type="button"
-                    onClick={onOpenDetail}
-                    className="group block w-full px-5 py-5 text-left"
-                    data-linked-task-card
-                >
-                    <div className="rounded-[15px] border border-[#35475a] bg-[#272b30] p-4 transition-colors group-hover:border-[#45698d] group-hover:bg-[#2b3138]">
-                        <div className="mb-3 flex flex-wrap items-center gap-2">
-                            <span className="font-mono text-[12px] font-black text-[#60a5fa]">
-                                {task.displayId}
-                            </span>
-                            <span className="rounded-[6px] border border-[#474747] bg-[#343434] px-2 py-1 text-[10px] font-bold text-[#dedede]">
-                                {projectLabel}
-                            </span>
-                            <span className={`rounded-full border px-2 py-1 text-[10px] font-bold ${statusStyle}`}>
-                                {task.status || '미착수'}
-                            </span>
-                        </div>
-
-                        <div className="flex items-start justify-between gap-4">
-                            <h4 className="text-[20px] font-bold leading-[1.35] text-white">
-                                {task.taskName}
-                            </h4>
-                            <span className="mt-1 shrink-0 text-[13px] font-black text-[#60a5fa]">
-                                상세보기 →
-                            </span>
-                        </div>
-
-                        {task.taskPurpose && (
-                            <p className="mt-3 line-clamp-2 text-[12px] leading-[1.65] text-[#b5b5ba]">
-                                {task.taskPurpose}
-                            </p>
-                        )}
-
-                        <div className="mt-4 grid grid-cols-2 gap-2 border-t border-[#3a3f45] pt-4 sm:grid-cols-4">
-                            <div>
-                                <div className="text-[9px] font-bold text-[#68686d]">업무분류</div>
-                                <div className="mt-1 truncate text-[11px] font-bold text-[#d1d1d6]">
-                                    {task.categoryMain || '-'}
-                                </div>
-                            </div>
-                            <div>
-                                <div className="text-[9px] font-bold text-[#68686d]">주관 조직</div>
-                                <div className="mt-1 truncate text-[11px] font-bold text-[#d1d1d6]">
-                                    {task.leadDeptName || '-'}
-                                </div>
-                            </div>
-                            <div>
-                                <div className="text-[9px] font-bold text-[#68686d]">우선순위</div>
-                                <div className={`mt-1 text-[11px] font-black ${
-                                    priorityScore >= 60 ? 'text-[#ff5f57]' : 'text-[#d1d1d6]'
-                                }`}>
-                                    {priorityScore}점
-                                </div>
-                            </div>
-                            <div>
-                                <div className="text-[9px] font-bold text-[#68686d]">마감 기한</div>
-                                <div className="mt-1 text-[11px] font-bold text-[#d1d1d6]">
-                                    {task.dueDate || '-'}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </button>
-            </div>
-        </div>,
-        document.body
-    );
-};
 
 const ScheduleEditModal = ({
     item,
@@ -603,7 +464,6 @@ export default function PmoDetailedSchedule() {
     const [editMode, setEditMode] = useState(false);
     const [departments, setDepartments] = useState(DEFAULT_SCHEDULE_DEPARTMENTS);
     const [editingItem, setEditingItem] = useState(null);
-    const [linkedTaskPreviewItem, setLinkedTaskPreviewItem] = useState(null);
     const [savingItem, setSavingItem] = useState(false);
     const [saveError, setSaveError] = useState('');
     const [expandedGroups, setExpandedGroups] = useState(() => new Set(
@@ -624,77 +484,35 @@ export default function PmoDetailedSchedule() {
     useEffect(() => {
         let isMounted = true;
         const loadSchedule = async () => {
-            const [scheduleResult, taskResult] = await Promise.all([
-                supabase
-                    .schema('iota_v2')
-                    .from('iota_schedule_items')
-                    .select(`
-                        source_key,
-                        source_order,
-                        item_type,
-                        parent_source_key,
-                        lv1,
-                        lv2,
-                        task_name,
-                        display_name,
-                        lead_dept_code,
-                        lead_label,
-                        category_main,
-                        start_period,
-                        end_period,
-                        milestone_period,
-                        progress_status,
-                        actual_completed_date,
-                        updated_by_name,
-                        updated_at,
-                        linked_task_id
-                    `)
-                    .eq('is_active', true)
-                    .order('source_order', { ascending: true }),
-                supabase
-                    .schema('iota_v2')
-                    .from('iota_pmo_tasks')
-                    .select(`
-                        id,
-                        project_code,
-                        category_main,
-                        task_name,
-                        task_purpose,
-                        due_date,
-                        status,
-                        priority_score,
-                        meeting_grade,
-                        created_at,
-                        lead_dept:iota_departments!lead_dept_code(dept_name)
-                    `)
-                    .neq('task_type', '팝업')
-                    .order('created_at', { ascending: true })
-                    .order('id', { ascending: true })
-            ]);
+            const { data, error } = await supabase
+                .schema('iota_v2')
+                .from('iota_schedule_items')
+                .select(`
+                    source_key,
+                    source_order,
+                    item_type,
+                    parent_source_key,
+                    lv1,
+                    lv2,
+                    task_name,
+                    display_name,
+                    lead_dept_code,
+                    lead_label,
+                    category_main,
+                    start_period,
+                    end_period,
+                    milestone_period,
+                    progress_status,
+                    actual_completed_date,
+                    updated_by_name,
+                    updated_at
+                `)
+                .eq('is_active', true)
+                .order('source_order', { ascending: true });
 
             if (!isMounted) return;
-            if (!scheduleResult.error && scheduleResult.data?.length) {
-                const linkedTaskMap = new Map(
-                    (taskResult.data || []).map((task, index) => [
-                        task.id,
-                        {
-                            id: task.id,
-                            displayId: `T-${String(index + 1).padStart(3, '0')}`,
-                            projectCode: task.project_code,
-                            categoryMain: task.category_main,
-                            taskName: task.task_name,
-                            taskPurpose: task.task_purpose,
-                            dueDate: task.due_date,
-                            status: task.status,
-                            priorityScore: task.priority_score,
-                            meetingGrade: task.meeting_grade,
-                            leadDeptName: task.lead_dept?.dept_name || null
-                        }
-                    ])
-                );
-                const normalized = scheduleResult.data.map((item) => (
-                    normalizeDbItem(item, linkedTaskMap.get(item.linked_task_id) || null)
-                ));
+            if (!error && data?.length) {
+                const normalized = data.map(normalizeDbItem);
                 setItems(normalized);
                 setExpandedGroups(new Set(
                     normalized
@@ -702,14 +520,8 @@ export default function PmoDetailedSchedule() {
                         .map((item) => item.sourceKey)
                 ));
                 setDataSource('database');
-                if (taskResult.error) {
-                    console.warn('Linked PMO task load failed.', taskResult.error);
-                }
-            } else if (scheduleResult.error) {
-                console.warn(
-                    'Detailed schedule DB load failed; using fallback data.',
-                    scheduleResult.error
-                );
+            } else if (error) {
+                console.warn('Detailed schedule DB load failed; using fallback data.', error);
             }
             setLoading(false);
         };
@@ -871,26 +683,6 @@ export default function PmoDetailedSchedule() {
         if (savingItem) return;
         setSaveError('');
         setEditingItem(null);
-    };
-
-    const openLinkedTaskPreview = (item) => {
-        if (editMode || item.itemType !== 'task' || !item.linkedTask) return;
-        setLinkedTaskPreviewItem(item);
-    };
-
-    const closeLinkedTaskPreview = () => {
-        setLinkedTaskPreviewItem(null);
-    };
-
-    const openLinkedTaskDetail = () => {
-        const taskId = linkedTaskPreviewItem?.linkedTask?.id;
-        if (!taskId) return;
-        const base = import.meta.env.BASE_URL.endsWith('/')
-            ? import.meta.env.BASE_URL.slice(0, -1)
-            : import.meta.env.BASE_URL;
-        window.location.assign(
-            `${base}/platform/iotaseoul/workflow?taskId=${encodeURIComponent(taskId)}`
-        );
     };
 
     const saveScheduleItem = async (form) => {
@@ -1194,9 +986,6 @@ export default function PmoDetailedSchedule() {
                                 && dataSource === 'database'
                                 && editMode
                                 && item.itemType === 'task';
-                            const canOpenLinkedTask = !editMode
-                                && item.itemType === 'task'
-                                && Boolean(item.linkedTask);
                             const hasSchedule = startIndex !== null && startIndex !== undefined;
                             const periodLabel = !hasSchedule
                                 ? isGroup ? '' : '일정 미정'
@@ -1210,11 +999,9 @@ export default function PmoDetailedSchedule() {
                                     key={item.sourceKey}
                                     onClick={() => {
                                         if (isEditableTask) openScheduleEditor(item);
-                                        else if (canOpenLinkedTask) openLinkedTaskPreview(item);
                                     }}
-                                    data-linked-task-source={canOpenLinkedTask ? item.sourceKey : undefined}
                                     className={`group h-[48px] border-b border-[#393939] ${attentionAnimationClass} ${
-                                        isEditableTask || canOpenLinkedTask ? 'cursor-pointer' : ''
+                                        isEditableTask ? 'cursor-pointer' : ''
                                     } ${
                                         item.itemType === 'lv1'
                                             ? 'bg-[#2c3440] hover:bg-[#343e4d]'
@@ -1276,11 +1063,6 @@ export default function PmoDetailedSchedule() {
                                                     <span className="shrink-0 font-mono text-[9px] text-[#68686d]">
                                                         {item.sourceKey}
                                                     </span>
-                                                    {item.linkedTask && (
-                                                        <span className="shrink-0 rounded-[5px] border border-[#315273] bg-[#2997ff]/10 px-1.5 py-0.5 font-mono text-[8px] font-black text-[#60a5fa]">
-                                                            ↗ {item.linkedTask.displayId}
-                                                        </span>
-                                                    )}
                                                     {item.itemType === 'task' && progressStatus !== DEFAULT_PROGRESS_STATUS && (
                                                         <span className={`shrink-0 rounded-full border px-1.5 py-0.5 text-[8px] font-bold ${
                                                             PROGRESS_STATUS_STYLES[progressStatus]
@@ -1397,14 +1179,6 @@ export default function PmoDetailedSchedule() {
                 <div className="flex h-[120px] items-center justify-center text-[13px] text-[#86868B]">
                     조건에 맞는 일정이 없습니다.
                 </div>
-            )}
-
-            {linkedTaskPreviewItem && (
-                <LinkedTaskPreviewModal
-                    scheduleItem={linkedTaskPreviewItem}
-                    onClose={closeLinkedTaskPreview}
-                    onOpenDetail={openLinkedTaskDetail}
-                />
             )}
 
             {editingItem && (
