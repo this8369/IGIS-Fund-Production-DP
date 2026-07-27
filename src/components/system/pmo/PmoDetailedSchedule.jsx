@@ -87,8 +87,6 @@ const TableHeaderSelect = ({ value, onChange, options, label }) => (
 
 export default function PmoDetailedSchedule() {
     const [items, setItems] = useState(IOTA_DETAILED_SCHEDULE_FALLBACK);
-    const [dataSource, setDataSource] = useState('fallback');
-    const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedLv1, setSelectedLv1] = useState('전체');
     const [selectedLv2, setSelectedLv2] = useState('전체');
@@ -135,11 +133,9 @@ export default function PmoDetailedSchedule() {
                         .filter((item) => item.itemType !== 'task')
                         .map((item) => item.sourceKey)
                 ));
-                setDataSource('database');
             } else if (error) {
                 console.warn('Detailed schedule DB load failed; using fallback data.', error);
             }
-            setLoading(false);
         };
 
         loadSchedule();
@@ -270,72 +266,23 @@ export default function PmoDetailedSchedule() {
         });
     };
 
-    const expandAll = () => setExpandedGroups(new Set(
-        items.filter((item) => item.itemType !== 'task').map((item) => item.sourceKey)
-    ));
-    const collapseDetails = () => setExpandedGroups(new Set(
-        items.filter((item) => item.itemType === 'lv1').map((item) => item.sourceKey)
-    ));
-
     return (
         <section className="w-full">
-            <div className="w-full overflow-hidden rounded-[24px] border border-[#3c3c3c] bg-[#242423] shadow-sm">
-                <div className="px-5 py-3">
-                <div className="flex items-center justify-between gap-5">
-                    <div>
-                        <div className="flex items-center gap-2.5">
-                            <h2 className="text-[17px] font-bold text-white">2026 통합 상세 일정</h2>
-                            <span className={`rounded-full border px-2 py-0.5 text-[10px] font-bold ${
-                                dataSource === 'database'
-                                    ? 'border-[#2997ff]/30 bg-[#2997ff]/10 text-[#60a5fa]'
-                                    : 'border-[#555]/60 bg-white/[0.04] text-[#a1a1aa]'
-                            }`}>
-                                {loading ? '불러오는 중' : dataSource === 'database' ? 'DB 일정 원장' : '기본 일정 데이터'}
-                            </span>
-                        </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <button
-                            type="button"
-                            onClick={collapseDetails}
-                            className="h-[32px] rounded-[8px] border border-[#3c3c3c] bg-[#2c2c2b] px-3 text-[11px] font-bold text-[#a1a1aa] transition-colors hover:text-white"
-                        >
-                            세부 접기
-                        </button>
-                        <button
-                            type="button"
-                            onClick={expandAll}
-                            className="h-[32px] rounded-[8px] border border-[#3c3c3c] bg-[#2c2c2b] px-3 text-[11px] font-bold text-[#a1a1aa] transition-colors hover:text-white"
-                        >
-                            모두 펼치기
-                        </button>
-                    </div>
-                </div>
-
-                <div className="mt-3 flex items-center gap-2">
+            <div className="flex w-full items-center gap-2">
                     {[
                         ['전체 세부업무', statistics.total, '#E5E5E5'],
                         ['일정 등록', statistics.scheduled, '#60a5fa'],
-                        ['일정 미정', statistics.unscheduled, '#a1a1aa'],
+                        ['일정 미정', statistics.unscheduled, '#ff5f57'],
                         ['마일스톤', statistics.milestones, '#F59E0B']
                     ].map(([label, value, color]) => (
                         <div
                             key={label}
                             className="flex h-[34px] w-fit shrink-0 items-center gap-1.5 whitespace-nowrap rounded-[8px] border border-[#36383a] bg-[#2b2b2a] px-2.5"
                         >
-                            <div className="text-[10px] font-bold text-[#86868B]">{label}</div>
-                            <div className="text-[14px] font-bold" style={{ color }}>{value}</div>
+                            <div className="text-[12px] font-bold text-[#86868B]">{label}</div>
+                            <div className="text-[18px] font-bold" style={{ color }}>{value}</div>
                         </div>
                     ))}
-                    <div className="relative h-[34px] min-w-[220px] flex-1">
-                        <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[13px] text-[#86868B]">⌕</span>
-                        <input
-                            value={searchTerm}
-                            onChange={(event) => setSearchTerm(event.target.value)}
-                            placeholder="Lv1, Lv2, 업무명, 주관 검색"
-                            className="h-full w-full rounded-[8px] border border-[#3c3c3c] bg-[#2c2c2b] pl-8 pr-3 text-[12px] text-white outline-none placeholder:text-[#68686d] focus:border-[#2997ff]"
-                        />
-                    </div>
                     <SelectControl
                         label="일정 상태"
                         value={selectedState}
@@ -347,8 +294,15 @@ export default function PmoDetailedSchedule() {
                             { value: 'milestone', label: '마일스톤' }
                         ]}
                     />
-                </div>
-                </div>
+                    <div className="relative h-[34px] min-w-[220px] flex-1">
+                        <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[13px] text-[#86868B]">⌕</span>
+                        <input
+                            value={searchTerm}
+                            onChange={(event) => setSearchTerm(event.target.value)}
+                            placeholder="Lv1, Lv2, 업무명, 주관 검색"
+                            className="h-full w-full rounded-[8px] border border-[#3c3c3c] bg-[#2c2c2b] pl-8 pr-3 text-[12px] text-white outline-none placeholder:text-[#68686d] focus:border-[#2997ff]"
+                        />
+                    </div>
             </div>
 
             <div className="-mr-[calc(50vw-50%)] mt-[10px] overflow-hidden rounded-l-[24px] border border-r-0 border-[#36383a] bg-[#252525] shadow-sm">
@@ -439,14 +393,14 @@ export default function PmoDetailedSchedule() {
                                     ? PERIOD_INDEX.get(item.endPeriod)
                                     : undefined;
                                 const stickyBackground = item.itemType === 'lv1'
-                                    ? 'bg-[#25313b] group-hover:bg-[#2b3b48]'
+                                    ? 'bg-[#252b30] group-hover:bg-[#293139]'
                                     : item.itemType === 'lv2'
-                                        ? 'bg-[#292c2f] group-hover:bg-[#303438]'
+                                        ? 'bg-[#27292a] group-hover:bg-[#2c3033]'
                                         : 'bg-[#252525] group-hover:bg-[#2b2c2d]';
                                 const rowBackground = item.itemType === 'lv1'
-                                    ? 'bg-[#25313b]'
+                                    ? 'bg-[#252b30]'
                                     : item.itemType === 'lv2'
-                                        ? 'bg-[#292c2f]'
+                                        ? 'bg-[#27292a]'
                                         : 'bg-[#252525] hover:bg-[#2b2c2d]';
                                 const displayedLead = item.leadLabel === '미정'
                                     ? ''
