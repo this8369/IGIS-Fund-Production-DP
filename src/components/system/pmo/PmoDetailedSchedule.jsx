@@ -54,11 +54,11 @@ const LINK_CANDIDATE_STATUS = {
         style: 'border-[#f59e0b]/40 bg-[#f59e0b]/10 text-[#fbbf24]'
     },
     approved: {
-        label: '검토 승인',
+        label: '',
         style: 'border-[#30d158]/40 bg-[#30d158]/10 text-[#4ade80]'
     },
     rejected: {
-        label: '검토 제외',
+        label: '',
         style: 'border-[#666]/50 bg-white/[0.03] text-[#86868B]'
     }
 };
@@ -312,9 +312,11 @@ const ScheduleLinkCandidateModal = ({
                                     <span className="rounded-[6px] border border-[#474747] bg-[#343434] px-2 py-1 text-[10px] font-bold text-[#dedede]">
                                         {TASK_PROJECT_LABELS[task?.projectCode] || task?.projectCode || 'IOTA 공통'}
                                     </span>
-                                    <span className={`rounded-full border px-2 py-1 text-[10px] font-bold ${status.style}`}>
-                                        {status.label}
-                                    </span>
+                                    {status.label && (
+                                        <span className={`rounded-full border px-2 py-1 text-[10px] font-bold ${status.style}`}>
+                                            {status.label}
+                                        </span>
+                                    )}
                                     <span className="ml-auto text-[11px] font-black text-[#fbbf24]">
                                         일치도 {candidate.matchScore}
                                     </span>
@@ -1435,7 +1437,7 @@ export default function PmoDetailedSchedule() {
                                                             {getProgressStatusLabel(progressStatus)}
                                                         </span>
                                                     )}
-                                                    {itemLinkCandidates.length > 0 && (
+                                                    {candidateReviewStatus === 'pending' && (
                                                         <button
                                                             type="button"
                                                             onClick={(event) => {
