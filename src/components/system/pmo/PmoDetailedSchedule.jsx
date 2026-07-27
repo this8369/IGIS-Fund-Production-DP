@@ -48,6 +48,29 @@ const PROGRESS_STATUS_STYLES = {
     on_hold: 'border-[#f59e0b]/35 bg-[#f59e0b]/10 text-[#fbbf24]'
 };
 
+const LINK_CANDIDATE_STATUS = {
+    pending: {
+        label: '연결 후보',
+        style: 'border-[#f59e0b]/40 bg-[#f59e0b]/10 text-[#fbbf24]'
+    },
+    approved: {
+        label: '검토 승인',
+        style: 'border-[#30d158]/40 bg-[#30d158]/10 text-[#4ade80]'
+    },
+    rejected: {
+        label: '검토 제외',
+        style: 'border-[#666]/50 bg-white/[0.03] text-[#86868B]'
+    }
+};
+
+const TASK_PROJECT_LABELS = {
+    IOTA_SEOUL: 'IOTA 공통',
+    PFV_427: '427 PFV',
+    PFV_816: '816 PFV',
+    FUND_421: '421 Fund',
+    EXTERNAL: '외부'
+};
+
 const getSeoulDateParts = (date = new Date()) => {
     const parts = new Intl.DateTimeFormat('en-US', {
         timeZone: 'Asia/Seoul',
@@ -221,6 +244,163 @@ const SelectControl = ({ value, onChange, options, label }) => (
         </select>
         <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[9px] text-[#86868B]">▼</span>
     </label>
+);
+
+const ScheduleLinkCandidateModal = ({
+    item,
+    candidates,
+    savingCandidateId,
+    errorMessage,
+    onClose,
+    onReview,
+    onOpenTask
+}) => (
+    createPortal(
+        <div
+            className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/65 px-6"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="schedule-link-review-title"
+            data-schedule-link-review-modal
+        >
+            <button
+                type="button"
+                className="absolute inset-0 cursor-default"
+                aria-label="연결 후보 검토 닫기"
+                onClick={onClose}
+            />
+            <div className="relative w-full max-w-[620px] overflow-hidden rounded-[20px] border border-[#454545] bg-[#20201f] shadow-[0_24px_70px_rgba(0,0,0,0.55)]">
+                <div className="flex items-start justify-between border-b border-[#393939] px-5 py-4">
+                    <div>
+                        <div className="mb-1 flex items-center gap-2">
+                            <span className="font-mono text-[11px] font-bold text-[#60a5fa]">
+                                {item.sourceKey}
+                            </span>
+                            <span className="text-[10px] font-bold text-[#fbbf24]">
+                                배포 전 검토
+                            </span>
+                        </div>
+                        <h3 id="schedule-link-review-title" className="text-[18px] font-bold text-white">
+                            통합업무 연결 후보
+                        </h3>
+                        <p className="mt-1 text-[12px] text-[#a1a1aa]">{item.displayName}</p>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        className="flex h-8 w-8 items-center justify-center rounded-full border border-[#444] text-[18px] text-[#a1a1aa] hover:bg-white/5 hover:text-white"
+                        aria-label="닫기"
+                    >
+                        ×
+                    </button>
+                </div>
+
+                <div className="timeline-scrollbar max-h-[65vh] space-y-3 overflow-y-auto p-5">
+                    {candidates.map((candidate) => {
+                        const status = LINK_CANDIDATE_STATUS[candidate.reviewStatus]
+                            || LINK_CANDIDATE_STATUS.pending;
+                        const task = candidate.task;
+                        return (
+                            <div
+                                key={candidate.id}
+                                className="rounded-[15px] border border-[#3d434a] bg-[#272a2e] p-4"
+                            >
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <span className="font-mono text-[12px] font-black text-[#60a5fa]">
+                                        {candidate.taskDisplayId}
+                                    </span>
+                                    <span className="rounded-[6px] border border-[#474747] bg-[#343434] px-2 py-1 text-[10px] font-bold text-[#dedede]">
+                                        {TASK_PROJECT_LABELS[task?.projectCode] || task?.projectCode || 'IOTA 공통'}
+                                    </span>
+                                    <span className={`rounded-full border px-2 py-1 text-[10px] font-bold ${status.style}`}>
+                                        {status.label}
+                                    </span>
+                                    <span className="ml-auto text-[11px] font-black text-[#fbbf24]">
+                                        일치도 {candidate.matchScore}
+                                    </span>
+                                </div>
+
+                                <button
+                                    type="button"
+                                    onClick={() => onOpenTask(task?.id)}
+                                    className="mt-3 block w-full text-left"
+                                >
+                                    <div className="flex items-start justify-between gap-4">
+                                        <h4 className="text-[18px] font-bold leading-[1.4] text-white">
+                                            {task?.taskName || '업무 정보를 불러오지 못했습니다.'}
+                                        </h4>
+                                        <span className="mt-1 shrink-0 text-[11px] font-bold text-[#60a5fa]">
+                                            상세보기 →
+                                        </span>
+                                    </div>
+                                    {task?.taskPurpose && (
+                                        <p className="mt-2 line-clamp-2 text-[12px] leading-[1.6] text-[#a1a1aa]">
+                                            {task.taskPurpose}
+                                        </p>
+                                    )}
+                                </button>
+
+                                <div className="mt-3 rounded-[10px] border border-[#3b3b3b] bg-black/10 px-3 py-2.5">
+                                    <div className="mb-1 text-[10px] font-bold text-[#86868B]">후보 선정 근거</div>
+                                    <p className="text-[11px] leading-[1.55] text-[#c7c7c2]">
+                                        {candidate.matchReason}
+                                    </p>
+                                    <div className="mt-2 flex flex-wrap gap-1.5">
+                                        {['현재 주차', '주관 일치', '업무분류 일치', '중복 없음'].map((reason) => (
+                                            <span
+                                                key={reason}
+                                                className="rounded-[5px] border border-[#3f5265] bg-[#2997ff]/5 px-1.5 py-0.5 text-[9px] font-bold text-[#93c5fd]"
+                                            >
+                                                {reason}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {errorMessage && (
+                                    <p className="mt-3 text-[11px] text-[#ff7169]">{errorMessage}</p>
+                                )}
+
+                                <div className="mt-4 flex justify-end gap-2">
+                                    {candidate.reviewStatus !== 'rejected' && (
+                                        <button
+                                            type="button"
+                                            disabled={savingCandidateId === candidate.id}
+                                            onClick={() => onReview(candidate.id, 'rejected')}
+                                            className="h-9 rounded-[8px] border border-[#555] px-3 text-[11px] font-bold text-[#a1a1aa] hover:bg-white/5 disabled:opacity-50"
+                                        >
+                                            제외
+                                        </button>
+                                    )}
+                                    {candidate.reviewStatus !== 'pending' && (
+                                        <button
+                                            type="button"
+                                            disabled={savingCandidateId === candidate.id}
+                                            onClick={() => onReview(candidate.id, 'pending')}
+                                            className="h-9 rounded-[8px] border border-[#555] px-3 text-[11px] font-bold text-[#c7c7c2] hover:bg-white/5 disabled:opacity-50"
+                                        >
+                                            재검토
+                                        </button>
+                                    )}
+                                    {candidate.reviewStatus !== 'approved' && (
+                                        <button
+                                            type="button"
+                                            disabled={savingCandidateId === candidate.id}
+                                            onClick={() => onReview(candidate.id, 'approved')}
+                                            className="h-9 rounded-[8px] border border-[#238744] bg-[#30d158]/15 px-3 text-[11px] font-bold text-[#4ade80] hover:bg-[#30d158]/20 disabled:opacity-50"
+                                        >
+                                            {savingCandidateId === candidate.id ? '저장 중' : '연결 승인'}
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
+        </div>,
+        document.body
+    )
 );
 
 const ScheduleEditModal = ({
@@ -466,6 +646,10 @@ export default function PmoDetailedSchedule() {
     const [editingItem, setEditingItem] = useState(null);
     const [savingItem, setSavingItem] = useState(false);
     const [saveError, setSaveError] = useState('');
+    const [linkCandidates, setLinkCandidates] = useState([]);
+    const [reviewingLinkSourceKey, setReviewingLinkSourceKey] = useState(null);
+    const [savingCandidateId, setSavingCandidateId] = useState(null);
+    const [candidateError, setCandidateError] = useState('');
     const [expandedGroups, setExpandedGroups] = useState(() => new Set(
         IOTA_DETAILED_SCHEDULE_FALLBACK
             .filter((item) => item.itemType !== 'task')
@@ -473,6 +657,9 @@ export default function PmoDetailedSchedule() {
     ));
     const memberOrganization = getMemberIotaOrganization(memberInfo, '');
     const canEditSchedule = ['기획추진', '사업2파트'].includes(memberOrganization);
+    const currentSchedulePeriodKey = todayMarker
+        ? IOTA_SCHEDULE_PERIODS[todayMarker.periodIndex]?.key || null
+        : null;
 
     useEffect(() => {
         const timerId = window.setInterval(() => {
@@ -559,6 +746,98 @@ export default function PmoDetailedSchedule() {
             isMounted = false;
         };
     }, []);
+
+    useEffect(() => {
+        if (!canEditSchedule || !currentSchedulePeriodKey) {
+            setLinkCandidates([]);
+            return undefined;
+        }
+
+        let isMounted = true;
+        const loadLinkCandidates = async () => {
+            const { data: candidateRows, error: candidateLoadError } = await supabase
+                .schema('iota_v2')
+                .from('iota_schedule_task_link_candidates')
+                .select(`
+                    id,
+                    source_key,
+                    candidate_period,
+                    task_id,
+                    task_display_id,
+                    match_score,
+                    match_reason,
+                    review_status
+                `)
+                .eq('candidate_period', currentSchedulePeriodKey)
+                .order('match_score', { ascending: false });
+
+            if (!isMounted) return;
+            if (candidateLoadError) {
+                console.warn('Schedule link candidate load failed.', candidateLoadError);
+                setLinkCandidates([]);
+                return;
+            }
+
+            const taskIds = [...new Set((candidateRows || []).map((candidate) => candidate.task_id))];
+            if (!taskIds.length) {
+                setLinkCandidates([]);
+                return;
+            }
+
+            const { data: taskRows, error: taskLoadError } = await supabase
+                .schema('iota_v2')
+                .from('iota_pmo_tasks')
+                .select(`
+                    id,
+                    project_code,
+                    task_name,
+                    task_purpose,
+                    category_main,
+                    lead_dept_code,
+                    due_date,
+                    status,
+                    priority_score
+                `)
+                .in('id', taskIds);
+
+            if (!isMounted) return;
+            if (taskLoadError) {
+                console.warn('Candidate PMO task load failed.', taskLoadError);
+            }
+
+            const taskMap = new Map((taskRows || []).map((task) => [
+                task.id,
+                {
+                    id: task.id,
+                    projectCode: task.project_code,
+                    taskName: task.task_name,
+                    taskPurpose: task.task_purpose,
+                    categoryMain: task.category_main,
+                    leadDeptCode: task.lead_dept_code,
+                    dueDate: task.due_date,
+                    status: task.status,
+                    priorityScore: task.priority_score
+                }
+            ]));
+
+            setLinkCandidates((candidateRows || []).map((candidate) => ({
+                id: candidate.id,
+                sourceKey: candidate.source_key,
+                candidatePeriod: candidate.candidate_period,
+                taskId: candidate.task_id,
+                taskDisplayId: candidate.task_display_id,
+                matchScore: candidate.match_score,
+                matchReason: candidate.match_reason,
+                reviewStatus: candidate.review_status,
+                task: taskMap.get(candidate.task_id) || null
+            })));
+        };
+
+        loadLinkCandidates();
+        return () => {
+            isMounted = false;
+        };
+    }, [canEditSchedule, currentSchedulePeriodKey]);
 
     const itemMap = useMemo(
         () => new Map(items.map((item) => [item.sourceKey, item])),
@@ -663,6 +942,21 @@ export default function PmoDetailedSchedule() {
         if (!includedKeys.has(item.sourceKey)) return false;
         return getAncestors(item, itemMap).every((ancestorKey) => expandedGroups.has(ancestorKey));
     }), [expandedGroups, includedKeys, itemMap, items]);
+    const linkCandidatesBySource = useMemo(() => {
+        const grouped = new Map();
+        for (const candidate of linkCandidates) {
+            const sourceCandidates = grouped.get(candidate.sourceKey) || [];
+            sourceCandidates.push(candidate);
+            grouped.set(candidate.sourceKey, sourceCandidates);
+        }
+        return grouped;
+    }, [linkCandidates]);
+    const reviewingLinkItem = reviewingLinkSourceKey
+        ? itemMap.get(reviewingLinkSourceKey)
+        : null;
+    const reviewingCandidates = reviewingLinkSourceKey
+        ? linkCandidatesBySource.get(reviewingLinkSourceKey) || []
+        : [];
 
     const toggleGroup = (sourceKey) => {
         setExpandedGroups((current) => {
@@ -683,6 +977,55 @@ export default function PmoDetailedSchedule() {
         if (savingItem) return;
         setSaveError('');
         setEditingItem(null);
+    };
+
+    const openLinkCandidateReview = (sourceKey) => {
+        if (!canEditSchedule || !linkCandidatesBySource.has(sourceKey)) return;
+        setCandidateError('');
+        setReviewingLinkSourceKey(sourceKey);
+    };
+
+    const closeLinkCandidateReview = () => {
+        if (savingCandidateId) return;
+        setCandidateError('');
+        setReviewingLinkSourceKey(null);
+    };
+
+    const reviewLinkCandidate = async (candidateId, reviewStatus) => {
+        setSavingCandidateId(candidateId);
+        setCandidateError('');
+
+        const { data, error } = await supabase
+            .schema('iota_v2')
+            .from('iota_schedule_task_link_candidates')
+            .update({ review_status: reviewStatus })
+            .eq('id', candidateId)
+            .select('id, review_status')
+            .single();
+
+        if (error || !data) {
+            console.error('Schedule link candidate review failed.', error);
+            setCandidateError(error?.message || '검토 결과를 저장하지 못했습니다.');
+            setSavingCandidateId(null);
+            return;
+        }
+
+        setLinkCandidates((current) => current.map((candidate) => (
+            candidate.id === data.id
+                ? { ...candidate, reviewStatus: data.review_status }
+                : candidate
+        )));
+        setSavingCandidateId(null);
+    };
+
+    const openCandidateTaskDetail = (taskId) => {
+        if (!taskId) return;
+        const base = import.meta.env.BASE_URL.endsWith('/')
+            ? import.meta.env.BASE_URL.slice(0, -1)
+            : import.meta.env.BASE_URL;
+        window.location.assign(
+            `${base}/platform/iotaseoul/workflow?taskId=${encodeURIComponent(taskId)}`
+        );
     };
 
     const saveScheduleItem = async (form) => {
@@ -803,6 +1146,11 @@ export default function PmoDetailedSchedule() {
                         }`}>
                             {loading ? '불러오는 중' : dataSource === 'database' ? 'DB 일정 원장' : '기본 일정 데이터'}
                         </span>
+                        {canEditSchedule && linkCandidates.length > 0 && (
+                            <span className="shrink-0 rounded-full border border-[#f59e0b]/35 bg-[#f59e0b]/10 px-2 py-0.5 text-[10px] font-bold text-[#fbbf24]">
+                                이번 주 연결 검토 {linkCandidates.length}
+                            </span>
+                        )}
                         <p className="truncate text-[12px] text-[#86868B]">
                             대분류·중분류를 펼쳐 세부업무의 주차별 수행기간과 마일스톤을 확인합니다.
                         </p>
@@ -986,6 +1334,20 @@ export default function PmoDetailedSchedule() {
                                 && dataSource === 'database'
                                 && editMode
                                 && item.itemType === 'task';
+                            const itemLinkCandidates = linkCandidatesBySource.get(item.sourceKey) || [];
+                            const canReviewLink = canEditSchedule
+                                && !editMode
+                                && itemLinkCandidates.length > 0;
+                            const candidateReviewStatus = itemLinkCandidates.some(
+                                (candidate) => candidate.reviewStatus === 'approved'
+                            )
+                                ? 'approved'
+                                : itemLinkCandidates.some(
+                                    (candidate) => candidate.reviewStatus === 'pending'
+                                )
+                                    ? 'pending'
+                                    : 'rejected';
+                            const candidateStatus = LINK_CANDIDATE_STATUS[candidateReviewStatus];
                             const hasSchedule = startIndex !== null && startIndex !== undefined;
                             const periodLabel = !hasSchedule
                                 ? isGroup ? '' : '일정 미정'
@@ -999,9 +1361,11 @@ export default function PmoDetailedSchedule() {
                                     key={item.sourceKey}
                                     onClick={() => {
                                         if (isEditableTask) openScheduleEditor(item);
+                                        else if (canReviewLink) openLinkCandidateReview(item.sourceKey);
                                     }}
+                                    data-link-review-source={canReviewLink ? item.sourceKey : undefined}
                                     className={`group h-[48px] border-b border-[#393939] ${attentionAnimationClass} ${
-                                        isEditableTask ? 'cursor-pointer' : ''
+                                        isEditableTask || canReviewLink ? 'cursor-pointer' : ''
                                     } ${
                                         item.itemType === 'lv1'
                                             ? 'bg-[#2c3440] hover:bg-[#343e4d]'
@@ -1063,13 +1427,25 @@ export default function PmoDetailedSchedule() {
                                                     <span className="shrink-0 font-mono text-[9px] text-[#68686d]">
                                                         {item.sourceKey}
                                                     </span>
-                                                    {item.itemType === 'task' && progressStatus !== DEFAULT_PROGRESS_STATUS && (
+                                                    {item.itemType === 'task' && (
                                                         <span className={`shrink-0 rounded-full border px-1.5 py-0.5 text-[8px] font-bold ${
                                                             PROGRESS_STATUS_STYLES[progressStatus]
                                                             || PROGRESS_STATUS_STYLES.not_started
                                                         }`}>
                                                             {getProgressStatusLabel(progressStatus)}
                                                         </span>
+                                                    )}
+                                                    {itemLinkCandidates.length > 0 && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={(event) => {
+                                                                event.stopPropagation();
+                                                                openLinkCandidateReview(item.sourceKey);
+                                                            }}
+                                                            className={`shrink-0 rounded-full border px-1.5 py-0.5 text-[8px] font-bold ${candidateStatus.style}`}
+                                                        >
+                                                            {candidateStatus.label}
+                                                        </button>
                                                     )}
                                                 </div>
                                                 <div className="mt-0 flex items-center gap-2 pl-7 text-[10px] text-[#86868B]">
@@ -1191,6 +1567,18 @@ export default function PmoDetailedSchedule() {
                     errorMessage={saveError}
                     onClose={closeScheduleEditor}
                     onSave={saveScheduleItem}
+                />
+            )}
+
+            {reviewingLinkItem && reviewingCandidates.length > 0 && (
+                <ScheduleLinkCandidateModal
+                    item={reviewingLinkItem}
+                    candidates={reviewingCandidates}
+                    savingCandidateId={savingCandidateId}
+                    errorMessage={candidateError}
+                    onClose={closeLinkCandidateReview}
+                    onReview={reviewLinkCandidate}
+                    onOpenTask={openCandidateTaskDetail}
                 />
             )}
         </section>
