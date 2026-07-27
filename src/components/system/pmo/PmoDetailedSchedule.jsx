@@ -340,29 +340,36 @@ export default function PmoDetailedSchedule() {
                     </div>
                 </div>
 
-                <div className="mt-4 flex items-stretch gap-2">
+                <div className="mt-[10px] flex items-stretch gap-2">
                     {[
-                        ['전체 세부업무', statistics.total, '#E5E5E5'],
-                        ['일정 등록', statistics.scheduled, '#60a5fa'],
-                        ['일정 미정', statistics.unscheduled, '#ff5f57'],
-                        ['마일스톤', statistics.milestones, '#F59E0B']
-                    ].map(([label, value, color]) => (
-                        <div
+                        ['전체 세부업무', statistics.total, '#E5E5E5', '전체'],
+                        ['일정 등록', statistics.scheduled, '#60a5fa', 'scheduled'],
+                        ['일정 미정', statistics.unscheduled, '#ff5f57', 'unscheduled'],
+                        ['마일스톤', statistics.milestones, '#F59E0B', 'milestone']
+                    ].map(([label, value, color, stateValue]) => (
+                        <button
+                            type="button"
                             key={label}
-                            className="flex h-[46px] shrink-0 items-center justify-between gap-1.5 rounded-[10px] border border-[#363636] bg-[#2b2b2a] px-2.5"
-                            style={{ width: 'max(112px, calc((100% - 32px) / 5.6 - 100px))' }}
+                            onClick={() => setSelectedState(stateValue)}
+                            aria-pressed={selectedState === stateValue}
+                            className={`flex h-[46px] shrink-0 cursor-pointer items-center justify-between gap-1.5 rounded-[10px] border px-2.5 text-left transition-colors ${
+                                selectedState === stateValue
+                                    ? 'border-[#60a5fa] bg-[#334155]'
+                                    : 'border-[#363636] bg-[#2b2b2a] hover:border-[#505050] hover:bg-[#323231]'
+                            }`}
+                            style={{ width: 'max(112px, calc((100% - 32px) / 5.6 - 150px))' }}
                         >
                             <div className="text-[12px] font-bold text-[#86868B]">{label}</div>
                             <div className="text-[22px] font-bold" style={{ color }}>{value}</div>
-                        </div>
+                        </button>
                     ))}
                     <div className="relative h-[46px] min-w-[280px] flex-1">
-                        <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[18px] font-bold text-[#86868B]">⌕</span>
+                        <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[22px] font-bold text-[#86868B]">⌕</span>
                         <input
                             value={searchTerm}
                             onChange={(event) => setSearchTerm(event.target.value)}
                             placeholder="일정·업무·주관 검색"
-                            className="h-full w-full rounded-[8px] border border-[#3c3c3c] bg-[#2c2c2b] pl-9 pr-3 text-[12px] text-white outline-none placeholder:text-[#68686d] focus:border-[#2997ff]"
+                            className="h-full w-full rounded-[8px] border border-[#3c3c3c] bg-[#2c2c2b] pl-10 pr-3 text-[13px] text-white outline-none placeholder:text-[#68686d] focus:border-[#2997ff]"
                         />
                     </div>
                 </div>

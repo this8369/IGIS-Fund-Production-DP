@@ -334,11 +334,8 @@ export default function PmoScheduleGate() {
             `}</style>
             {/* Header */}
             <div className="w-full flex items-end justify-between mb-[16px]">
-                <div className="flex items-baseline gap-[16px]">
+                <div className="flex items-center gap-[16px]">
                     <h1 className="text-[32px] font-bold text-white tracking-tight leading-none">마일스톤</h1>
-                    <p className="text-[15px] text-[#86868B] leading-none">마일스톤의 최종 목표는 준공 및 Take-out/운영 전환입니다.</p>
-                </div>
-                <div className="flex items-center gap-4 text-[12px] font-bold pr-[10px]">
                     <div className="flex h-[34px] items-center rounded-[9px] border border-[#3c3c3c] bg-[#252524] p-0.5">
                         <button
                             type="button"
@@ -363,14 +360,7 @@ export default function PmoScheduleGate() {
                             Gate 요약
                         </button>
                     </div>
-                    <div className="flex items-center gap-1.5">
-                        <span className="w-2.5 h-2.5 rounded-full bg-[#2997ff] inline-block"></span>
-                        <span className="text-[#E5E5E5]">수행 진행 기간</span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                        <span className="text-[#F59E0B] font-mono text-[16px] leading-none flex items-center h-[12px] mb-0.5">◆</span>
-                        <span className="text-[#E5E5E5]">마일스톤 달성</span>
-                    </div>
+                    <p className="text-[15px] text-[#86868B] leading-none">마일스톤의 최종 목표는 준공 및 Take-out/운영 전환입니다.</p>
                 </div>
             </div>
 
@@ -379,6 +369,16 @@ export default function PmoScheduleGate() {
             ) : (
                 /* Timeline Matrix Grid */
                 <div className="w-[1290px] border border-[#3c3c3c] bg-[#272726] rounded-[32px] overflow-visible relative">
+                <div className="absolute right-4 top-[-38px] flex items-center gap-4 text-[12px] font-bold">
+                    <div className="flex items-center gap-1.5">
+                        <span className="inline-block h-2.5 w-2.5 rounded-full bg-[#2997ff]"></span>
+                        <span className="text-[#E5E5E5]">수행 진행 기간</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                        <span className="mb-0.5 flex h-[12px] items-center font-mono text-[16px] leading-none text-[#F59E0B]">◆</span>
+                        <span className="text-[#E5E5E5]">마일스톤 달성</span>
+                    </div>
+                </div>
                 
                 {/* Speech Bubbles Overlay */}
                 <div className="absolute top-[-68px] left-0 w-full h-[36px] pointer-events-none z-50 overflow-visible">
