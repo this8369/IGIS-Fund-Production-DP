@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { supabase } from '../../../utils/supabaseClient';
 import { useAuth } from '../../../context/AuthContext';
 import { getMemberIotaOrganization } from '../../../utils/iotaOrganizations';
@@ -268,7 +269,7 @@ const ScheduleEditModal = ({
         });
     };
 
-    return (
+    return createPortal(
         <div
             className="fixed inset-0 z-[9999] flex justify-end bg-black/60"
             role="dialog"
@@ -445,7 +446,8 @@ const ScheduleEditModal = ({
                     </button>
                 </div>
             </form>
-        </div>
+        </div>,
+        document.body
     );
 };
 
@@ -459,6 +461,7 @@ export default function PmoDetailedSchedule() {
     const [selectedCategory, setSelectedCategory] = useState('전체');
     const [selectedLead, setSelectedLead] = useState('전체');
     const [selectedState, setSelectedState] = useState('전체');
+    const [editMode, setEditMode] = useState(false);
     const [departments, setDepartments] = useState(DEFAULT_SCHEDULE_DEPARTMENTS);
     const [editingItem, setEditingItem] = useState(null);
     const [savingItem, setSavingItem] = useState(false);
@@ -805,6 +808,27 @@ export default function PmoDetailedSchedule() {
                         </p>
                     </div>
                     <div className="flex shrink-0 items-center gap-2">
+                        {canEditSchedule && dataSource === 'database' && (
+                            <>
+                                {editMode && (
+                                    <span className="text-[10px] font-bold text-[#60a5fa]">
+                                        업무 행을 클릭하세요
+                                    </span>
+                                )}
+                                <button
+                                    type="button"
+                                    onClick={() => setEditMode((current) => !current)}
+                                    aria-pressed={editMode}
+                                    className={`h-[34px] rounded-[8px] border px-3 text-[11px] font-bold transition-colors ${
+                                        editMode
+                                            ? 'border-[#1f6fb2] bg-[#2997ff] text-white'
+                                            : 'border-[#465463] bg-[#2b333c] text-[#93c5fd] hover:border-[#5b7690] hover:bg-[#303c48]'
+                                    }`}
+                                >
+                                    {editMode ? '수정 종료' : '일정 수정'}
+                                </button>
+                            </>
+                        )}
                         <SelectControl
                             label="대분류"
                             value={selectedCategory}
@@ -948,6 +972,20 @@ export default function PmoDetailedSchedule() {
                                 item,
                                 todayMarker?.periodIndex
                             );
+                            const attentionAnimationClass = scheduleAttention === 'overdue'
+                                ? 'schedule-attention-overdue'
+                                : scheduleAttention === 'due_this_week'
+                                    ? 'schedule-attention-due'
+                                    : '';
+                            const attentionTitleClass = scheduleAttention === 'overdue'
+                                ? 'schedule-attention-title-overdue'
+                                : scheduleAttention === 'due_this_week'
+                                    ? 'schedule-attention-title-due'
+                                    : '';
+                            const isEditableTask = canEditSchedule
+                                && dataSource === 'database'
+                                && editMode
+                                && item.itemType === 'task';
                             const hasSchedule = startIndex !== null && startIndex !== undefined;
                             const periodLabel = !hasSchedule
                                 ? isGroup ? '' : '일정 미정'
@@ -959,7 +997,12 @@ export default function PmoDetailedSchedule() {
                             return (
                                 <tr
                                     key={item.sourceKey}
-                                    className={`group h-[48px] border-b border-[#393939] ${
+                                    onClick={() => {
+                                        if (isEditableTask) openScheduleEditor(item);
+                                    }}
+                                    className={`group h-[48px] border-b border-[#393939] ${attentionAnimationClass} ${
+                                        isEditableTask ? 'cursor-pointer' : ''
+                                    } ${
                                         item.itemType === 'lv1'
                                             ? 'bg-[#2c3440] hover:bg-[#343e4d]'
                                             : item.itemType === 'lv2'
@@ -973,7 +1016,7 @@ export default function PmoDetailedSchedule() {
                                                             : 'bg-[#272726] hover:bg-[#30302f]'
                                     }`}
                                 >
-                                    <td className={`sticky left-0 z-10 w-[450px] min-w-[450px] px-3 shadow-[inset_-1px_0_0_#464646] ${
+                                    <td className={`sticky left-0 z-10 w-[450px] min-w-[450px] px-3 shadow-[inset_-1px_0_0_#464646] ${attentionAnimationClass} ${
                                         item.itemType === 'lv1'
                                             ? 'bg-[#2c3440] group-hover:bg-[#343e4d]'
                                             : item.itemType === 'lv2'
@@ -1004,7 +1047,7 @@ export default function PmoDetailedSchedule() {
                                                     ) : (
                                                         <span className="w-5 shrink-0 text-center font-mono text-[8px] text-[#666]">•</span>
                                                     )}
-                                                    <span className={`truncate ${
+                                                    <span className={`truncate ${attentionTitleClass} ${
                                                         item.itemType === 'lv1'
                                                             ? 'text-[14px] font-bold text-white'
                                                             : item.itemType === 'lv2'
@@ -1020,7 +1063,7 @@ export default function PmoDetailedSchedule() {
                                                     <span className="shrink-0 font-mono text-[9px] text-[#68686d]">
                                                         {item.sourceKey}
                                                     </span>
-                                                    {item.itemType === 'task' && (
+                                                    {item.itemType === 'task' && progressStatus !== DEFAULT_PROGRESS_STATUS && (
                                                         <span className={`shrink-0 rounded-full border px-1.5 py-0.5 text-[8px] font-bold ${
                                                             PROGRESS_STATUS_STYLES[progressStatus]
                                                             || PROGRESS_STATUS_STYLES.not_started
@@ -1061,13 +1104,17 @@ export default function PmoDetailedSchedule() {
                                                 }`}>
                                                     {periodLabel}
                                                 </div>
-                                                {canEditSchedule && dataSource === 'database' && item.itemType === 'task' && (
+                                                {isEditableTask && (
                                                     <button
                                                         type="button"
                                                         data-schedule-edit-source={item.sourceKey}
-                                                        onClick={() => openScheduleEditor(item)}
-                                                        className="mt-0.5 text-[9px] font-bold text-[#60a5fa] hover:text-[#93c5fd]"
+                                                        onClick={(event) => {
+                                                            event.stopPropagation();
+                                                            openScheduleEditor(item);
+                                                        }}
+                                                        className="mt-0.5 inline-flex items-center gap-1 rounded-[5px] border border-[#2997ff]/35 bg-[#2997ff]/10 px-1.5 py-0.5 text-[9px] font-bold text-[#60a5fa] hover:border-[#2997ff]/60 hover:text-[#93c5fd]"
                                                     >
+                                                        <span aria-hidden="true">✎</span>
                                                         수정
                                                     </button>
                                                 )}

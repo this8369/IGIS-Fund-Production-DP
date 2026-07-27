@@ -332,6 +332,54 @@ export default function PmoScheduleGate() {
                     scrollbar-width: thin;
                     scrollbar-color: rgba(255, 255, 255, 0.12) rgba(255, 255, 255, 0.02);
                 }
+                @keyframes scheduleDuePulse {
+                    0%, 100% { background-color: #342d22; }
+                    50% { background-color: #49391f; }
+                }
+                @keyframes scheduleOverduePulse {
+                    0%, 100% { background-color: #352525; }
+                    50% { background-color: #4b2929; }
+                }
+                @keyframes scheduleDueTitlePulse {
+                    0%, 100% {
+                        color: #d99a3b;
+                        text-shadow: 0 0 0 rgba(245, 158, 11, 0);
+                    }
+                    50% {
+                        color: #fbbf24;
+                        text-shadow: 0 0 8px rgba(245, 158, 11, 0.45);
+                    }
+                }
+                @keyframes scheduleOverdueTitlePulse {
+                    0%, 100% {
+                        color: #e35f58;
+                        text-shadow: 0 0 0 rgba(255, 95, 87, 0);
+                    }
+                    50% {
+                        color: #ff7169;
+                        text-shadow: 0 0 8px rgba(255, 95, 87, 0.42);
+                    }
+                }
+                .schedule-attention-due {
+                    animation: scheduleDuePulse 2.6s ease-in-out infinite;
+                }
+                .schedule-attention-overdue {
+                    animation: scheduleOverduePulse 2.2s ease-in-out infinite;
+                }
+                .schedule-attention-title-due {
+                    animation: scheduleDueTitlePulse 2.6s ease-in-out infinite;
+                }
+                .schedule-attention-title-overdue {
+                    animation: scheduleOverdueTitlePulse 2.2s ease-in-out infinite;
+                }
+                @media (prefers-reduced-motion: reduce) {
+                    .schedule-attention-due,
+                    .schedule-attention-overdue,
+                    .schedule-attention-title-due,
+                    .schedule-attention-title-overdue {
+                        animation: none;
+                    }
+                }
             `}</style>
             {/* Header */}
             <div className="w-full flex items-end justify-between mb-[12px]">
