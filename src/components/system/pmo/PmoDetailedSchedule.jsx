@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { supabase } from '../../../utils/supabaseClient';
 import { useAuth } from '../../../context/AuthContext';
@@ -9,6 +9,7 @@ import {
     IOTA_SCHEDULE_PERIODS,
     normalizeIotaScheduleLabel
 } from '../../../data/iotaDetailedSchedule';
+import PmoTaskBoardStaging from './PmoTaskBoardStaging';
 import PmoScheduleTaskLinkModal from './PmoScheduleTaskLinkModal';
 
 const PERIOD_INDEX = new Map(
@@ -475,6 +476,7 @@ export default function PmoDetailedSchedule() {
     const [linkBusy, setLinkBusy] = useState(false);
     const [linkError, setLinkError] = useState('');
     const [linkDataVersion, setLinkDataVersion] = useState(0);
+    const [embeddedTaskDetailOpen, setEmbeddedTaskDetailOpen] = useState(false);
     const [expandedGroups, setExpandedGroups] = useState(() => new Set(
         IOTA_DETAILED_SCHEDULE_FALLBACK
             .filter((item) => item.itemType !== 'task')
@@ -488,6 +490,17 @@ export default function PmoDetailedSchedule() {
             setTodayMarker(getTodayScheduleMarker());
         }, 60 * 60 * 1000);
         return () => window.clearInterval(timerId);
+    }, []);
+
+    useEffect(() => {
+        const syncEmbeddedTaskDetail = () => {
+            const taskId = new URLSearchParams(window.location.search).get('taskId');
+            setEmbeddedTaskDetailOpen(Boolean(taskId));
+        };
+
+        syncEmbeddedTaskDetail();
+        window.addEventListener('popstate', syncEmbeddedTaskDetail);
+        return () => window.removeEventListener('popstate', syncEmbeddedTaskDetail);
     }, []);
 
     useEffect(() => {
@@ -925,15 +938,44 @@ export default function PmoDetailedSchedule() {
         setLinkingSourceKey(null);
     };
 
-    const openTaskDetail = (taskId) => {
+    const openTaskDetail = useCallback((taskId) => {
         if (!taskId) return;
-        const base = import.meta.env.BASE_URL.endsWith('/')
-            ? import.meta.env.BASE_URL.slice(0, -1)
-            : import.meta.env.BASE_URL;
-        window.location.assign(
-            `${base}/platform/iotaseoul/workflow?taskId=${encodeURIComponent(taskId)}`
+        const url = new URL(window.location.href);
+        url.searchParams.set('taskId', taskId);
+        const currentState = window.history.state && typeof window.history.state === 'object'
+            ? window.history.state
+            : {};
+        window.history.pushState(
+            { ...currentState, timelineTaskDetail: String(taskId) },
+            '',
+            `${url.pathname}${url.search}${url.hash}`
         );
-    };
+        setLinkingSourceKey(null);
+        setEmbeddedTaskDetailOpen(true);
+    }, []);
+
+    const closeEmbeddedTaskDetail = useCallback(() => {
+        const url = new URL(window.location.href);
+        const currentTaskId = url.searchParams.get('taskId');
+        const currentState = window.history.state && typeof window.history.state === 'object'
+            ? window.history.state
+            : {};
+
+        if (currentTaskId && currentState.timelineTaskDetail === currentTaskId) {
+            window.history.back();
+            return;
+        }
+
+        url.searchParams.delete('taskId');
+        const nextState = { ...currentState };
+        delete nextState.timelineTaskDetail;
+        window.history.replaceState(
+            nextState,
+            '',
+            `${url.pathname}${url.search}${url.hash}`
+        );
+        setEmbeddedTaskDetailOpen(false);
+    }, []);
 
     const saveScheduleItem = async (form) => {
         const displayName = form.displayName.trim();
@@ -1435,6 +1477,13 @@ export default function PmoDetailedSchedule() {
                     onCreateTask={createAndLinkTask}
                     onEditSchedule={openScheduleEditorFromTaskLink}
                     onOpenTask={openTaskDetail}
+                />
+            )}
+
+            {embeddedTaskDetailOpen && (
+                <PmoTaskBoardStaging
+                    embeddedDetailOnly
+                    onEmbeddedDetailClose={closeEmbeddedTaskDetail}
                 />
             )}
         </section>

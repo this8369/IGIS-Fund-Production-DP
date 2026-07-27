@@ -1332,7 +1332,17 @@ const getPmoTaskDisplayId = (task, taskList = []) => {
     return /^T-\d+$/i.test(legacyTaskId) ? legacyTaskId : '';
 };
 
-export default function PmoTaskBoardStaging({ searchQuery: propSearchQuery, setSearchQuery: propSetSearchQuery, viewMode: propViewMode, setViewMode: propSetViewMode, pageSize = 10, setPageSize, addNewTaskTrigger = 0 }) {
+export default function PmoTaskBoardStaging({
+    searchQuery: propSearchQuery,
+    setSearchQuery: propSetSearchQuery,
+    viewMode: propViewMode,
+    setViewMode: propSetViewMode,
+    pageSize = 10,
+    setPageSize,
+    addNewTaskTrigger = 0,
+    embeddedDetailOnly = false,
+    onEmbeddedDetailClose = null
+}) {
     const { memberInfo } = useAuth();
     const [tasks, setTasks] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -1421,6 +1431,11 @@ export default function PmoTaskBoardStaging({ searchQuery: propSearchQuery, setS
     const initialUrlCheckedRef = useRef(false);
     const drawerRef = useRef(null);
     const [showAssigneeDropdown, setShowAssigneeDropdown] = useState(false);
+
+    const closeSelectedTaskDetail = () => {
+        setSelectedTaskDetail(null);
+        if (embeddedDetailOnly) onEmbeddedDetailClose?.();
+    };
 
     // Suggestions panels
     const [showSubsectorSuggestions, setShowSubsectorSuggestions] = useState(false);
@@ -1861,7 +1876,8 @@ export default function PmoTaskBoardStaging({ searchQuery: propSearchQuery, setS
                 if (e.target.closest('tr') || e.target.closest('.activity-log-item') || e.target.closest('.notification-item') || e.target.closest('button')) {
                     return;
                 }
-                setSelectedTaskDetail(null);
+                closeSelectedTaskDetail();
+                if (embeddedDetailOnly) return;
                 const newParams = new URLSearchParams(window.location.search);
                 let changed = false;
                 if (newParams.has('taskId')) { newParams.delete('taskId'); changed = true; }
@@ -1877,7 +1893,7 @@ export default function PmoTaskBoardStaging({ searchQuery: propSearchQuery, setS
         return () => {
             document.removeEventListener('mousedown', handleOutsideClick);
         };
-    }, [isModalOpen]);
+    }, [embeddedDetailOnly, isModalOpen, onEmbeddedDetailClose]);
 
     // Watch URL parameter changes dynamically (for mount and popstate events / notification clicks)
     useEffect(() => {
@@ -1945,6 +1961,7 @@ export default function PmoTaskBoardStaging({ searchQuery: propSearchQuery, setS
                         newParams.delete('logId');
                         const newSearch = newParams.toString();
                         window.history.replaceState(null, '', `${window.location.pathname}${newSearch ? '?' + newSearch : ''}`);
+                        if (embeddedDetailOnly) onEmbeddedDetailClose?.();
                     }
                 } catch (err) {
                     console.error("Error verifying task ID:", err);
@@ -1958,6 +1975,7 @@ export default function PmoTaskBoardStaging({ searchQuery: propSearchQuery, setS
                 const newSearch = newParams.toString();
                 window.history.replaceState(null, '', `${window.location.pathname}${newSearch ? '?' + newSearch : ''}`);
                 initialUrlCheckedRef.current = true;
+                if (embeddedDetailOnly) onEmbeddedDetailClose?.();
             }
         };
 
@@ -1971,7 +1989,7 @@ export default function PmoTaskBoardStaging({ searchQuery: propSearchQuery, setS
         return () => {
             window.removeEventListener('popstate', handlePopState);
         };
-    }, [tasks]);
+    }, [embeddedDetailOnly, onEmbeddedDetailClose, tasks]);
 
     // Sync selectedTaskDetail to URL query param
     useEffect(() => {
@@ -2693,7 +2711,8 @@ export default function PmoTaskBoardStaging({ searchQuery: propSearchQuery, setS
                     overflow-y: hidden !important;
                 }
             `}</style>
-            <div className="w-full flex flex-col mb-[36px] text-left">
+            <div className={embeddedDetailOnly ? '' : 'w-full flex flex-col mb-[36px] text-left'}>
+            <div className={embeddedDetailOnly ? 'hidden' : 'contents'}>
             {loading ? (
                 <div className="w-full h-[260px] flex items-center justify-center border border-[#333] rounded-[24px]">
                     <span className="text-[#86868B] text-[15px] animate-pulse">원장 정보를 불러오는 중입니다...</span>
@@ -3487,6 +3506,7 @@ export default function PmoTaskBoardStaging({ searchQuery: propSearchQuery, setS
                 </div>
 
             )}
+            </div>
 
             {/* R&R 관리 권한 안내 모달 */}
             {showAuthInfoModal && (
@@ -4219,7 +4239,7 @@ export default function PmoTaskBoardStaging({ searchQuery: propSearchQuery, setS
                                     </div>
                                     <button 
                                         type="button"
-                                        onClick={() => setSelectedTaskDetail(null)}
+                                        onClick={closeSelectedTaskDetail}
                                         className="text-[#86868B] hover:text-white text-[20px] font-bold transition-colors cursor-pointer"
                                     >
                                         ✕
@@ -4421,7 +4441,7 @@ export default function PmoTaskBoardStaging({ searchQuery: propSearchQuery, setS
                                 <div className="px-[10px] py-4 border-t border-[#3c3c3c]/80 flex justify-end gap-3 bg-[#1c1c1e]/90">
                                     <button 
                                         type="button"
-                                        onClick={() => setSelectedTaskDetail(null)}
+                                        onClick={closeSelectedTaskDetail}
                                         className="px-4 py-2 rounded-[8px] bg-white/5 hover:bg-white/10 text-white border border-[#3c3c3c] text-[13px] font-bold cursor-pointer transition-all"
                                     >
                                         닫기
