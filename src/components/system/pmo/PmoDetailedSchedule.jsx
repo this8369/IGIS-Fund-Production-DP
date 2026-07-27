@@ -33,6 +33,12 @@ const getScheduleState = (item) => {
     return item.itemType === 'task' ? 'unscheduled' : 'group';
 };
 
+const getDepth = (item) => {
+    if (item.itemType === 'lv1') return 0;
+    if (item.itemType === 'lv2') return 1;
+    return 2;
+};
+
 const getAncestors = (item, itemMap) => {
     const ancestors = [];
     let parentKey = item.parentSourceKey;
@@ -150,6 +156,12 @@ export default function PmoDetailedSchedule() {
         () => items.filter((item) => item.itemType === 'task'),
         [items]
     );
+    const statistics = useMemo(() => ({
+        total: taskItems.length,
+        scheduled: taskItems.filter((item) => item.startPeriod && item.endPeriod).length,
+        unscheduled: taskItems.filter((item) => !item.startPeriod || !item.endPeriod).length,
+        milestones: items.filter((item) => item.milestonePeriod).length
+    }), [items, taskItems]);
 
     const filterOptions = useMemo(() => ({
         lv1: [...new Set(items.map((item) => item.lv1).filter(Boolean))],
@@ -301,10 +313,20 @@ export default function PmoDetailedSchedule() {
                 </div>
 
                 <div className="mt-3 flex items-center gap-2">
-                    <div className="flex h-[34px] w-fit shrink-0 items-center gap-2 whitespace-nowrap rounded-[8px] border border-[#36383a] bg-[#2b2b2a] px-3">
-                        <div className="text-[11px] font-bold text-[#86868B]">전체 세부업무</div>
-                        <div className="text-[15px] font-bold text-[#E5E5E5]">{taskItems.length}</div>
-                    </div>
+                    {[
+                        ['전체 세부업무', statistics.total, '#E5E5E5'],
+                        ['일정 등록', statistics.scheduled, '#60a5fa'],
+                        ['일정 미정', statistics.unscheduled, '#a1a1aa'],
+                        ['마일스톤', statistics.milestones, '#F59E0B']
+                    ].map(([label, value, color]) => (
+                        <div
+                            key={label}
+                            className="flex h-[34px] w-fit shrink-0 items-center gap-1.5 whitespace-nowrap rounded-[8px] border border-[#36383a] bg-[#2b2b2a] px-2.5"
+                        >
+                            <div className="text-[10px] font-bold text-[#86868B]">{label}</div>
+                            <div className="text-[14px] font-bold" style={{ color }}>{value}</div>
+                        </div>
+                    ))}
                     <div className="relative h-[34px] min-w-[220px] flex-1">
                         <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[13px] text-[#86868B]">⌕</span>
                         <input
@@ -336,7 +358,10 @@ export default function PmoDetailedSchedule() {
                         <thead>
                             <tr className="h-[28px] border-b border-[#36383a] bg-[#222324] text-[11px] font-bold text-[#92979c]">
                                 <th rowSpan={2} className="sticky left-0 z-40 w-[50px] min-w-[50px] bg-[#222324] text-center">NO</th>
-                                <th rowSpan={2} className="sticky left-[50px] z-40 w-[120px] min-w-[120px] bg-[#222324] px-1.5">
+                                <th rowSpan={2} className="sticky left-[50px] z-40 w-[310px] min-w-[310px] bg-[#222324] px-4">
+                                    업무명
+                                </th>
+                                <th rowSpan={2} className="sticky left-[360px] z-40 w-[120px] min-w-[120px] bg-[#222324] px-1.5">
                                     <TableHeaderSelect
                                         label="Lv1"
                                         value={selectedLv1}
@@ -347,7 +372,7 @@ export default function PmoDetailedSchedule() {
                                         ]}
                                     />
                                 </th>
-                                <th rowSpan={2} className="sticky left-[170px] z-40 w-[130px] min-w-[130px] bg-[#222324] px-1.5">
+                                <th rowSpan={2} className="sticky left-[480px] z-40 w-[130px] min-w-[130px] border-r border-[#36383a] bg-[#222324] px-1.5">
                                     <TableHeaderSelect
                                         label="Lv2"
                                         value={selectedLv2}
@@ -357,9 +382,6 @@ export default function PmoDetailedSchedule() {
                                             ...filterOptions.lv2.map((value) => ({ value, label: value }))
                                         ]}
                                     />
-                                </th>
-                                <th rowSpan={2} className="sticky left-[300px] z-40 w-[310px] min-w-[310px] border-r border-[#36383a] bg-[#222324] px-4">
-                                    업무명
                                 </th>
                                 <th rowSpan={2} className="w-[80px] min-w-[80px] bg-[#222324] px-1.5">
                                     <TableHeaderSelect
@@ -408,6 +430,8 @@ export default function PmoDetailedSchedule() {
                         <tbody>
                             {visibleItems.map((item, itemIndex) => {
                                 const isExpanded = expandedGroups.has(item.sourceKey);
+                                const isGroup = item.itemType !== 'task';
+                                const depth = getDepth(item);
                                 const startIndex = item.startPeriod
                                     ? PERIOD_INDEX.get(item.startPeriod)
                                     : undefined;
@@ -436,49 +460,42 @@ export default function PmoDetailedSchedule() {
                                         <td className={`sticky left-0 z-20 w-[50px] min-w-[50px] text-center font-mono text-[11px] text-[#86868B] transition-colors ${stickyBackground}`}>
                                             {item.sourceOrder}
                                         </td>
-                                        <td className={`sticky left-[50px] z-20 w-[120px] min-w-[120px] px-2 text-[12px] transition-colors ${stickyBackground}`}>
-                                            <div className="flex min-w-0 items-center gap-1.5">
-                                                {item.itemType === 'lv1' && (
+                                        <td className={`sticky left-[50px] z-20 w-[310px] min-w-[310px] px-4 text-[12px] font-medium text-[#E5E5E5] transition-colors ${stickyBackground}`}>
+                                            <div
+                                                className="flex min-w-0 items-center gap-2"
+                                                style={{ paddingLeft: `${depth * 14}px` }}
+                                            >
+                                                {isGroup ? (
                                                     <button
                                                         type="button"
                                                         onClick={() => toggleGroup(item.sourceKey)}
-                                                        className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-[9px] text-[#a1a1aa] hover:bg-white/10 hover:text-white"
+                                                        className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-[10px] text-[#a1a1aa] hover:bg-white/10 hover:text-white"
                                                         aria-label={`${item.displayName} ${isExpanded ? '접기' : '펼치기'}`}
                                                     >
                                                         {isExpanded ? '▼' : '▶'}
                                                     </button>
+                                                ) : (
+                                                    <span className="w-5 shrink-0 text-center font-mono text-[8px] text-[#666]">•</span>
                                                 )}
-                                                <span className="block truncate font-bold text-[#E5E5E5]" title={item.lv1 || ''}>
-                                                    {item.lv1 || ''}
-                                                </span>
-                                            </div>
-                                        </td>
-                                        <td className={`sticky left-[170px] z-20 w-[130px] min-w-[130px] px-2 text-[12px] transition-colors ${stickyBackground}`}>
-                                            <div className="flex min-w-0 items-center gap-1.5">
-                                                {item.itemType === 'lv2' && (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => toggleGroup(item.sourceKey)}
-                                                        className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-[9px] text-[#a1a1aa] hover:bg-white/10 hover:text-white"
-                                                        aria-label={`${item.displayName} ${isExpanded ? '접기' : '펼치기'}`}
-                                                    >
-                                                        {isExpanded ? '▼' : '▶'}
-                                                    </button>
-                                                )}
-                                                <span className="block truncate font-medium text-[#c7c7c2]" title={item.lv2 || ''}>
-                                                    {item.lv2 || ''}
-                                                </span>
-                                            </div>
-                                        </td>
-                                        <td className={`sticky left-[300px] z-20 w-[310px] min-w-[310px] border-r border-[#36383a] px-4 text-[12px] font-medium text-[#E5E5E5] transition-colors ${stickyBackground}`}>
-                                            <span className={`block truncate ${
+                                                <span className={`block truncate ${
                                                     item.itemType === 'lv1'
                                                         ? 'font-bold text-white'
                                                         : item.itemType === 'lv2'
                                                             ? 'font-bold text-[#E5E5E5]'
                                                             : 'font-medium text-[#c7c7c2]'
-                                            }`} title={item.displayName || ''}>
-                                                {item.displayName || ''}
+                                                }`} title={item.displayName || ''}>
+                                                    {item.displayName || ''}
+                                                </span>
+                                            </div>
+                                        </td>
+                                        <td className={`sticky left-[360px] z-20 w-[120px] min-w-[120px] px-2 text-[12px] transition-colors ${stickyBackground}`}>
+                                            <span className="block truncate font-bold text-[#E5E5E5]" title={item.lv1 || ''}>
+                                                {item.lv1 || ''}
+                                            </span>
+                                        </td>
+                                        <td className={`sticky left-[480px] z-20 w-[130px] min-w-[130px] border-r border-[#36383a] px-2 text-[12px] transition-colors ${stickyBackground}`}>
+                                            <span className="block truncate font-medium text-[#c7c7c2]" title={item.lv2 || ''}>
+                                                {item.lv2 || ''}
                                             </span>
                                         </td>
                                         <td className="w-[80px] min-w-[80px] px-2 text-left text-[11px] font-semibold text-[#E5E5E5]">
