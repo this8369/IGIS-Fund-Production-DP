@@ -1267,6 +1267,33 @@ export default function PmoDetailedSchedule() {
                                     : `${IOTA_SCHEDULE_PERIODS[startIndex]?.label} ~ ${IOTA_SCHEDULE_PERIODS[endIndex]?.label}`;
                             const isLeadUnassigned = !item.leadLabel || item.leadLabel === '미정';
                             const showLead = !isGroup || !isLeadUnassigned;
+                            const rowSurfaceClass = item.itemType === 'lv1'
+                                ? 'bg-[#2b3542] hover:bg-[#344253]'
+                                : item.itemType === 'lv2'
+                                    ? 'bg-[#242b32] hover:bg-[#2b343d]'
+                                    : scheduleAttention === 'overdue'
+                                        ? 'bg-[#3a2525] hover:bg-[#482c2c]'
+                                        : scheduleAttention === 'due_this_week'
+                                            ? 'bg-[#393020] hover:bg-[#453923]'
+                                            : state === 'unscheduled'
+                                                ? 'bg-[#342727] hover:bg-[#422e2e]'
+                                                : 'bg-[#1c1c1e] hover:bg-[#252527]';
+                            const stickySurfaceClass = item.itemType === 'lv1'
+                                ? 'bg-[#2b3542] group-hover:bg-[#344253]'
+                                : item.itemType === 'lv2'
+                                    ? 'bg-[#242b32] group-hover:bg-[#2b343d]'
+                                    : scheduleAttention === 'overdue'
+                                        ? 'bg-[#3a2525] group-hover:bg-[#482c2c]'
+                                        : scheduleAttention === 'due_this_week'
+                                            ? 'bg-[#393020] group-hover:bg-[#453923]'
+                                            : state === 'unscheduled'
+                                                ? 'bg-[#342727] group-hover:bg-[#422e2e]'
+                                                : 'bg-[#1c1c1e] group-hover:bg-[#252527]';
+                            const hierarchyDividerClass = item.itemType === 'lv1'
+                                ? 'border-y border-[#465569]'
+                                : item.itemType === 'lv2'
+                                    ? 'border-b border-[#39434d]'
+                                    : 'border-b border-[#343436]';
 
                             return (
                                 <tr
@@ -1275,35 +1302,12 @@ export default function PmoDetailedSchedule() {
                                         if (canOpenTaskLink) openTaskLinkModal(item);
                                     }}
                                     data-task-link-source={canOpenTaskLink ? item.sourceKey : undefined}
-                                    className={`group h-[48px] border-b border-[#393939] ${attentionAnimationClass} ${
+                                    data-schedule-item-type={item.itemType}
+                                    className={`group h-[48px] ${hierarchyDividerClass} ${attentionAnimationClass} ${
                                         canOpenTaskLink ? 'cursor-pointer' : ''
-                                    } ${
-                                        item.itemType === 'lv1'
-                                            ? 'bg-[#2c3440] hover:bg-[#343e4d]'
-                                            : item.itemType === 'lv2'
-                                                ? 'bg-[#2d2d2c] hover:bg-[#363635]'
-                                                : scheduleAttention === 'overdue'
-                                                    ? 'bg-[#3a2525] hover:bg-[#482c2c]'
-                                                    : scheduleAttention === 'due_this_week'
-                                                        ? 'bg-[#393020] hover:bg-[#453923]'
-                                                        : state === 'unscheduled'
-                                                            ? 'bg-[#342727] hover:bg-[#422e2e]'
-                                                            : 'bg-[#272726] hover:bg-[#30302f]'
-                                    }`}
+                                    } ${rowSurfaceClass}`}
                                 >
-                                    <td className={`sticky left-0 z-10 w-[450px] min-w-[450px] px-3 shadow-[inset_-1px_0_0_#464646] ${attentionAnimationClass} ${
-                                        item.itemType === 'lv1'
-                                            ? 'bg-[#2c3440] group-hover:bg-[#343e4d]'
-                                            : item.itemType === 'lv2'
-                                                ? 'bg-[#2d2d2c] group-hover:bg-[#363635]'
-                                                : scheduleAttention === 'overdue'
-                                                    ? 'bg-[#3a2525] group-hover:bg-[#482c2c]'
-                                                    : scheduleAttention === 'due_this_week'
-                                                        ? 'bg-[#393020] group-hover:bg-[#453923]'
-                                                        : state === 'unscheduled'
-                                                            ? 'bg-[#342727] group-hover:bg-[#422e2e]'
-                                                            : 'bg-[#272726] group-hover:bg-[#30302f]'
-                                    }`}>
+                                    <td className={`sticky left-0 z-10 w-[450px] min-w-[450px] px-3 shadow-[inset_-1px_0_0_#464646] ${attentionAnimationClass} ${stickySurfaceClass}`}>
                                         <div className="flex items-center justify-between gap-3">
                                             <div
                                                 className="min-w-0 flex-1"
