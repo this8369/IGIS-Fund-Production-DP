@@ -361,16 +361,16 @@ export default function PmoScheduleGate() {
                     }
                 }
                 .schedule-attention-due {
-                    animation: scheduleDuePulse 2.6s ease-in-out infinite;
+                    animation: scheduleDuePulse 1.6s ease-in-out infinite;
                 }
                 .schedule-attention-overdue {
-                    animation: scheduleOverduePulse 2.2s ease-in-out infinite;
+                    animation: scheduleOverduePulse 1.4s ease-in-out infinite;
                 }
                 .schedule-attention-title-due {
-                    animation: scheduleDueTitlePulse 2.6s ease-in-out infinite;
+                    animation: scheduleDueTitlePulse 1.6s ease-in-out infinite;
                 }
                 .schedule-attention-title-overdue {
-                    animation: scheduleOverdueTitlePulse 2.2s ease-in-out infinite;
+                    animation: scheduleOverdueTitlePulse 1.4s ease-in-out infinite;
                 }
                 @media (prefers-reduced-motion: reduce) {
                     .schedule-attention-due,
@@ -391,7 +391,7 @@ export default function PmoScheduleGate() {
                             onClick={() => setTimelineView('detail')}
                             className={`h-[28px] rounded-[7px] border px-3 text-[11px] font-bold transition-colors ${
                                 timelineView === 'detail'
-                                    ? 'border-[#31445a] bg-[#3b4f68] text-white'
+                                    ? 'border-[#263b52] bg-[#3b4f68] text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.035)]'
                                     : 'border-transparent text-[#86868B] hover:text-white'
                             }`}
                         >
@@ -402,7 +402,7 @@ export default function PmoScheduleGate() {
                             onClick={() => setTimelineView('summary')}
                             className={`h-[28px] rounded-[7px] border px-3 text-[11px] font-bold transition-colors ${
                                 timelineView === 'summary'
-                                    ? 'border-[#31445a] bg-[#3b4f68] text-white'
+                                    ? 'border-[#263b52] bg-[#3b4f68] text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.035)]'
                                     : 'border-transparent text-[#86868B] hover:text-white'
                             }`}
                         >
