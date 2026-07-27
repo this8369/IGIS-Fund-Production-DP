@@ -439,7 +439,9 @@ export default function PmoDetailedSchedule() {
                                             ? 'bg-[#2c3440] hover:bg-[#343e4d]'
                                             : item.itemType === 'lv2'
                                                 ? 'bg-[#2d2d2c] hover:bg-[#363635]'
-                                                : 'bg-[#272726] hover:bg-[#30302f]'
+                                                : state === 'unscheduled'
+                                                    ? 'bg-[#2d2727] hover:bg-[#382c2c]'
+                                                    : 'bg-[#272726] hover:bg-[#30302f]'
                                     }`}
                                 >
                                     <td className={`sticky left-0 z-10 w-[450px] min-w-[450px] border-r border-[#464646] px-3 ${
@@ -447,7 +449,9 @@ export default function PmoDetailedSchedule() {
                                             ? 'bg-[#2c3440] group-hover:bg-[#343e4d]'
                                             : item.itemType === 'lv2'
                                                 ? 'bg-[#2d2d2c] group-hover:bg-[#363635]'
-                                                : 'bg-[#272726] group-hover:bg-[#30302f]'
+                                                : state === 'unscheduled'
+                                                    ? 'bg-[#2d2727] group-hover:bg-[#382c2c]'
+                                                    : 'bg-[#272726] group-hover:bg-[#30302f]'
                                     }`}>
                                         <div className="flex items-center justify-between gap-3">
                                             <div
