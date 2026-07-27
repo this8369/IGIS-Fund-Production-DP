@@ -3,8 +3,12 @@ import { supabase } from '../../utils/supabaseClient';
 import { executeWithTimeout } from '../../utils/supabaseHelper';
 import { motion, AnimatePresence } from 'framer-motion';
 import { notifyMembersOnLogCreation } from '../../utils/notificationHelpers';
+import {
+    buildMentionCandidates,
+    getActiveMentionEntities,
+} from '../../utils/mentionHelpers.js';
 
-export default function LogWriteBox({ memberInfo, masterStakeholders, fetchLogs, fetchMasterStakeholders, workspaceCode, workspaceLabel, defaultExpanded = false, editMode = false, initialData = null, onCancel = null, onSuccess = null, isTaskBoard = false, taskId = null, taskProject = null, mobileMode = false }) {
+export default function LogWriteBox({ memberInfo, masterStakeholders, pilotMembers = [], fetchLogs, fetchMasterStakeholders, workspaceCode, workspaceLabel, defaultExpanded = false, editMode = false, initialData = null, onCancel = null, onSuccess = null, isTaskBoard = false, taskId = null, taskProject = null, mobileMode = false }) {
     const uniqueIdSuffix = editMode ? `${workspaceCode}-edit` : workspaceCode;
     // Form States
     const [projectId, setProjectId] = useState('IOTA_COMMON');
@@ -43,7 +47,7 @@ export default function LogWriteBox({ memberInfo, masterStakeholders, fetchLogs,
     const [mentionQuery, setMentionQuery] = useState('');
     const [mentionCursorIndex, setMentionCursorIndex] = useState(0);
     const [mentionPosition, setMentionPosition] = useState({ top: 0, left: 0 });
-    const [mentionedNames, setMentionedNames] = useState([]);
+    const [mentionedEntities, setMentionedEntities] = useState([]);
 
     // Permission states
     const [visibilityGroups, setVisibilityGroups] = useState([]);
@@ -145,6 +149,9 @@ export default function LogWriteBox({ memberInfo, masterStakeholders, fetchLogs,
                 if (meta.attachedFiles) {
                     setAttachedFiles(meta.attachedFiles);
                 }
+                if (meta.mentions) {
+                    setMentionedEntities(meta.mentions);
+                }
 
             }
             
@@ -222,23 +229,27 @@ export default function LogWriteBox({ memberInfo, masterStakeholders, fetchLogs,
         }
     };
 
-    const handleMentionSelect = (name) => {
+    const handleMentionSelect = (mention) => {
+        const name = mention.label;
         const textBeforeMention = content.slice(0, mentionCursorIndex);
         const textAfterCursor = content.slice(mentionCursorIndex + mentionQuery.length + 1);
         
-        const newText = textBeforeMention + `${name} ` + textAfterCursor;
+        const newText = textBeforeMention + `@${name} ` + textAfterCursor;
         setContent(newText);
         setShowMentionDropdown(false);
         
-        if (!mentionedNames.includes(name)) {
-            setMentionedNames(prev => [...prev, name]);
-        }
+        setMentionedEntities((current) => {
+            const mentionKey = `${mention.type}:${mention.label}`;
+            return current.some((item) => `${item.type}:${item.label}` === mentionKey)
+                ? current
+                : [...current, mention];
+        });
         
         setTimeout(() => {
             const textarea = document.getElementById(`log-textarea-${uniqueIdSuffix}`);
             if (textarea) {
                 textarea.focus();
-                const newPos = mentionCursorIndex + name.length + 1;
+                const newPos = mentionCursorIndex + name.length + 2;
                 textarea.setSelectionRange(newPos, newPos);
             }
         }, 0);
@@ -250,23 +261,26 @@ export default function LogWriteBox({ memberInfo, masterStakeholders, fetchLogs,
                 <span className="text-[#bbb9af] text-[14px]">
                     진행 이력, 협업 요청, 리스크 판단 필요사항, 의사결정 필요항목을 입력하세요.
                     <br />
-                    (@로 담당자 또는 외부상대방을 맨션할 수 있습니다)
+                    (@로 담당부서 또는 담당자를 맨션할 수 있습니다)
                 </span>
             );
         }
 
-        if (mentionedNames.length === 0) {
+        const activeMentionLabels = getActiveMentionEntities(content, mentionedEntities).map((mention) => mention.label);
+        if (activeMentionLabels.length === 0) {
             return <span className="text-[#E5E5E5]">{content}{content.endsWith('\n') ? <br/> : null}</span>;
         }
 
-        const escapedNames = mentionedNames.map(n => n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
-        const regex = new RegExp(`(${escapedNames.join('|')})`, 'g');
+        const escapedNames = activeMentionLabels
+            .sort((left, right) => right.length - left.length)
+            .map(n => n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+        const regex = new RegExp(`(@(?:${escapedNames.join('|')}))`, 'g');
         const parts = content.split(regex);
 
         return (
             <>
                 {parts.map((part, i) => {
-                    if (mentionedNames.includes(part)) {
+                    if (part.startsWith('@') && activeMentionLabels.includes(part.slice(1))) {
                         return <span key={i} className="text-[#82afb9]">{part}</span>;
                     }
                     return <span key={i} className="text-[#E5E5E5]">{part}</span>;
@@ -371,6 +385,7 @@ export default function LogWriteBox({ memberInfo, masterStakeholders, fetchLogs,
             const logId = isEditing ? initialData.log_id : `iota_issue_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
             const writerId = isEditing ? initialData.writer_staff_id : (memberInfo?.email || 'unknown');
             const writerName = isEditing ? initialData.writer_name : (memberInfo?.staff_name || '익명');
+            const activeMentions = getActiveMentionEntities(content, mentionedEntities);
 
             const logData = {
                 work_date: workDate,
@@ -389,6 +404,7 @@ export default function LogWriteBox({ memberInfo, masterStakeholders, fetchLogs,
                         groups: visibilityGroups,
                         individuals: visibilityIndividuals.map(i => i.contact_name)
                     },
+                    mentions: activeMentions,
                     attachedFiles: attachedFiles,
                     task_id: isTaskBoard ? taskId : (isEditing ? initialData.metadata?.task_id : undefined),
                     is_task_board: isTaskBoard ? true : (isEditing ? initialData.metadata?.is_task_board : undefined)
@@ -419,7 +435,7 @@ export default function LogWriteBox({ memberInfo, masterStakeholders, fetchLogs,
                     label: workspaceLabel,
                     orgNames: [workspaceLabel.split('-')[0].trim()]
                 };
-                notifyMembersOnLogCreation(logId, content, wsInfo, memberInfo?.email || writerId);
+                notifyMembersOnLogCreation(logId, content, wsInfo, memberInfo?.email || writerId, activeMentions);
             }
 
             // 2. Insert into iota_seoul_log_links
@@ -468,6 +484,7 @@ export default function LogWriteBox({ memberInfo, masterStakeholders, fetchLogs,
                 setContactQuery('');
                 setVisibilityGroups([]);
                 setVisibilityIndividuals([]);
+                setMentionedEntities([]);
                 setAttachedFiles([]);
             }
             if(fetchLogs) {
@@ -540,8 +557,13 @@ export default function LogWriteBox({ memberInfo, masterStakeholders, fetchLogs,
         await processSubmit();
     };
 
-    const mentionCandidates = Array.from(new Set(masterStakeholders.map(s => s.contact_name).filter(Boolean)));
-    const filteredMentions = mentionCandidates.filter(name => name.toLowerCase().includes(mentionQuery.toLowerCase())).slice(0, 5);
+    const mentionCandidates = buildMentionCandidates(pilotMembers);
+    const filteredMentions = mentionCandidates
+        .filter((mention) => (
+            mention.label.toLowerCase().includes(mentionQuery.toLowerCase())
+            || mention.organization?.toLowerCase().includes(mentionQuery.toLowerCase())
+        ))
+        .slice(0, 8);
 
     const getParticle = (word) => {
         if (!word) return '와';
@@ -862,16 +884,26 @@ export default function LogWriteBox({ memberInfo, masterStakeholders, fetchLogs,
                     {/* Mention Dropdown */}
                     {showMentionDropdown && filteredMentions.length > 0 && (
                         <div 
-                            className="absolute bg-[#222] border border-[#333] rounded-[8px] py-[6px] w-[180px] max-h-[150px] overflow-y-auto z-50 shadow-xl"
+                            className="absolute bg-[#222] border border-[#333] rounded-[8px] py-[6px] w-[240px] max-h-[220px] overflow-y-auto z-50 shadow-xl"
                             style={{ top: `${mentionPosition.top}px`, left: `${mentionPosition.left}px` }}
                         >
-                            {filteredMentions.map((name, i) => (
+                            {filteredMentions.map((mention) => (
                                 <div 
-                                    key={i} 
-                                    className="px-[12px] py-[8px] text-[13px] text-[#E5E5E5] hover:bg-[#333] cursor-pointer truncate"
-                                    onClick={() => handleMentionSelect(name)}
+                                    key={`${mention.type}:${mention.label}`}
+                                    className="px-[12px] py-[8px] text-[13px] text-[#E5E5E5] hover:bg-[#333] cursor-pointer flex items-center gap-[8px]"
+                                    onClick={() => handleMentionSelect(mention)}
                                 >
-                                    <span className="text-[#86868B] mr-2">@</span>{name}
+                                    <span className={`text-[10px] font-bold px-[6px] py-[2px] rounded-[4px] shrink-0 ${
+                                        mention.type === 'department'
+                                            ? 'bg-[#2997ff]/15 text-[#5ac8fa]'
+                                            : 'bg-white/10 text-[#A1A1AA]'
+                                    }`}>
+                                        {mention.type === 'department' ? '부서' : '담당자'}
+                                    </span>
+                                    <span className="truncate">@{mention.label}</span>
+                                    {mention.type === 'person' && mention.organization && (
+                                        <span className="text-[11px] text-[#666] truncate ml-auto">{mention.organization}</span>
+                                    )}
                                 </div>
                             ))}
                         </div>

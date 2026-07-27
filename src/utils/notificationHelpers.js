@@ -1,4 +1,5 @@
 import { supabase } from './supabaseClient';
+import { resolveMentionedAuthIds } from './mentionHelpers.js';
 
 const VIP_AUTH_IDS = [
     '4d855717-1e30-4c50-9c5a-621740e686b6', // 이시정
@@ -37,7 +38,7 @@ export const notifyVIPsOnTaskCreation = async (taskId, taskName, workspaceName, 
 /**
  * 협업글(Log) 생성 시 워크스페이스 소속원 및 마스터/디렉터에게 알림 전송 (비동기 백그라운드 구동 권장)
  */
-export const notifyMembersOnLogCreation = async (logId, logContent, workspace, writerEmail) => {
+export const notifyMembersOnLogCreation = async (logId, logContent, workspace, writerEmail, mentions = []) => {
     if (!logId || !workspace?.code) return;
 
     try {
@@ -53,17 +54,15 @@ export const notifyMembersOnLogCreation = async (logId, logContent, workspace, w
             return;
         }
 
-        // 2. 작성자 정보 및 멘션(@) 파싱 (부서 이름 멘션도 처리)
+        // 2. 작성자 정보 및 멘션(@) 파싱 (담당자와 담당부서 구성원 전체 처리)
         const writerMember = members.find(m => m.email && writerEmail && m.email.toLowerCase() === writerEmail.toLowerCase());
         const writerName = writerMember ? writerMember.staff_name : '누군가';
-
-        // 본문에서 @이름 또는 @부서 패턴 추출
-        const mentionMatches = [...logContent.matchAll(/@([가-힣a-zA-Z0-9]+)/g)].map(m => m[1]);
-        const mentionedMembers = members.filter(member => 
-            (mentionMatches.includes(member.staff_name) || mentionMatches.includes(member.org_name)) &&
-            member.email && writerEmail && member.email.toLowerCase() !== writerEmail.toLowerCase()
-        );
-        const mentionedAuthIds = [...new Set(mentionedMembers.map(m => m.auth_id))];
+        const mentionedAuthIds = resolveMentionedAuthIds({
+            members,
+            content: logContent,
+            mentions,
+            writerEmail,
+        });
 
         // 3. 수신자 매핑 알고리즘:
         let recipientIds = [];

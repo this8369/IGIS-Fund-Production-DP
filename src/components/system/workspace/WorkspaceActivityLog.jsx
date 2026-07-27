@@ -4,6 +4,7 @@ import { executeWithTimeout } from '../../../utils/supabaseHelper';
 import { notifyMembersOnCommentCreation } from '../../../utils/notificationHelpers';
 import { getDirectorLogCell } from '../../../utils/directorWorkflowLogs';
 import { normalizeIotaOrganization } from '../../../utils/iotaOrganizations.js';
+import { buildMentionCandidates } from '../../../utils/mentionHelpers.js';
 import { useAuth } from '../../../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import LogWriteBox from '../LogWriteBox';
@@ -386,16 +387,21 @@ export default function WorkspaceActivityLog({ workspaceCode, workspaceLabel, is
 
     const renderLogTextWithMentions = (text) => {
         if (!text) return null;
-        if (!masterStakeholders || masterStakeholders.length === 0) return text;
-        const names = Array.from(new Set(masterStakeholders.map(s => s.contact_name).filter(Boolean)));
+        const names = Array.from(new Set([
+            ...(masterStakeholders?.map(s => s.contact_name) || []),
+            ...buildMentionCandidates(pilotMembers).map((mention) => mention.label),
+        ].filter(Boolean)));
         if (names.length === 0) return text;
 
-        const escapedNames = names.map(n => n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
-        const regex = new RegExp(`(${escapedNames.join('|')})`, 'g');
+        const escapedNames = names
+            .sort((left, right) => right.length - left.length)
+            .map(n => n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+        const regex = new RegExp(`(@?(?:${escapedNames.join('|')}))`, 'g');
         const parts = text.split(regex);
 
         return parts.map((part, i) => {
-            if (names.includes(part)) {
+            const label = part.startsWith('@') ? part.slice(1) : part;
+            if (names.includes(label)) {
                 return <span key={i} className="text-[#82afb9] font-bold">{part}</span>;
             }
             return part;
@@ -411,7 +417,9 @@ export default function WorkspaceActivityLog({ workspaceCode, workspaceLabel, is
             setMasterStakeholders(data);
         }
         
-        const { data: pilotData, error: pilotError } = await supabase.from('iota_seoul_pilot_members').select('email, staff_name, org_name, role_code');
+        const { data: pilotData, error: pilotError } = await supabase
+            .from('iota_seoul_pilot_members')
+            .select('auth_id, email, staff_name, org_name, role_code, workspace_code, is_active');
         if (!pilotError && pilotData) {
             setPilotMembers(pilotData);
         }
@@ -985,6 +993,7 @@ export default function WorkspaceActivityLog({ workspaceCode, workspaceLabel, is
                 <LogWriteBox 
                     memberInfo={memberInfo}
                     masterStakeholders={masterStakeholders}
+                    pilotMembers={pilotMembers}
                     fetchLogs={fetchLogs}
                     fetchMasterStakeholders={fetchMasterStakeholders}
                     workspaceCode={workspaceCode}
@@ -1812,6 +1821,7 @@ export default function WorkspaceActivityLog({ workspaceCode, workspaceLabel, is
                     <LogWriteBox 
                         memberInfo={memberInfo}
                         masterStakeholders={masterStakeholders}
+                        pilotMembers={pilotMembers}
                         fetchLogs={fetchLogs}
                         fetchMasterStakeholders={fetchMasterStakeholders}
                         workspaceCode={workspaceCode}
@@ -1839,6 +1849,7 @@ export default function WorkspaceActivityLog({ workspaceCode, workspaceLabel, is
                         <LogWriteBox 
                             memberInfo={memberInfo}
                             masterStakeholders={masterStakeholders}
+                            pilotMembers={pilotMembers}
                             fetchLogs={fetchLogs}
                             fetchMasterStakeholders={fetchMasterStakeholders}
                             workspaceCode={workspaceCode}
