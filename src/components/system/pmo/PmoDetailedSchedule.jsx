@@ -1339,9 +1339,6 @@ export default function PmoDetailedSchedule() {
                                                     }`}>
                                                         {item.displayName}
                                                     </span>
-                                                    <span className="shrink-0 font-mono text-[9px] text-[#68686d]">
-                                                        {item.sourceKey}
-                                                    </span>
                                                     {item.itemType === 'task' && (
                                                         <span className={`shrink-0 rounded-full border px-1.5 py-0.5 text-[8px] font-bold ${
                                                             PROGRESS_STATUS_STYLES[progressStatus]
