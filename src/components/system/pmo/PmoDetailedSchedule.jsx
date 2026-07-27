@@ -349,19 +349,20 @@ export default function PmoDetailedSchedule() {
                     ].map(([label, value, color]) => (
                         <div
                             key={label}
-                            className="flex h-[46px] min-w-[132px] flex-1 items-center justify-between gap-3 rounded-[10px] border border-[#363636] bg-[#2b2b2a] px-3"
+                            className="flex h-[46px] shrink-0 items-center justify-between gap-1.5 rounded-[10px] border border-[#363636] bg-[#2b2b2a] px-2.5"
+                            style={{ width: 'max(112px, calc((100% - 32px) / 5.6 - 100px))' }}
                         >
                             <div className="text-[12px] font-bold text-[#86868B]">{label}</div>
                             <div className="text-[22px] font-bold" style={{ color }}>{value}</div>
                         </div>
                     ))}
-                    <div className="relative h-[46px] min-w-[280px] flex-[1.6]">
-                        <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[13px] text-[#86868B]">⌕</span>
+                    <div className="relative h-[46px] min-w-[280px] flex-1">
+                        <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[18px] font-bold text-[#86868B]">⌕</span>
                         <input
                             value={searchTerm}
                             onChange={(event) => setSearchTerm(event.target.value)}
                             placeholder="일정·업무·주관 검색"
-                            className="h-full w-full rounded-[8px] border border-[#3c3c3c] bg-[#2c2c2b] pl-8 pr-3 text-[12px] text-white outline-none placeholder:text-[#68686d] focus:border-[#2997ff]"
+                            className="h-full w-full rounded-[8px] border border-[#3c3c3c] bg-[#2c2c2b] pl-9 pr-3 text-[12px] text-white outline-none placeholder:text-[#68686d] focus:border-[#2997ff]"
                         />
                     </div>
                 </div>
