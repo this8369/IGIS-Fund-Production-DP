@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { supabase } from '../../../utils/supabaseClient';
+import { useAuth } from '../../../context/AuthContext';
+import { getMemberIotaOrganization } from '../../../utils/iotaOrganizations';
 import {
     IOTA_DETAILED_SCHEDULE_FALLBACK,
     IOTA_SCHEDULE_PERIODS,
@@ -15,6 +17,35 @@ const SCHEDULE_START_MONTH = 7;
 const SCHEDULE_END_MONTH = 12;
 const SCHEDULE_LABEL_COLUMN_WIDTH = 450;
 const SCHEDULE_PERIOD_WIDTH = 48;
+const DEFAULT_PROGRESS_STATUS = 'not_started';
+
+const PROGRESS_STATUS_OPTIONS = [
+    { value: 'not_started', label: '미착수' },
+    { value: 'in_progress', label: '진행중' },
+    { value: 'completed', label: '완료' },
+    { value: 'on_hold', label: '보류' }
+];
+
+const DEFAULT_SCHEDULE_DEPARTMENTS = [
+    { dept_code: '', dept_name: '미정' },
+    { dept_code: 'SPECIAL_CFT', dept_name: 'CFT' },
+    { dept_code: 'DEPT_PM1', dept_name: '사업1파트' },
+    { dept_code: 'DEPT_PM2', dept_name: '사업2파트' },
+    { dept_code: 'DEPT_LFC', dept_name: 'LFC' },
+    { dept_code: 'DEPT_DEV', dept_name: '개발솔루션' },
+    { dept_code: 'DEPT_DESIGN', dept_name: '공간솔루션' },
+    { dept_code: 'DEPT_MKT', dept_name: '기업마케팅' },
+    { dept_code: 'DEPT_KAM', dept_name: 'KAM' },
+    { dept_code: 'DEPT_PO', dept_name: '기획추진' },
+    { dept_code: 'DEPT_ALL', dept_name: '전부서' }
+];
+
+const PROGRESS_STATUS_STYLES = {
+    not_started: 'border-[#555]/60 bg-white/[0.04] text-[#a1a1aa]',
+    in_progress: 'border-[#2997ff]/35 bg-[#2997ff]/10 text-[#60a5fa]',
+    completed: 'border-[#30d158]/35 bg-[#30d158]/10 text-[#4ade80]',
+    on_hold: 'border-[#f59e0b]/35 bg-[#f59e0b]/10 text-[#fbbf24]'
+};
 
 const getSeoulDateParts = (date = new Date()) => {
     const parts = new Intl.DateTimeFormat('en-US', {
@@ -53,6 +84,7 @@ const getTodayScheduleMarker = () => {
     return {
         dateLabel: `오늘 ${month}.${day}`,
         isoDate: `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`,
+        periodIndex,
         left: SCHEDULE_LABEL_COLUMN_WIDTH
             + ((periodIndex + periodProgress) * SCHEDULE_PERIOD_WIDTH)
     };
@@ -72,8 +104,34 @@ const normalizeDbItem = (item) => ({
     categoryMain: item.category_main,
     startPeriod: item.start_period,
     endPeriod: item.end_period,
-    milestonePeriod: item.milestone_period
+    milestonePeriod: item.milestone_period,
+    progressStatus: item.progress_status || DEFAULT_PROGRESS_STATUS,
+    actualCompletedDate: item.actual_completed_date || null,
+    updatedByName: item.updated_by_name || null,
+    updatedAt: item.updated_at || null
 });
+
+const getProgressStatusLabel = (status) => (
+    PROGRESS_STATUS_OPTIONS.find((option) => option.value === status)?.label || '미착수'
+);
+
+const getScheduleAttention = (item, currentPeriodIndex) => {
+    if (
+        item.itemType !== 'task'
+        || item.progressStatus === 'completed'
+        || currentPeriodIndex === null
+        || currentPeriodIndex === undefined
+    ) {
+        return null;
+    }
+
+    const closingPeriod = item.endPeriod || item.milestonePeriod;
+    const closingPeriodIndex = PERIOD_INDEX.get(closingPeriod);
+    if (closingPeriodIndex === undefined) return null;
+    if (closingPeriodIndex < currentPeriodIndex) return 'overdue';
+    if (closingPeriodIndex === currentPeriodIndex) return 'due_this_week';
+    return null;
+};
 
 const getScheduleState = (item) => {
     if (item.milestonePeriod) return 'milestone';
@@ -164,7 +222,235 @@ const SelectControl = ({ value, onChange, options, label }) => (
     </label>
 );
 
+const ScheduleEditModal = ({
+    item,
+    departments,
+    categories,
+    saving,
+    errorMessage,
+    onClose,
+    onSave
+}) => {
+    const initialLeadValue = item.leadDeptCode
+        || (item.leadLabel === 'CFT' ? 'SPECIAL_CFT' : '');
+    const [form, setForm] = useState({
+        displayName: item.displayName || '',
+        leadValue: initialLeadValue,
+        categoryMain: item.categoryMain || '',
+        startPeriod: item.startPeriod || '',
+        endPeriod: item.endPeriod || '',
+        milestonePeriod: item.milestonePeriod || '',
+        progressStatus: item.progressStatus || DEFAULT_PROGRESS_STATUS,
+        actualCompletedDate: item.actualCompletedDate || ''
+    });
+
+    const updateForm = (field, value) => {
+        setForm((current) => ({
+            ...current,
+            [field]: value,
+            ...(field === 'progressStatus' && value !== 'completed'
+                ? { actualCompletedDate: '' }
+                : {})
+        }));
+    };
+
+    const handleSubmit = (event) => {
+        event.preventDefault();
+        const selectedDepartment = departments.find(
+            (department) => department.dept_code === form.leadValue
+        );
+        onSave({
+            ...form,
+            leadDeptCode: form.leadValue && form.leadValue !== 'SPECIAL_CFT'
+                ? form.leadValue
+                : null,
+            leadLabel: selectedDepartment?.dept_name || '미정'
+        });
+    };
+
+    return (
+        <div
+            className="fixed inset-0 z-[9999] flex justify-end bg-black/60"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="schedule-edit-title"
+            data-schedule-edit-modal
+        >
+            <button
+                type="button"
+                className="absolute inset-0 cursor-default"
+                aria-label="일정 수정 닫기"
+                onClick={onClose}
+            />
+            <form
+                onSubmit={handleSubmit}
+                className="relative flex h-full w-[430px] flex-col border-l border-[#444] bg-[#20201f] shadow-[-16px_0_40px_rgba(0,0,0,0.35)]"
+            >
+                <div className="flex items-start justify-between border-b border-[#3a3a3a] px-6 py-5">
+                    <div>
+                        <div className="mb-1 font-mono text-[11px] font-bold text-[#60a5fa]">
+                            {item.sourceKey}
+                        </div>
+                        <h3 id="schedule-edit-title" className="text-[20px] font-bold text-white">
+                            일정 행 수정
+                        </h3>
+                        <p className="mt-1 text-[11px] text-[#86868B]">
+                            저장한 변경사항은 수정자와 함께 자동 기록됩니다.
+                        </p>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        className="flex h-8 w-8 items-center justify-center rounded-full border border-[#444] text-[18px] text-[#a1a1aa] hover:bg-white/5 hover:text-white"
+                        aria-label="닫기"
+                    >
+                        ×
+                    </button>
+                </div>
+
+                <div className="timeline-scrollbar flex-1 space-y-5 overflow-y-auto px-6 py-5">
+                    <label className="block">
+                        <span className="mb-2 block text-[12px] font-bold text-[#a1a1aa]">업무명</span>
+                        <input
+                            value={form.displayName}
+                            onChange={(event) => updateForm('displayName', event.target.value)}
+                            className="h-10 w-full rounded-[8px] border border-[#444] bg-[#292928] px-3 text-[13px] text-white outline-none focus:border-[#60a5fa]"
+                            required
+                        />
+                    </label>
+
+                    <div className="grid grid-cols-2 gap-3">
+                        <label className="block">
+                            <span className="mb-2 block text-[12px] font-bold text-[#a1a1aa]">주관 조직</span>
+                            <select
+                                value={form.leadValue}
+                                onChange={(event) => updateForm('leadValue', event.target.value)}
+                                className="h-10 w-full rounded-[8px] border border-[#444] bg-[#292928] px-3 text-[12px] text-white outline-none focus:border-[#60a5fa]"
+                            >
+                                {departments.map((department) => (
+                                    <option key={department.dept_code || 'unassigned'} value={department.dept_code}>
+                                        {department.dept_name}
+                                    </option>
+                                ))}
+                            </select>
+                        </label>
+                        <label className="block">
+                            <span className="mb-2 block text-[12px] font-bold text-[#a1a1aa]">업무분류</span>
+                            <input
+                                value={form.categoryMain}
+                                onChange={(event) => updateForm('categoryMain', event.target.value)}
+                                list="schedule-category-options"
+                                className="h-10 w-full rounded-[8px] border border-[#444] bg-[#292928] px-3 text-[12px] text-white outline-none focus:border-[#60a5fa]"
+                                required
+                            />
+                            <datalist id="schedule-category-options">
+                                {categories.map((category) => <option key={category} value={category} />)}
+                            </datalist>
+                        </label>
+                    </div>
+
+                    <div className="rounded-[12px] border border-[#393939] bg-[#252524] p-4">
+                        <div className="mb-3 text-[12px] font-bold text-[#a1a1aa]">수행 기간</div>
+                        <div className="grid grid-cols-2 gap-3">
+                            <label className="block">
+                                <span className="mb-1.5 block text-[10px] text-[#86868B]">시작</span>
+                                <select
+                                    value={form.startPeriod}
+                                    onChange={(event) => updateForm('startPeriod', event.target.value)}
+                                    className="h-9 w-full rounded-[7px] border border-[#444] bg-[#2b2b2a] px-2 text-[11px] text-white outline-none focus:border-[#60a5fa]"
+                                >
+                                    <option value="">일정 미정</option>
+                                    {IOTA_SCHEDULE_PERIODS.map((period) => (
+                                        <option key={period.key} value={period.key}>{period.label}</option>
+                                    ))}
+                                </select>
+                            </label>
+                            <label className="block">
+                                <span className="mb-1.5 block text-[10px] text-[#86868B]">종료</span>
+                                <select
+                                    value={form.endPeriod}
+                                    onChange={(event) => updateForm('endPeriod', event.target.value)}
+                                    className="h-9 w-full rounded-[7px] border border-[#444] bg-[#2b2b2a] px-2 text-[11px] text-white outline-none focus:border-[#60a5fa]"
+                                >
+                                    <option value="">일정 미정</option>
+                                    {IOTA_SCHEDULE_PERIODS.map((period) => (
+                                        <option key={period.key} value={period.key}>{period.label}</option>
+                                    ))}
+                                </select>
+                            </label>
+                        </div>
+                        <label className="mt-3 block">
+                            <span className="mb-1.5 block text-[10px] text-[#86868B]">마일스톤</span>
+                            <select
+                                value={form.milestonePeriod}
+                                onChange={(event) => updateForm('milestonePeriod', event.target.value)}
+                                className="h-9 w-full rounded-[7px] border border-[#444] bg-[#2b2b2a] px-2 text-[11px] text-white outline-none focus:border-[#60a5fa]"
+                            >
+                                <option value="">마일스톤 없음</option>
+                                {IOTA_SCHEDULE_PERIODS.map((period) => (
+                                    <option key={period.key} value={period.key}>{period.label}</option>
+                                ))}
+                            </select>
+                        </label>
+                    </div>
+
+                    <div className="rounded-[12px] border border-[#3f4852] bg-[#252b31] p-4">
+                        <label className="block">
+                            <span className="mb-2 block text-[12px] font-bold text-[#c7c7c2]">진행상태</span>
+                            <select
+                                value={form.progressStatus}
+                                onChange={(event) => updateForm('progressStatus', event.target.value)}
+                                className="h-10 w-full rounded-[8px] border border-[#4b5661] bg-[#20252a] px-3 text-[12px] font-bold text-white outline-none focus:border-[#60a5fa]"
+                            >
+                                {PROGRESS_STATUS_OPTIONS.map((status) => (
+                                    <option key={status.value} value={status.value}>{status.label}</option>
+                                ))}
+                            </select>
+                        </label>
+                        {form.progressStatus === 'completed' && (
+                            <label className="mt-3 block">
+                                <span className="mb-1.5 block text-[10px] text-[#a1a1aa]">실제 완료일</span>
+                                <input
+                                    type="date"
+                                    value={form.actualCompletedDate}
+                                    onChange={(event) => updateForm('actualCompletedDate', event.target.value)}
+                                    className="h-9 w-full rounded-[7px] border border-[#4b5661] bg-[#20252a] px-3 text-[12px] text-white outline-none focus:border-[#60a5fa]"
+                                />
+                            </label>
+                        )}
+                    </div>
+
+                    {errorMessage && (
+                        <div className="rounded-[8px] border border-[#ff5f57]/40 bg-[#ff5f57]/10 px-3 py-2 text-[11px] font-bold text-[#ff7b74]">
+                            {errorMessage}
+                        </div>
+                    )}
+                </div>
+
+                <div className="flex gap-2 border-t border-[#3a3a3a] px-6 py-4">
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        disabled={saving}
+                        className="h-10 flex-1 rounded-[8px] border border-[#444] text-[12px] font-bold text-[#a1a1aa] hover:bg-white/5 disabled:opacity-50"
+                    >
+                        취소
+                    </button>
+                    <button
+                        type="submit"
+                        disabled={saving}
+                        className="h-10 flex-1 rounded-[8px] border border-[#1f6fb2] bg-[#2997ff] text-[12px] font-bold text-white hover:bg-[#3ba1ff] disabled:cursor-wait disabled:opacity-60"
+                    >
+                        {saving ? '저장 중' : '변경 저장'}
+                    </button>
+                </div>
+            </form>
+        </div>
+    );
+};
+
 export default function PmoDetailedSchedule() {
+    const { memberInfo } = useAuth();
     const [items, setItems] = useState(IOTA_DETAILED_SCHEDULE_FALLBACK);
     const [dataSource, setDataSource] = useState('fallback');
     const [loading, setLoading] = useState(true);
@@ -173,11 +459,17 @@ export default function PmoDetailedSchedule() {
     const [selectedCategory, setSelectedCategory] = useState('전체');
     const [selectedLead, setSelectedLead] = useState('전체');
     const [selectedState, setSelectedState] = useState('전체');
+    const [departments, setDepartments] = useState(DEFAULT_SCHEDULE_DEPARTMENTS);
+    const [editingItem, setEditingItem] = useState(null);
+    const [savingItem, setSavingItem] = useState(false);
+    const [saveError, setSaveError] = useState('');
     const [expandedGroups, setExpandedGroups] = useState(() => new Set(
         IOTA_DETAILED_SCHEDULE_FALLBACK
             .filter((item) => item.itemType !== 'task')
             .map((item) => item.sourceKey)
     ));
+    const memberOrganization = getMemberIotaOrganization(memberInfo, '');
+    const canEditSchedule = ['기획추진', '사업2파트'].includes(memberOrganization);
 
     useEffect(() => {
         const timerId = window.setInterval(() => {
@@ -206,7 +498,11 @@ export default function PmoDetailedSchedule() {
                     category_main,
                     start_period,
                     end_period,
-                    milestone_period
+                    milestone_period,
+                    progress_status,
+                    actual_completed_date,
+                    updated_by_name,
+                    updated_at
                 `)
                 .eq('is_active', true)
                 .order('source_order', { ascending: true });
@@ -228,6 +524,34 @@ export default function PmoDetailedSchedule() {
         };
 
         loadSchedule();
+        return () => {
+            isMounted = false;
+        };
+    }, []);
+
+    useEffect(() => {
+        let isMounted = true;
+        const loadDepartments = async () => {
+            const { data, error } = await supabase
+                .schema('iota_v2')
+                .from('iota_departments')
+                .select('dept_code, dept_name')
+                .order('dept_name', { ascending: true });
+
+            if (!isMounted || error || !data?.length) return;
+            const merged = [
+                DEFAULT_SCHEDULE_DEPARTMENTS[0],
+                DEFAULT_SCHEDULE_DEPARTMENTS[1],
+                ...data
+            ].filter((department, index, allDepartments) => (
+                allDepartments.findIndex(
+                    (candidate) => candidate.dept_code === department.dept_code
+                ) === index
+            ));
+            setDepartments(merged);
+        };
+
+        loadDepartments();
         return () => {
             isMounted = false;
         };
@@ -344,6 +668,99 @@ export default function PmoDetailedSchedule() {
             else next.add(sourceKey);
             return next;
         });
+    };
+
+    const openScheduleEditor = (item) => {
+        if (!canEditSchedule || dataSource !== 'database' || item.itemType !== 'task') return;
+        setSaveError('');
+        setEditingItem(item);
+    };
+
+    const closeScheduleEditor = () => {
+        if (savingItem) return;
+        setSaveError('');
+        setEditingItem(null);
+    };
+
+    const saveScheduleItem = async (form) => {
+        const displayName = form.displayName.trim();
+        const categoryMain = form.categoryMain.trim();
+        const hasStart = Boolean(form.startPeriod);
+        const hasEnd = Boolean(form.endPeriod);
+        if (!displayName || !categoryMain) {
+            setSaveError('업무명과 업무분류를 입력해 주세요.');
+            return;
+        }
+        if (hasStart !== hasEnd) {
+            setSaveError('시작 주차와 종료 주차는 함께 설정하거나 함께 비워야 합니다.');
+            return;
+        }
+        if (
+            hasStart
+            && PERIOD_INDEX.get(form.startPeriod) > PERIOD_INDEX.get(form.endPeriod)
+        ) {
+            setSaveError('종료 주차는 시작 주차보다 빠를 수 없습니다.');
+            return;
+        }
+
+        setSavingItem(true);
+        setSaveError('');
+        const payload = {
+            task_name: displayName,
+            display_name: displayName,
+            lead_dept_code: form.leadDeptCode,
+            lead_label: form.leadLabel,
+            category_main: categoryMain,
+            start_period: form.startPeriod || null,
+            end_period: form.endPeriod || null,
+            milestone_period: form.milestonePeriod || null,
+            progress_status: form.progressStatus,
+            actual_completed_date: form.progressStatus === 'completed'
+                ? form.actualCompletedDate || null
+                : null
+        };
+
+        const { data, error } = await supabase
+            .schema('iota_v2')
+            .from('iota_schedule_items')
+            .update(payload)
+            .eq('source_key', editingItem.sourceKey)
+            .eq('item_type', 'task')
+            .select(`
+                source_key,
+                source_order,
+                item_type,
+                parent_source_key,
+                lv1,
+                lv2,
+                task_name,
+                display_name,
+                lead_dept_code,
+                lead_label,
+                category_main,
+                start_period,
+                end_period,
+                milestone_period,
+                progress_status,
+                actual_completed_date,
+                updated_by_name,
+                updated_at
+            `)
+            .single();
+
+        if (error || !data) {
+            console.error('Schedule item update failed.', error);
+            setSaveError(error?.message || '일정 변경사항을 저장하지 못했습니다.');
+            setSavingItem(false);
+            return;
+        }
+
+        const normalizedItem = normalizeDbItem(data);
+        setItems((current) => current.map((item) => (
+            item.sourceKey === normalizedItem.sourceKey ? normalizedItem : item
+        )));
+        setSavingItem(false);
+        setEditingItem(null);
     };
 
     const handleScheduleWheel = (event) => {
@@ -526,6 +943,11 @@ export default function PmoDetailedSchedule() {
                                 ? PERIOD_INDEX.get(item.endPeriod)
                                 : summary.endIndex;
                             const state = getScheduleState(item);
+                            const progressStatus = item.progressStatus || DEFAULT_PROGRESS_STATUS;
+                            const scheduleAttention = getScheduleAttention(
+                                item,
+                                todayMarker?.periodIndex
+                            );
                             const hasSchedule = startIndex !== null && startIndex !== undefined;
                             const periodLabel = !hasSchedule
                                 ? isGroup ? '' : '일정 미정'
@@ -542,9 +964,13 @@ export default function PmoDetailedSchedule() {
                                             ? 'bg-[#2c3440] hover:bg-[#343e4d]'
                                             : item.itemType === 'lv2'
                                                 ? 'bg-[#2d2d2c] hover:bg-[#363635]'
-                                                : state === 'unscheduled'
-                                                    ? 'bg-[#342727] hover:bg-[#422e2e]'
-                                                    : 'bg-[#272726] hover:bg-[#30302f]'
+                                                : scheduleAttention === 'overdue'
+                                                    ? 'bg-[#3a2525] hover:bg-[#482c2c]'
+                                                    : scheduleAttention === 'due_this_week'
+                                                        ? 'bg-[#393020] hover:bg-[#453923]'
+                                                        : state === 'unscheduled'
+                                                            ? 'bg-[#342727] hover:bg-[#422e2e]'
+                                                            : 'bg-[#272726] hover:bg-[#30302f]'
                                     }`}
                                 >
                                     <td className={`sticky left-0 z-10 w-[450px] min-w-[450px] px-3 shadow-[inset_-1px_0_0_#464646] ${
@@ -552,9 +978,13 @@ export default function PmoDetailedSchedule() {
                                             ? 'bg-[#2c3440] group-hover:bg-[#343e4d]'
                                             : item.itemType === 'lv2'
                                                 ? 'bg-[#2d2d2c] group-hover:bg-[#363635]'
-                                                : state === 'unscheduled'
-                                                    ? 'bg-[#342727] group-hover:bg-[#422e2e]'
-                                                    : 'bg-[#272726] group-hover:bg-[#30302f]'
+                                                : scheduleAttention === 'overdue'
+                                                    ? 'bg-[#3a2525] group-hover:bg-[#482c2c]'
+                                                    : scheduleAttention === 'due_this_week'
+                                                        ? 'bg-[#393020] group-hover:bg-[#453923]'
+                                                        : state === 'unscheduled'
+                                                            ? 'bg-[#342727] group-hover:bg-[#422e2e]'
+                                                            : 'bg-[#272726] group-hover:bg-[#30302f]'
                                     }`}>
                                         <div className="flex items-center justify-between gap-3">
                                             <div
@@ -579,13 +1009,25 @@ export default function PmoDetailedSchedule() {
                                                             ? 'text-[14px] font-bold text-white'
                                                             : item.itemType === 'lv2'
                                                                 ? 'text-[13px] font-bold text-[#E5E5E5]'
-                                                                : 'text-[13px] font-medium text-[#c7c7c2]'
+                                                                : scheduleAttention === 'overdue'
+                                                                    ? 'text-[13px] font-bold text-[#ff7169]'
+                                                                    : scheduleAttention === 'due_this_week'
+                                                                        ? 'text-[13px] font-bold text-[#f6ad3c]'
+                                                                        : 'text-[13px] font-medium text-[#c7c7c2]'
                                                     }`}>
                                                         {item.displayName}
                                                     </span>
                                                     <span className="shrink-0 font-mono text-[9px] text-[#68686d]">
                                                         {item.sourceKey}
                                                     </span>
+                                                    {item.itemType === 'task' && (
+                                                        <span className={`shrink-0 rounded-full border px-1.5 py-0.5 text-[8px] font-bold ${
+                                                            PROGRESS_STATUS_STYLES[progressStatus]
+                                                            || PROGRESS_STATUS_STYLES.not_started
+                                                        }`}>
+                                                            {getProgressStatusLabel(progressStatus)}
+                                                        </span>
+                                                    )}
                                                 </div>
                                                 <div className="mt-0 flex items-center gap-2 pl-7 text-[10px] text-[#86868B]">
                                                     {showLead && (
@@ -619,6 +1061,16 @@ export default function PmoDetailedSchedule() {
                                                 }`}>
                                                     {periodLabel}
                                                 </div>
+                                                {canEditSchedule && dataSource === 'database' && item.itemType === 'task' && (
+                                                    <button
+                                                        type="button"
+                                                        data-schedule-edit-source={item.sourceKey}
+                                                        onClick={() => openScheduleEditor(item)}
+                                                        className="mt-0.5 text-[9px] font-bold text-[#60a5fa] hover:text-[#93c5fd]"
+                                                    >
+                                                        수정
+                                                    </button>
+                                                )}
                                             </div>
                                         </div>
                                     </td>
@@ -680,6 +1132,19 @@ export default function PmoDetailedSchedule() {
                 <div className="flex h-[120px] items-center justify-center text-[13px] text-[#86868B]">
                     조건에 맞는 일정이 없습니다.
                 </div>
+            )}
+
+            {editingItem && (
+                <ScheduleEditModal
+                    key={editingItem.sourceKey}
+                    item={editingItem}
+                    departments={departments}
+                    categories={filterOptions.category}
+                    saving={savingItem}
+                    errorMessage={saveError}
+                    onClose={closeScheduleEditor}
+                    onSave={saveScheduleItem}
+                />
             )}
         </section>
     );
