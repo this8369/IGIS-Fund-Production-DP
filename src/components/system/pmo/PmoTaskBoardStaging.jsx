@@ -1256,6 +1256,25 @@ const normalizeProjectName = (name) => {
     return name;
 };
 
+const normalizeSearchText = (value) => {
+    if (value === null || value === undefined) return '';
+    if (Array.isArray(value)) return value.map(normalizeSearchText).join(' ');
+    if (typeof value === 'object') {
+        return [
+            value.name,
+            value.staff_name,
+            value.dept_name,
+            value.stakeholder_name,
+            value.label,
+            value.title
+        ]
+            .filter(item => item !== null && item !== undefined)
+            .map(normalizeSearchText)
+            .join(' ');
+    }
+    return String(value).toLowerCase();
+};
+
 // Gate string mapping (UI/Excel <-> DB)
 const gateMapToDb = (uiVal) => {
     if (!uiVal) return 'G0';
@@ -2548,25 +2567,23 @@ export default function PmoTaskBoardStaging({ searchQuery: propSearchQuery, setS
             }
 
             // Search query match
-            if (searchQuery.trim() !== '') {
-                const query = searchQuery.toLowerCase().trim();
-                const extPartyName = t.external_party?.name || t.external_party || fallbackItem.external_party || '';
-                const nextActionVal = t.next_action || fallbackItem.next_action || '';
-                const supportNeeded = t.support_needed || fallbackItem.support_needed || '';
-                
-                const nameMatch = (t.task_name || '').toLowerCase().includes(query);
-                const assigneeMatch = (t.assignee || '').toLowerCase().includes(query);
-                const leadDeptMatch = leadDeptName.toLowerCase().includes(query);
-                const coopDeptMatch = coopDeptNames.toLowerCase().includes(query);
-                const extPartyMatch = (extPartyName || '').toLowerCase().includes(query);
-                const purposeMatch = (t.task_purpose || fallbackItem.task_purpose || '').toLowerCase().includes(query);
-                const deliverablesMatch = (t.deliverables || fallbackItem.deliverables || '').toLowerCase().includes(query);
-                const nextActionMatch = (nextActionVal || '').toLowerCase().includes(query);
-                const supportMatch = (supportNeeded || '').toLowerCase().includes(query);
-                
-                if (!nameMatch && !assigneeMatch && !leadDeptMatch && !coopDeptMatch && !extPartyMatch && !purposeMatch && !deliverablesMatch && !nextActionMatch && !supportMatch) {
-                    return false;
-                }
+            const query = normalizeSearchText(searchQuery).trim();
+            if (query !== '') {
+                const searchTargets = [
+                    t.task_name,
+                    t.assignee,
+                    leadDeptName,
+                    coopDeptNames,
+                    t.external_party,
+                    t.external_party_code,
+                    fallbackItem.external_party,
+                    t.task_purpose || fallbackItem.task_purpose,
+                    t.deliverables || fallbackItem.deliverables,
+                    t.next_action || fallbackItem.next_action,
+                    t.support_needed || fallbackItem.support_needed
+                ];
+
+                if (!searchTargets.some(value => normalizeSearchText(value).includes(query))) return false;
             }
 
             return true;
