@@ -464,7 +464,6 @@ export default function PmoDetailedSchedule() {
     const [selectedCategory, setSelectedCategory] = useState('전체');
     const [selectedLead, setSelectedLead] = useState('전체');
     const [selectedState, setSelectedState] = useState('전체');
-    const [editMode, setEditMode] = useState(false);
     const [departments, setDepartments] = useState(DEFAULT_SCHEDULE_DEPARTMENTS);
     const [editingItem, setEditingItem] = useState(null);
     const [savingItem, setSavingItem] = useState(false);
@@ -823,6 +822,12 @@ export default function PmoDetailedSchedule() {
         setLinkingSourceKey(null);
     };
 
+    const openScheduleEditorFromTaskLink = () => {
+        if (!linkingItem || !canEditSchedule) return;
+        setLinkingSourceKey(null);
+        openScheduleEditor(linkingItem);
+    };
+
     const linkExistingTask = async (taskId) => {
         if (!canEditSchedule || !linkingItem?.scheduleItemId) return;
         setLinkBusy(true);
@@ -1054,27 +1059,6 @@ export default function PmoDetailedSchedule() {
                         </p>
                     </div>
                     <div className="flex shrink-0 items-center gap-2">
-                        {canEditSchedule && dataSource === 'database' && (
-                            <>
-                                {editMode && (
-                                    <span className="text-[10px] font-bold text-[#60a5fa]">
-                                        업무 행을 클릭하세요
-                                    </span>
-                                )}
-                                <button
-                                    type="button"
-                                    onClick={() => setEditMode((current) => !current)}
-                                    aria-pressed={editMode}
-                                    className={`h-[34px] rounded-[8px] border px-3 text-[11px] font-bold transition-colors ${
-                                        editMode
-                                            ? 'border-[#1f6fb2] bg-[#2997ff] text-white'
-                                            : 'border-[#465463] bg-[#2b333c] text-[#93c5fd] hover:border-[#5b7690] hover:bg-[#303c48]'
-                                    }`}
-                                >
-                                    {editMode ? '수정 종료' : '일정 수정'}
-                                </button>
-                            </>
-                        )}
                         <SelectControl
                             label="대분류"
                             value={selectedCategory}
@@ -1228,15 +1212,10 @@ export default function PmoDetailedSchedule() {
                                 : scheduleAttention === 'due_this_week'
                                     ? 'schedule-attention-title-due'
                                     : '';
-                            const isEditableTask = canEditSchedule
-                                && dataSource === 'database'
-                                && editMode
-                                && item.itemType === 'task';
                             const itemLinks = item.scheduleItemId
                                 ? linksByScheduleItemId.get(item.scheduleItemId) || []
                                 : [];
                             const canOpenTaskLink = dataSource === 'database'
-                                && !editMode
                                 && item.itemType === 'task'
                                 && Boolean(item.scheduleItemId);
                             const hasSchedule = startIndex !== null && startIndex !== undefined;
@@ -1251,12 +1230,11 @@ export default function PmoDetailedSchedule() {
                                 <tr
                                     key={item.sourceKey}
                                     onClick={() => {
-                                        if (isEditableTask) openScheduleEditor(item);
-                                        else if (canOpenTaskLink) openTaskLinkModal(item);
+                                        if (canOpenTaskLink) openTaskLinkModal(item);
                                     }}
                                     data-task-link-source={canOpenTaskLink ? item.sourceKey : undefined}
                                     className={`group h-[48px] border-b border-[#393939] ${attentionAnimationClass} ${
-                                        isEditableTask || canOpenTaskLink ? 'cursor-pointer' : ''
+                                        canOpenTaskLink ? 'cursor-pointer' : ''
                                     } ${
                                         item.itemType === 'lv1'
                                             ? 'bg-[#2c3440] hover:bg-[#343e4d]'
@@ -1371,20 +1349,6 @@ export default function PmoDetailedSchedule() {
                                                 }`}>
                                                     {periodLabel}
                                                 </div>
-                                                {isEditableTask && (
-                                                    <button
-                                                        type="button"
-                                                        data-schedule-edit-source={item.sourceKey}
-                                                        onClick={(event) => {
-                                                            event.stopPropagation();
-                                                            openScheduleEditor(item);
-                                                        }}
-                                                        className="mt-0.5 inline-flex items-center gap-1 rounded-[5px] border border-[#2997ff]/35 bg-[#2997ff]/10 px-1.5 py-0.5 text-[9px] font-bold text-[#60a5fa] hover:border-[#2997ff]/60 hover:text-[#93c5fd]"
-                                                    >
-                                                        <span aria-hidden="true">✎</span>
-                                                        수정
-                                                    </button>
-                                                )}
                                             </div>
                                         </div>
                                     </td>
@@ -1475,6 +1439,7 @@ export default function PmoDetailedSchedule() {
                     onLink={linkExistingTask}
                     onUnlink={unlinkTask}
                     onCreateTask={createAndLinkTask}
+                    onEditSchedule={openScheduleEditorFromTaskLink}
                     onOpenTask={openTaskDetail}
                 />
             )}

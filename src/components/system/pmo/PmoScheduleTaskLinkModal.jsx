@@ -253,6 +253,64 @@ const TaskCard = ({
     </div>
 );
 
+const LinkedTaskList = ({
+    linkedTasks,
+    canManage,
+    busy,
+    onUnlink,
+    onOpenTask
+}) => (
+    <section>
+        <div className="mb-2 flex items-center justify-between">
+            <h4 className="text-[12px] font-bold text-white">연결된 통합업무</h4>
+            <span className="text-[10px] font-bold text-[#4ade80]">{linkedTasks.length}건</span>
+        </div>
+        {linkedTasks.length > 0 ? (
+            <div className="space-y-2">
+                {linkedTasks.map(({ link, task }) => (
+                    <div
+                        key={link.id}
+                        className="flex items-center gap-3 rounded-[12px] border border-[#30d158]/25 bg-[#30d158]/5 px-3 py-3"
+                    >
+                        <button
+                            type="button"
+                            onClick={() => onOpenTask(task.id)}
+                            className="min-w-0 flex-1 text-left"
+                        >
+                            <div className="flex items-center gap-2">
+                                <span className="font-mono text-[10px] font-black text-[#60a5fa]">{task.displayId}</span>
+                                <span className="truncate text-[13px] font-bold text-white">{task.taskName}</span>
+                                <span className="ml-auto shrink-0 text-[10px] font-bold text-[#60a5fa]">상세보기 →</span>
+                            </div>
+                            <div className="mt-1 text-[9px] text-[#86868B]">
+                                {task.categoryMain} · {task.leadDeptName || '주관 미정'}
+                            </div>
+                        </button>
+                        {canManage && (
+                            <button
+                                type="button"
+                                disabled={busy}
+                                onClick={() => onUnlink(link.id)}
+                                data-unlink-id={link.id}
+                                className="h-8 shrink-0 rounded-[7px] border border-[#555] px-2.5 text-[10px] font-bold text-[#a1a1aa] hover:border-[#ff5f57]/50 hover:text-[#ff7169] disabled:opacity-50"
+                            >
+                                연결 해제
+                            </button>
+                        )}
+                    </div>
+                ))}
+            </div>
+        ) : (
+            <div className="rounded-[12px] border border-dashed border-[#454545] bg-white/[0.02] px-4 py-6 text-center">
+                <p className="text-[12px] font-bold text-[#a1a1aa]">연결된 통합업무가 없습니다.</p>
+                {canManage && (
+                    <p className="mt-1 text-[10px] text-[#68686d]">아래 관리 메뉴에서 기존 업무를 연결하거나 새로 등록할 수 있습니다.</p>
+                )}
+            </div>
+        )}
+    </section>
+);
+
 export default function PmoScheduleTaskLinkModal({
     item,
     tasks,
@@ -266,9 +324,10 @@ export default function PmoScheduleTaskLinkModal({
     onLink,
     onUnlink,
     onCreateTask,
+    onEditSchedule,
     onOpenTask
 }) {
-    const [activeTab, setActiveTab] = useState('existing');
+    const [activeTab, setActiveTab] = useState('overview');
     const [searchTerm, setSearchTerm] = useState('');
     const validDepartments = useMemo(
         () => departments.filter((department) => (
@@ -284,7 +343,7 @@ export default function PmoScheduleTaskLinkModal({
     const [form, setForm] = useState(() => buildInitialForm(item, validDepartmentCodes));
 
     useEffect(() => {
-        setActiveTab('existing');
+        setActiveTab('overview');
         setSearchTerm('');
         setForm(buildInitialForm(item, validDepartmentCodes));
     }, [item, validDepartmentCodes]);
@@ -358,7 +417,7 @@ export default function PmoScheduleTaskLinkModal({
             <button
                 type="button"
                 className="absolute inset-0 cursor-default"
-                aria-label="통합업무 연결 닫기"
+                aria-label="일정 업무 상세 닫기"
                 onClick={onClose}
             />
             <div className="relative flex max-h-[90vh] w-full max-w-[900px] flex-col overflow-hidden rounded-[20px] border border-[#454545] bg-[#20201f] shadow-[0_24px_70px_rgba(0,0,0,0.55)]">
@@ -373,9 +432,12 @@ export default function PmoScheduleTaskLinkModal({
                             )}
                         </div>
                         <h3 id="schedule-task-link-title" className="mt-1 text-[19px] font-bold text-white">
-                            통합업무 연결
+                            일정 업무 상세
                         </h3>
-                        <p className="mt-1 truncate text-[12px] text-[#a1a1aa]">{item.displayName}</p>
+                        <p className="mt-1 truncate text-[14px] font-bold text-[#d8d8d4]">{item.displayName}</p>
+                        <p className="mt-1 text-[10px] text-[#86868B]">
+                            {item.leadLabel || '주관 미정'} · {item.categoryMain || '업무분류 미정'}
+                        </p>
                     </div>
                     <button
                         type="button"
@@ -388,25 +450,20 @@ export default function PmoScheduleTaskLinkModal({
                     </button>
                 </div>
 
-                <div className="flex border-b border-[#393939] bg-[#242423] px-5 pt-3">
-                    {[
-                        ['existing', '기존 업무 연결'],
-                        ['new', '새 업무 등록']
-                    ].map(([value, label]) => (
+                {activeTab !== 'overview' && (
+                    <div className="flex h-12 items-center gap-3 border-b border-[#393939] bg-[#242423] px-5">
                         <button
-                            key={value}
                             type="button"
-                            onClick={() => setActiveTab(value)}
-                            className={`h-10 border-b-2 px-4 text-[12px] font-bold ${
-                                activeTab === value
-                                    ? 'border-[#2997ff] text-[#7cc0ff]'
-                                    : 'border-transparent text-[#86868B] hover:text-[#c7c7c2]'
-                            }`}
+                            onClick={() => setActiveTab('overview')}
+                            className="h-8 rounded-[7px] border border-[#444] px-3 text-[10px] font-bold text-[#a1a1aa] hover:bg-white/5 hover:text-white"
                         >
-                            {label}
+                            ← 요약으로
                         </button>
-                    ))}
-                </div>
+                        <span className="text-[12px] font-bold text-white">
+                            {activeTab === 'existing' ? '기존 업무 연결' : '새 업무 등록'}
+                        </span>
+                    </div>
+                )}
 
                 {errorMessage && (
                     <div className="mx-5 mt-4 rounded-[8px] border border-[#ff5f57]/40 bg-[#ff5f57]/10 px-3 py-2 text-[11px] font-bold text-[#ff7b74]">
@@ -414,49 +471,72 @@ export default function PmoScheduleTaskLinkModal({
                     </div>
                 )}
 
-                {activeTab === 'existing' ? (
+                {activeTab === 'overview' ? (
                     <div className="timeline-scrollbar min-h-0 flex-1 overflow-y-auto p-5">
-                        {linkedTasks.length > 0 && (
-                            <section>
-                                <h4 className="mb-2 text-[12px] font-bold text-white">현재 연결된 업무</h4>
-                                <div className="space-y-2">
-                                    {linkedTasks.map(({ link, task }) => (
-                                        <div
-                                            key={link.id}
-                                            className="flex items-center gap-3 rounded-[12px] border border-[#30d158]/25 bg-[#30d158]/5 px-3 py-3"
-                                        >
-                                            <button
-                                                type="button"
-                                                onClick={() => onOpenTask(task.id)}
-                                                className="min-w-0 flex-1 text-left"
-                                            >
-                                                <div className="flex items-center gap-2">
-                                                    <span className="font-mono text-[10px] font-black text-[#60a5fa]">{task.displayId}</span>
-                                                    <span className="truncate text-[13px] font-bold text-white">{task.taskName}</span>
-                                                </div>
-                                                <div className="mt-1 text-[9px] text-[#86868B]">
-                                                    {task.categoryMain} · {task.leadDeptName || '주관 미정'}
-                                                </div>
-                                            </button>
-                                            {canManage && (
-                                                <button
-                                                    type="button"
-                                                    disabled={busy}
-                                                    onClick={() => onUnlink(link.id)}
-                                                    data-unlink-id={link.id}
-                                                    className="h-8 shrink-0 rounded-[7px] border border-[#555] px-2.5 text-[10px] font-bold text-[#a1a1aa] hover:border-[#ff5f57]/50 hover:text-[#ff7169] disabled:opacity-50"
-                                                >
-                                                    연결 해제
-                                                </button>
-                                            )}
-                                        </div>
-                                    ))}
+                        <LinkedTaskList
+                            linkedTasks={linkedTasks}
+                            canManage={canManage}
+                            busy={busy}
+                            onUnlink={onUnlink}
+                            onOpenTask={onOpenTask}
+                        />
+
+                        {canManage && (
+                            <section className="mt-5">
+                                <div className="mb-2">
+                                    <h4 className="text-[12px] font-bold text-white">관리 메뉴</h4>
+                                    <p className="mt-0.5 text-[10px] text-[#86868B]">필요한 작업 하나를 선택하세요.</p>
+                                </div>
+                                <div className="grid grid-cols-3 gap-2.5">
+                                    <button
+                                        type="button"
+                                        data-admin-action="existing"
+                                        onClick={() => setActiveTab('existing')}
+                                        className="rounded-[13px] border border-[#36658d] bg-[#2997ff]/10 p-4 text-left transition-colors hover:border-[#4f86b5] hover:bg-[#2997ff]/15"
+                                    >
+                                        <span className="block text-[13px] font-bold text-[#7cc0ff]">기존 업무 연결</span>
+                                        <span className="mt-1.5 block text-[10px] leading-[1.5] text-[#8e8e93]">
+                                            추천 또는 검색으로 통합업무를 찾습니다.
+                                        </span>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        data-admin-action="new"
+                                        onClick={() => setActiveTab('new')}
+                                        className="rounded-[13px] border border-[#347247] bg-[#30d158]/8 p-4 text-left transition-colors hover:border-[#478f5d] hover:bg-[#30d158]/12"
+                                    >
+                                        <span className="block text-[13px] font-bold text-[#4ade80]">새 업무 등록</span>
+                                        <span className="mt-1.5 block text-[10px] leading-[1.5] text-[#8e8e93]">
+                                            새 통합업무를 만들고 즉시 연결합니다.
+                                        </span>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        data-admin-action="schedule"
+                                        onClick={onEditSchedule}
+                                        className="rounded-[13px] border border-[#806329] bg-[#f59e0b]/8 p-4 text-left transition-colors hover:border-[#a17b31] hover:bg-[#f59e0b]/12"
+                                    >
+                                        <span className="block text-[13px] font-bold text-[#fbbf24]">일정 수정</span>
+                                        <span className="mt-1.5 block text-[10px] leading-[1.5] text-[#8e8e93]">
+                                            업무명·주관·기간·진행상태를 수정합니다.
+                                        </span>
+                                    </button>
                                 </div>
                             </section>
                         )}
+                    </div>
+                ) : activeTab === 'existing' ? (
+                    <div className="timeline-scrollbar min-h-0 flex-1 overflow-y-auto p-5">
+                        <LinkedTaskList
+                            linkedTasks={linkedTasks}
+                            canManage={canManage}
+                            busy={busy}
+                            onUnlink={onUnlink}
+                            onOpenTask={onOpenTask}
+                        />
 
-                        {canManage && recommendations.length > 0 && (
-                            <section className={linkedTasks.length ? 'mt-5' : ''}>
+                        {recommendations.length > 0 && (
+                            <section className="mt-5">
                                 <div className="mb-2">
                                     <h4 className="text-[12px] font-bold text-white">추천 업무</h4>
                                     <p className="mt-0.5 text-[10px] text-[#86868B]">
