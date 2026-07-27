@@ -4212,12 +4212,26 @@ export default function PmoTaskBoardStaging({
                 const projObj = projects.find(p => p.project_code === t.project_code);
 
                 return (
-                    <div className="fixed inset-0 z-[100000] overflow-hidden pointer-events-none">
-                        {/* Backdrop Click-outside Catcher (Interception disabled, handled by mousedown listener) */}
-                        <div 
-                            className="absolute inset-0 bg-transparent pointer-events-none"
-                        />
-                        <div ref={drawerRef} className="absolute inset-y-0 right-0 max-w-full flex pl-10 pointer-events-auto">
+                    <div
+                        className="fixed inset-0 z-[100000] overflow-hidden pointer-events-none"
+                        data-pmo-task-detail-overlay
+                    >
+                        {embeddedDetailOnly ? (
+                            <button
+                                type="button"
+                                aria-label="업무 상세 닫기"
+                                onClick={closeSelectedTaskDetail}
+                                className="absolute inset-0 cursor-default bg-transparent pointer-events-auto"
+                                data-pmo-task-detail-backdrop
+                            />
+                        ) : (
+                            <div className="absolute inset-0 bg-transparent pointer-events-none" />
+                        )}
+                        <div
+                            ref={drawerRef}
+                            className="absolute inset-y-0 right-0 max-w-full flex pl-10 pointer-events-auto"
+                            data-pmo-task-detail-drawer
+                        >
                             <form onSubmit={handleFormSubmit} className="w-screen max-w-[550px] transform transition-transform duration-300 ease-in-out shadow-2xl flex flex-col h-full bg-[#1c1c1e]/95 backdrop-blur-xl border-l border-[#3c3c3c]/80 text-white select-text">
                                 {/* Header */}
                                 <div className="px-[10px] py-3 border-b border-[#3c3c3c]/80 flex items-center justify-between bg-[#1c1c1e]/80 sticky top-0 z-20">
@@ -4240,7 +4254,9 @@ export default function PmoTaskBoardStaging({
                                     <button 
                                         type="button"
                                         onClick={closeSelectedTaskDetail}
-                                        className="text-[#86868B] hover:text-white text-[20px] font-bold transition-colors cursor-pointer"
+                                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[#86868B] hover:bg-white/5 hover:text-white text-[20px] font-bold transition-colors cursor-pointer"
+                                        aria-label="업무 상세 닫기"
+                                        data-pmo-task-detail-close
                                     >
                                         ✕
                                     </button>
@@ -4443,6 +4459,7 @@ export default function PmoTaskBoardStaging({
                                         type="button"
                                         onClick={closeSelectedTaskDetail}
                                         className="px-4 py-2 rounded-[8px] bg-white/5 hover:bg-white/10 text-white border border-[#3c3c3c] text-[13px] font-bold cursor-pointer transition-all"
+                                        data-pmo-task-detail-close
                                     >
                                         닫기
                                     </button>
