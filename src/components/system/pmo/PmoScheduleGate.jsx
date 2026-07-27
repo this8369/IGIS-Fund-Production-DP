@@ -360,7 +360,6 @@ export default function PmoScheduleGate() {
                             Gate 요약
                         </button>
                     </div>
-                    <p className="text-[15px] text-[#86868B] leading-none">마일스톤의 최종 목표는 준공 및 Take-out/운영 전환입니다.</p>
                 </div>
             </div>
 

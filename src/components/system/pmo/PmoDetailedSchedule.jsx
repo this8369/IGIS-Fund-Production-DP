@@ -440,7 +440,7 @@ export default function PmoDetailedSchedule() {
                                             : item.itemType === 'lv2'
                                                 ? 'bg-[#2d2d2c] hover:bg-[#363635]'
                                                 : state === 'unscheduled'
-                                                    ? 'bg-[#2d2727] hover:bg-[#382c2c]'
+                                                    ? 'bg-[#342727] hover:bg-[#422e2e]'
                                                     : 'bg-[#272726] hover:bg-[#30302f]'
                                     }`}
                                 >
@@ -450,7 +450,7 @@ export default function PmoDetailedSchedule() {
                                             : item.itemType === 'lv2'
                                                 ? 'bg-[#2d2d2c] group-hover:bg-[#363635]'
                                                 : state === 'unscheduled'
-                                                    ? 'bg-[#2d2727] group-hover:bg-[#382c2c]'
+                                                    ? 'bg-[#342727] group-hover:bg-[#422e2e]'
                                                     : 'bg-[#272726] group-hover:bg-[#30302f]'
                                     }`}>
                                         <div className="flex items-center justify-between gap-3">
@@ -488,12 +488,16 @@ export default function PmoDetailedSchedule() {
                                                     {showLead && (
                                                         <>
                                                             <span className={item.leadLabel === '미정' ? 'font-bold text-[#ff5f57]' : ''}>
+                                                                <span className="font-normal text-[#6e6e73]">주관 : </span>
                                                                 {item.leadLabel}
                                                             </span>
                                                             <span className="text-[#4f4f52]">·</span>
                                                         </>
                                                     )}
-                                                    <span>{item.categoryMain}</span>
+                                                    <span>
+                                                        <span className="text-[#6e6e73]">업무분류 : </span>
+                                                        {item.categoryMain}
+                                                    </span>
                                                     {isGroup && (
                                                         <>
                                                             <span className="text-[#4f4f52]">·</span>
