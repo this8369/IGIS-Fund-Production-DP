@@ -311,6 +311,7 @@ export default function PmoScheduleGate() {
             <style>{`
                 .timeline-scrollbar::-webkit-scrollbar {
                     height: 8px;
+                    width: 8px;
                 }
                 .timeline-scrollbar::-webkit-scrollbar-track {
                     background: rgba(255, 255, 255, 0.02);

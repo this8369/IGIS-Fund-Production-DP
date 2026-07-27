@@ -346,6 +346,30 @@ export default function PmoDetailedSchedule() {
         });
     };
 
+    const handleScheduleWheel = (event) => {
+        const scrollContainer = event.currentTarget;
+        const atTop = scrollContainer.scrollTop <= 0;
+        const atBottom = scrollContainer.scrollTop + scrollContainer.clientHeight
+            >= scrollContainer.scrollHeight - 1;
+        const shouldContinuePageScroll = (event.deltaY < 0 && atTop)
+            || (event.deltaY > 0 && atBottom);
+
+        if (shouldContinuePageScroll) {
+            event.preventDefault();
+            let pageScrollContainer = scrollContainer.parentElement;
+            while (pageScrollContainer) {
+                const style = window.getComputedStyle(pageScrollContainer);
+                const canScrollVertically = /(auto|scroll)/.test(style.overflowY)
+                    && pageScrollContainer.scrollHeight > pageScrollContainer.clientHeight;
+                if (canScrollVertically) break;
+                pageScrollContainer = pageScrollContainer.parentElement;
+            }
+
+            if (pageScrollContainer) pageScrollContainer.scrollBy(0, event.deltaY);
+            else window.scrollBy(0, event.deltaY);
+        }
+    };
+
     return (
         <section className="w-full overflow-hidden rounded-[32px] border border-[#3c3c3c] bg-[#272726] shadow-sm">
             <div className="border-b border-[#3c3c3c] bg-[#242423] px-5 py-4">
@@ -431,8 +455,29 @@ export default function PmoDetailedSchedule() {
                 </div>
             </div>
 
-            <div className="timeline-scrollbar w-full overflow-x-auto">
+            <div
+                data-schedule-scroll
+                className="timeline-scrollbar max-h-[calc(100vh-250px)] w-full overflow-auto"
+                onWheel={handleScheduleWheel}
+            >
                 <div className="relative w-[1602px] min-w-[1602px]">
+                {todayMarker && (
+                    <div className="pointer-events-none sticky top-0 z-[40] -mb-[58px] h-[58px]">
+                        <div
+                            className="absolute top-[4px] flex h-[22px] -translate-x-1/2 items-center whitespace-nowrap rounded-[5px] border border-[#fbbf24]/70 bg-[#F59E0B] px-2 text-[10px] font-black tracking-[-0.02em] text-[#1c1c1e] shadow-[0_2px_8px_rgba(245,158,11,0.3)]"
+                            style={{ left: `${todayMarker.left}px` }}
+                        >
+                            {todayMarker.dateLabel}
+                        </div>
+                        <div
+                            aria-hidden="true"
+                            className="absolute top-[25px] h-[33px] -translate-x-1/2"
+                            style={{ left: `${todayMarker.left}px` }}
+                        >
+                            <div className="absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-[#F59E0B]/80 shadow-[0_0_5px_rgba(245,158,11,0.3)]" />
+                        </div>
+                    </div>
+                )}
                 <table className="w-full table-fixed border-collapse text-left">
                     <thead className="sticky top-0 z-20">
                         <tr className="h-[30px] border-b border-[#3c3c3c] bg-[#242423]">
@@ -618,30 +663,15 @@ export default function PmoDetailedSchedule() {
                     </tbody>
                 </table>
                 {todayMarker && (
-                    <>
-                        <div
-                            className="pointer-events-none absolute top-[4px] z-[40] flex h-[22px] -translate-x-1/2 items-center whitespace-nowrap rounded-[5px] border border-[#fbbf24]/70 bg-[#F59E0B] px-2 text-[10px] font-black tracking-[-0.02em] text-[#1c1c1e] shadow-[0_2px_8px_rgba(245,158,11,0.3)]"
-                            style={{ left: `${todayMarker.left}px` }}
-                        >
-                            {todayMarker.dateLabel}
-                        </div>
-                        <div
-                            aria-hidden="true"
-                            className="pointer-events-none absolute top-[25px] z-[25] h-[33px] -translate-x-1/2"
-                            style={{ left: `${todayMarker.left}px` }}
-                        >
-                            <div className="absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-[#F59E0B]/80 shadow-[0_0_5px_rgba(245,158,11,0.3)]" />
-                        </div>
-                        <div
-                            aria-hidden="true"
-                            data-current-date={todayMarker.isoDate}
-                            className="pointer-events-none absolute bottom-0 top-[58px] z-[5] -translate-x-1/2"
-                            style={{ left: `${todayMarker.left}px` }}
-                        >
-                            <div className="absolute inset-y-0 left-1/2 w-[5px] -translate-x-1/2 bg-[#F59E0B]/10" />
-                            <div className="absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-[#F59E0B]/80 shadow-[0_0_5px_rgba(245,158,11,0.3)]" />
-                        </div>
-                    </>
+                    <div
+                        aria-hidden="true"
+                        data-current-date={todayMarker.isoDate}
+                        className="pointer-events-none absolute bottom-0 top-[58px] z-[5] -translate-x-1/2"
+                        style={{ left: `${todayMarker.left}px` }}
+                    >
+                        <div className="absolute inset-y-0 left-1/2 w-[5px] -translate-x-1/2 bg-[#F59E0B]/10" />
+                        <div className="absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-[#F59E0B]/80 shadow-[0_0_5px_rgba(245,158,11,0.3)]" />
+                    </div>
                 )}
                 </div>
             </div>
