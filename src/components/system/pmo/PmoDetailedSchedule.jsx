@@ -121,7 +121,6 @@ export default function PmoDetailedSchedule() {
     const [dataSource, setDataSource] = useState('fallback');
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
-    const [selectedLv1, setSelectedLv1] = useState('전체');
     const [selectedCategory, setSelectedCategory] = useState('전체');
     const [selectedLead, setSelectedLead] = useState('전체');
     const [selectedState, setSelectedState] = useState('전체');
@@ -195,7 +194,6 @@ export default function PmoDetailedSchedule() {
     }), [items, taskItems]);
 
     const filterOptions = useMemo(() => ({
-        lv1: [...new Set(items.map((item) => item.lv1).filter(Boolean))],
         category: [...new Set(items.map((item) => item.categoryMain).filter(Boolean))],
         lead: [...new Set(items
             .map((item) => item.leadLabel)
@@ -205,7 +203,6 @@ export default function PmoDetailedSchedule() {
     const includedKeys = useMemo(() => {
         const normalizedSearch = searchTerm.trim().toLowerCase();
         const hasFilters = normalizedSearch
-            || selectedLv1 !== '전체'
             || selectedCategory !== '전체'
             || selectedLead !== '전체'
             || selectedState !== '전체';
@@ -232,7 +229,6 @@ export default function PmoDetailedSchedule() {
             ].filter(Boolean).join(' ').toLowerCase();
             const state = getScheduleState(item);
             const matches = (!normalizedSearch || searchable.includes(normalizedSearch))
-                && (selectedLv1 === '전체' || item.lv1 === selectedLv1)
                 && (selectedCategory === '전체' || item.categoryMain === selectedCategory)
                 && (selectedLead === '전체' || item.leadLabel === selectedLead)
                 && (
@@ -254,7 +250,6 @@ export default function PmoDetailedSchedule() {
                 item.categoryMain
             ].filter(Boolean).join(' ').toLowerCase();
             const matchesCommonFilters = (!normalizedSearch || searchable.includes(normalizedSearch))
-                && (selectedLv1 === '전체' || item.lv1 === selectedLv1)
                 && (selectedCategory === '전체' || item.categoryMain === selectedCategory)
                 && (selectedLead === '전체' || item.leadLabel === selectedLead);
             const matchesSearchGroup = Boolean(normalizedSearch) && matchesCommonFilters;
@@ -278,7 +273,6 @@ export default function PmoDetailedSchedule() {
         searchTerm,
         selectedCategory,
         selectedLead,
-        selectedLv1,
         selectedState
     ]);
 
@@ -296,66 +290,72 @@ export default function PmoDetailedSchedule() {
         });
     };
 
-    const expandAll = () => setExpandedGroups(new Set(
-        items.filter((item) => item.itemType !== 'task').map((item) => item.sourceKey)
-    ));
-    const collapseDetails = () => setExpandedGroups(new Set(
-        items.filter((item) => item.itemType === 'lv1').map((item) => item.sourceKey)
-    ));
-
     return (
         <section className="w-full overflow-hidden rounded-[32px] border border-[#3c3c3c] bg-[#272726] shadow-sm">
             <div className="border-b border-[#3c3c3c] bg-[#242423] px-5 py-4">
-                <div className="flex items-start justify-between gap-5">
-                    <div>
-                        <div className="flex items-center gap-2.5">
-                            <h2 className="text-[17px] font-bold text-white">2026 통합 상세 일정</h2>
-                            <span className={`rounded-full border px-2 py-0.5 text-[10px] font-bold ${
-                                dataSource === 'database'
-                                    ? 'border-[#2997ff]/30 bg-[#2997ff]/10 text-[#60a5fa]'
-                                    : 'border-[#555]/60 bg-white/[0.04] text-[#a1a1aa]'
-                            }`}>
-                                {loading ? '불러오는 중' : dataSource === 'database' ? 'DB 일정 원장' : '기본 일정 데이터'}
-                            </span>
-                        </div>
-                        <p className="mt-1 text-[12px] text-[#86868B]">
+                <div className="flex items-center justify-between gap-5">
+                    <div className="flex min-w-0 items-center gap-2.5">
+                        <h2 className="shrink-0 text-[17px] font-bold text-white">2026 통합 상세 일정</h2>
+                        <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-bold ${
+                            dataSource === 'database'
+                                ? 'border-[#2997ff]/30 bg-[#2997ff]/10 text-[#60a5fa]'
+                                : 'border-[#555]/60 bg-white/[0.04] text-[#a1a1aa]'
+                        }`}>
+                            {loading ? '불러오는 중' : dataSource === 'database' ? 'DB 일정 원장' : '기본 일정 데이터'}
+                        </span>
+                        <p className="truncate text-[12px] text-[#86868B]">
                             대분류·중분류를 펼쳐 세부업무의 주차별 수행기간과 마일스톤을 확인합니다.
                         </p>
                     </div>
-                    <div className="flex items-center gap-2">
-                        <button
-                            type="button"
-                            onClick={collapseDetails}
-                            className="h-[32px] rounded-[8px] border border-[#3c3c3c] bg-[#2c2c2b] px-3 text-[11px] font-bold text-[#a1a1aa] transition-colors hover:text-white"
-                        >
-                            세부 접기
-                        </button>
-                        <button
-                            type="button"
-                            onClick={expandAll}
-                            className="h-[32px] rounded-[8px] border border-[#3c3c3c] bg-[#2c2c2b] px-3 text-[11px] font-bold text-[#a1a1aa] transition-colors hover:text-white"
-                        >
-                            모두 펼치기
-                        </button>
+                    <div className="flex shrink-0 items-center gap-2">
+                        <SelectControl
+                            label="대분류"
+                            value={selectedCategory}
+                            onChange={setSelectedCategory}
+                            options={[
+                                { value: '전체', label: '대분류 전체' },
+                                ...filterOptions.category.map((value) => ({ value, label: value }))
+                            ]}
+                        />
+                        <SelectControl
+                            label="주관"
+                            value={selectedLead}
+                            onChange={setSelectedLead}
+                            options={[
+                                { value: '전체', label: '주관 전체' },
+                                ...filterOptions.lead.map((value) => ({ value, label: value }))
+                            ]}
+                        />
+                        <SelectControl
+                            label="일정 상태"
+                            value={selectedState}
+                            onChange={setSelectedState}
+                            options={[
+                                { value: '전체', label: '일정 전체' },
+                                { value: 'scheduled', label: '일정 등록' },
+                                { value: 'unscheduled', label: '일정 미정' },
+                                { value: 'milestone', label: '마일스톤' }
+                            ]}
+                        />
                     </div>
                 </div>
 
-                <div className="mt-4 grid grid-cols-4 gap-2">
+                <div className="mt-4 flex items-stretch gap-2">
                     {[
                         ['전체 세부업무', statistics.total, '#E5E5E5'],
                         ['일정 등록', statistics.scheduled, '#60a5fa'],
                         ['일정 미정', statistics.unscheduled, '#ff5f57'],
                         ['마일스톤', statistics.milestones, '#F59E0B']
                     ].map(([label, value, color]) => (
-                        <div key={label} className="rounded-[10px] border border-[#363636] bg-[#2b2b2a] px-3 py-2">
+                        <div
+                            key={label}
+                            className="flex h-[46px] min-w-[132px] flex-1 items-center justify-between gap-3 rounded-[10px] border border-[#363636] bg-[#2b2b2a] px-3"
+                        >
                             <div className="text-[12px] font-bold text-[#86868B]">{label}</div>
-                            <div className="mt-0.5 text-[22px] font-bold" style={{ color }}>{value}</div>
+                            <div className="text-[22px] font-bold" style={{ color }}>{value}</div>
                         </div>
                     ))}
-                </div>
-
-                <div className="mt-3 flex items-center gap-2">
-                    <div className="relative h-[34px] min-w-[220px] flex-1">
+                    <div className="relative h-[46px] min-w-[280px] flex-[1.6]">
                         <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[13px] text-[#86868B]">⌕</span>
                         <input
                             value={searchTerm}
@@ -364,44 +364,6 @@ export default function PmoDetailedSchedule() {
                             className="h-full w-full rounded-[8px] border border-[#3c3c3c] bg-[#2c2c2b] pl-8 pr-3 text-[12px] text-white outline-none placeholder:text-[#68686d] focus:border-[#2997ff]"
                         />
                     </div>
-                    <SelectControl
-                        label="대분류"
-                        value={selectedLv1}
-                        onChange={setSelectedLv1}
-                        options={[
-                            { value: '전체', label: '대분류 전체' },
-                            ...filterOptions.lv1.map((value) => ({ value, label: value }))
-                        ]}
-                    />
-                    <SelectControl
-                        label="연동분류"
-                        value={selectedCategory}
-                        onChange={setSelectedCategory}
-                        options={[
-                            { value: '전체', label: '연동분류 전체' },
-                            ...filterOptions.category.map((value) => ({ value, label: value }))
-                        ]}
-                    />
-                    <SelectControl
-                        label="주관"
-                        value={selectedLead}
-                        onChange={setSelectedLead}
-                        options={[
-                            { value: '전체', label: '주관 전체' },
-                            ...filterOptions.lead.map((value) => ({ value, label: value }))
-                        ]}
-                    />
-                    <SelectControl
-                        label="일정 상태"
-                        value={selectedState}
-                        onChange={setSelectedState}
-                        options={[
-                            { value: '전체', label: '일정 전체' },
-                            { value: 'scheduled', label: '일정 등록' },
-                            { value: 'unscheduled', label: '일정 미정' },
-                            { value: 'milestone', label: '마일스톤' }
-                        ]}
-                    />
                 </div>
             </div>
 
