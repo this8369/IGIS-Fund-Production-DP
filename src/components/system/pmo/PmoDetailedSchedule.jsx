@@ -464,20 +464,20 @@ export default function PmoDetailedSchedule() {
                             return (
                                 <tr
                                     key={item.sourceKey}
-                                    className={`h-[48px] border-b border-[#393939] ${
+                                    className={`group h-[48px] border-b border-[#393939] ${
                                         item.itemType === 'lv1'
-                                            ? 'bg-[#2c3440]'
+                                            ? 'bg-[#2c3440] hover:bg-[#343e4d]'
                                             : item.itemType === 'lv2'
-                                                ? 'bg-[#2d2d2c]'
+                                                ? 'bg-[#2d2d2c] hover:bg-[#363635]'
                                                 : 'bg-[#272726] hover:bg-[#30302f]'
                                     }`}
                                 >
                                     <td className={`sticky left-0 z-10 w-[450px] min-w-[450px] border-r border-[#464646] px-3 ${
                                         item.itemType === 'lv1'
-                                            ? 'bg-[#2c3440]'
+                                            ? 'bg-[#2c3440] group-hover:bg-[#343e4d]'
                                             : item.itemType === 'lv2'
-                                                ? 'bg-[#2d2d2c]'
-                                                : 'bg-[#272726]'
+                                                ? 'bg-[#2d2d2c] group-hover:bg-[#363635]'
+                                                : 'bg-[#272726] group-hover:bg-[#30302f]'
                                     }`}>
                                         <div className="flex items-center justify-between gap-3">
                                             <div
@@ -510,7 +510,7 @@ export default function PmoDetailedSchedule() {
                                                         {item.sourceKey}
                                                     </span>
                                                 </div>
-                                                <div className="mt-0.5 flex items-center gap-2 pl-7 text-[10px] text-[#86868B]">
+                                                <div className="mt-0 flex items-center gap-2 pl-7 text-[10px] text-[#86868B]">
                                                     {showLead && (
                                                         <>
                                                             <span className={item.leadLabel === '미정' ? 'font-bold text-[#ff5f57]' : ''}>
