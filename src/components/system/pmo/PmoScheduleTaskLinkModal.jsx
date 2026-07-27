@@ -196,12 +196,12 @@ const TaskCard = ({
         className="rounded-[13px] border border-[#40454b] bg-[#282b2f] p-3.5"
     >
         <div className="flex items-center gap-2">
-            <span className="font-mono text-[11px] font-black text-[#60a5fa]">{task.displayId}</span>
-            <span className="rounded-[5px] border border-[#494949] bg-[#343434] px-1.5 py-0.5 text-[9px] font-bold text-[#d8d8d4]">
+            <span className="font-mono text-[13px] font-black text-[#60a5fa]">{task.displayId}</span>
+            <span className="rounded-[5px] border border-[#494949] bg-[#343434] px-1.5 py-0.5 text-[11px] font-bold text-[#d8d8d4]">
                 {PROJECT_LABELS[task.projectCode] || task.projectCode || 'IOTA 공통'}
             </span>
-            <span className="text-[10px] font-bold text-[#a1a1aa]">{task.status || '미착수'}</span>
-            <span className="ml-auto text-[11px] font-black text-[#ff7169]">
+            <span className="text-[12px] font-bold text-[#a1a1aa]">{task.status || '미착수'}</span>
+            <span className="ml-auto text-[13px] font-black text-[#ff7169]">
                 우선 {task.priorityScore ?? 0}
             </span>
         </div>
@@ -210,8 +210,8 @@ const TaskCard = ({
             onClick={() => onOpenTask(task.id)}
             className="mt-2 block w-full text-left"
         >
-            <div className="text-[15px] font-bold leading-[1.45] text-white">{task.taskName}</div>
-            <div className="mt-1 flex flex-wrap gap-x-2 gap-y-1 text-[10px] text-[#8e8e93]">
+            <div className="text-[17px] font-bold leading-[1.45] text-white">{task.taskName}</div>
+            <div className="mt-1 flex flex-wrap gap-x-2 gap-y-1 text-[12px] text-[#8e8e93]">
                 <span>{task.categoryMain || '업무분류 미정'}</span>
                 <span>·</span>
                 <span>{task.leadDeptName || '주관 미정'}</span>
@@ -228,7 +228,7 @@ const TaskCard = ({
                 {reasons.map((reason) => (
                     <span
                         key={reason}
-                        className="rounded-[5px] border border-[#3f5265] bg-[#2997ff]/5 px-1.5 py-0.5 text-[9px] font-bold text-[#93c5fd]"
+                        className="rounded-[5px] border border-[#3f5265] bg-[#2997ff]/5 px-1.5 py-0.5 text-[11px] font-bold text-[#93c5fd]"
                     >
                         {reason}
                     </span>
@@ -241,7 +241,7 @@ const TaskCard = ({
                 disabled={linked || busy || !canManage}
                 onClick={() => onLink(task.id)}
                 data-link-task-id={task.id}
-                className={`h-8 rounded-[7px] border px-3 text-[10px] font-bold ${
+                className={`h-8 rounded-[7px] border px-3 text-[12px] font-bold ${
                     linked
                         ? 'border-[#30d158]/35 bg-[#30d158]/10 text-[#4ade80]'
                         : 'border-[#296da8] bg-[#2997ff]/15 text-[#7cc0ff] hover:bg-[#2997ff]/25 disabled:cursor-not-allowed disabled:opacity-45'
@@ -263,7 +263,7 @@ const LinkedTaskList = ({
     <section>
         <div className="mb-2 flex items-center justify-between">
             <h4 className="text-[12px] font-bold text-white">연결된 통합업무</h4>
-            <span className="text-[10px] font-bold text-[#4ade80]">{linkedTasks.length}건</span>
+            <span className="text-[12px] font-bold text-[#4ade80]">{linkedTasks.length}건</span>
         </div>
         {linkedTasks.length > 0 ? (
             <div className="space-y-2">
@@ -278,11 +278,11 @@ const LinkedTaskList = ({
                             className="min-w-0 flex-1 text-left"
                         >
                             <div className="flex items-center gap-2">
-                                <span className="font-mono text-[10px] font-black text-[#60a5fa]">{task.displayId}</span>
-                                <span className="truncate text-[13px] font-bold text-white">{task.taskName}</span>
-                                <span className="ml-auto shrink-0 text-[10px] font-bold text-[#60a5fa]">상세보기 →</span>
+                                <span className="font-mono text-[12px] font-black text-[#60a5fa]">{task.displayId}</span>
+                                <span className="truncate text-[15px] font-bold text-white">{task.taskName}</span>
+                                <span className="ml-auto shrink-0 text-[12px] font-bold text-[#60a5fa]">상세보기 →</span>
                             </div>
-                            <div className="mt-1 text-[9px] text-[#86868B]">
+                            <div className="mt-1 text-[11px] text-[#86868B]">
                                 {task.categoryMain} · {task.leadDeptName || '주관 미정'}
                             </div>
                         </button>
@@ -292,7 +292,7 @@ const LinkedTaskList = ({
                                 disabled={busy}
                                 onClick={() => onUnlink(link.id)}
                                 data-unlink-id={link.id}
-                                className="h-8 shrink-0 rounded-[7px] border border-[#555] px-2.5 text-[10px] font-bold text-[#a1a1aa] hover:border-[#ff5f57]/50 hover:text-[#ff7169] disabled:opacity-50"
+                                className="h-8 shrink-0 rounded-[7px] border border-[#555] px-2.5 text-[12px] font-bold text-[#a1a1aa] hover:border-[#ff5f57]/50 hover:text-[#ff7169] disabled:opacity-50"
                             >
                                 연결 해제
                             </button>
@@ -302,9 +302,9 @@ const LinkedTaskList = ({
             </div>
         ) : (
             <div className="rounded-[12px] border border-dashed border-[#454545] bg-white/[0.02] px-4 py-6 text-center">
-                <p className="text-[12px] font-bold text-[#a1a1aa]">연결된 통합업무가 없습니다.</p>
+                <p className="text-[14px] font-bold text-[#a1a1aa]">연결된 통합업무가 없습니다.</p>
                 {canManage && (
-                    <p className="mt-1 text-[10px] text-[#68686d]">아래 관리 메뉴에서 기존 업무를 연결하거나 새로 등록할 수 있습니다.</p>
+                    <p className="mt-1 text-[12px] text-[#68686d]">아래 관리 메뉴에서 기존 업무를 연결하거나 새로 등록할 수 있습니다.</p>
                 )}
             </div>
         )}
@@ -329,6 +329,7 @@ export default function PmoScheduleTaskLinkModal({
 }) {
     const [activeTab, setActiveTab] = useState('overview');
     const [searchTerm, setSearchTerm] = useState('');
+    const isLeadUnassigned = !item.leadLabel || item.leadLabel === '미정';
     const validDepartments = useMemo(
         () => departments.filter((department) => (
             department.dept_code
@@ -417,26 +418,28 @@ export default function PmoScheduleTaskLinkModal({
             <button
                 type="button"
                 className="absolute inset-0 cursor-default"
-                aria-label="일정 업무 상세 닫기"
+                aria-label={`${item.displayName} 닫기`}
                 onClick={onClose}
             />
             <div className="relative flex max-h-[90vh] w-full max-w-[900px] flex-col overflow-hidden rounded-[20px] border border-[#454545] bg-[#20201f] shadow-[0_24px_70px_rgba(0,0,0,0.55)]">
                 <div className="flex items-start justify-between border-b border-[#393939] px-5 py-4">
                     <div className="min-w-0">
                         <div className="flex items-center gap-2">
-                            <span className="font-mono text-[11px] font-bold text-[#60a5fa]">{item.sourceKey}</span>
+                            <span className="font-mono text-[13px] font-bold text-[#60a5fa]">{item.sourceKey}</span>
                             {links.length > 0 && (
-                                <span className="rounded-full border border-[#30d158]/35 bg-[#30d158]/10 px-2 py-0.5 text-[9px] font-bold text-[#4ade80]">
+                                <span className="rounded-full border border-[#30d158]/35 bg-[#30d158]/10 px-2 py-0.5 text-[11px] font-bold text-[#4ade80]">
                                     연결 {links.length}
                                 </span>
                             )}
                         </div>
-                        <h3 id="schedule-task-link-title" className="mt-1 text-[19px] font-bold text-white">
-                            일정 업무 상세
+                        <h3 id="schedule-task-link-title" className="mt-2 truncate text-[22px] font-bold text-white">
+                            {item.displayName}
                         </h3>
-                        <p className="mt-1 truncate text-[14px] font-bold text-[#d8d8d4]">{item.displayName}</p>
-                        <p className="mt-1 text-[10px] text-[#86868B]">
-                            {item.leadLabel || '주관 미정'} · {item.categoryMain || '업무분류 미정'}
+                        <p className="mt-1.5 flex items-center gap-2 text-[12px] text-[#86868B]">
+                            <span className={isLeadUnassigned ? 'font-bold text-[#ff5f57]' : ''}>
+                                {isLeadUnassigned ? '주관부서미정' : item.leadLabel}
+                            </span>
+                            <span>{item.categoryMain || '업무분류 미정'}</span>
                         </p>
                     </div>
                     <button
@@ -455,7 +458,7 @@ export default function PmoScheduleTaskLinkModal({
                         <button
                             type="button"
                             onClick={() => setActiveTab('overview')}
-                            className="h-8 rounded-[7px] border border-[#444] px-3 text-[10px] font-bold text-[#a1a1aa] hover:bg-white/5 hover:text-white"
+                            className="h-8 rounded-[7px] border border-[#444] px-3 text-[12px] font-bold text-[#a1a1aa] hover:bg-white/5 hover:text-white"
                         >
                             ← 요약으로
                         </button>
@@ -466,7 +469,7 @@ export default function PmoScheduleTaskLinkModal({
                 )}
 
                 {errorMessage && (
-                    <div className="mx-5 mt-4 rounded-[8px] border border-[#ff5f57]/40 bg-[#ff5f57]/10 px-3 py-2 text-[11px] font-bold text-[#ff7b74]">
+                    <div className="mx-5 mt-4 rounded-[8px] border border-[#ff5f57]/40 bg-[#ff5f57]/10 px-3 py-2 text-[13px] font-bold text-[#ff7b74]">
                         {errorMessage}
                     </div>
                 )}
@@ -485,7 +488,7 @@ export default function PmoScheduleTaskLinkModal({
                             <section className="mt-5">
                                 <div className="mb-2">
                                     <h4 className="text-[12px] font-bold text-white">관리 메뉴</h4>
-                                    <p className="mt-0.5 text-[10px] text-[#86868B]">필요한 작업 하나를 선택하세요.</p>
+                                    <p className="mt-0.5 text-[12px] text-[#86868B]">필요한 작업 하나를 선택하세요.</p>
                                 </div>
                                 <div className="grid grid-cols-3 gap-2.5">
                                     <button
@@ -495,7 +498,7 @@ export default function PmoScheduleTaskLinkModal({
                                         className="rounded-[13px] border border-[#36658d] bg-[#2997ff]/10 p-4 text-left transition-colors hover:border-[#4f86b5] hover:bg-[#2997ff]/15"
                                     >
                                         <span className="block text-[13px] font-bold text-[#7cc0ff]">기존 업무 연결</span>
-                                        <span className="mt-1.5 block text-[10px] leading-[1.5] text-[#8e8e93]">
+                                        <span className="mt-1.5 block text-[12px] leading-[1.5] text-[#8e8e93]">
                                             추천 또는 검색으로 통합업무를 찾습니다.
                                         </span>
                                     </button>
@@ -506,7 +509,7 @@ export default function PmoScheduleTaskLinkModal({
                                         className="rounded-[13px] border border-[#347247] bg-[#30d158]/8 p-4 text-left transition-colors hover:border-[#478f5d] hover:bg-[#30d158]/12"
                                     >
                                         <span className="block text-[13px] font-bold text-[#4ade80]">새 업무 등록</span>
-                                        <span className="mt-1.5 block text-[10px] leading-[1.5] text-[#8e8e93]">
+                                        <span className="mt-1.5 block text-[12px] leading-[1.5] text-[#8e8e93]">
                                             새 통합업무를 만들고 즉시 연결합니다.
                                         </span>
                                     </button>
@@ -517,7 +520,7 @@ export default function PmoScheduleTaskLinkModal({
                                         className="rounded-[13px] border border-[#806329] bg-[#f59e0b]/8 p-4 text-left transition-colors hover:border-[#a17b31] hover:bg-[#f59e0b]/12"
                                     >
                                         <span className="block text-[13px] font-bold text-[#fbbf24]">일정 수정</span>
-                                        <span className="mt-1.5 block text-[10px] leading-[1.5] text-[#8e8e93]">
+                                        <span className="mt-1.5 block text-[12px] leading-[1.5] text-[#8e8e93]">
                                             업무명·주관·기간·진행상태를 수정합니다.
                                         </span>
                                     </button>
@@ -539,7 +542,7 @@ export default function PmoScheduleTaskLinkModal({
                             <section className="mt-5">
                                 <div className="mb-2">
                                     <h4 className="text-[12px] font-bold text-white">추천 업무</h4>
-                                    <p className="mt-0.5 text-[10px] text-[#86868B]">
+                                    <p className="mt-0.5 text-[12px] text-[#86868B]">
                                         업무명·주관 조직·업무분류·프로젝트 문맥을 기준으로 제안합니다.
                                     </p>
                                 </div>
@@ -564,7 +567,7 @@ export default function PmoScheduleTaskLinkModal({
                             <div className="mb-2 flex items-end justify-between gap-4">
                                 <div>
                                     <h4 className="text-[12px] font-bold text-white">전체 통합업무</h4>
-                                    <p className="mt-0.5 text-[10px] text-[#86868B]">
+                                    <p className="mt-0.5 text-[12px] text-[#86868B]">
                                         검색하지 않아도 전체 업무를 우선순위 순으로 표시합니다.
                                     </p>
                                 </div>
@@ -574,7 +577,7 @@ export default function PmoScheduleTaskLinkModal({
                                         value={searchTerm}
                                         onChange={(event) => setSearchTerm(event.target.value)}
                                         placeholder="업무명·담당자·주관·분류 검색"
-                                        className="h-9 w-full rounded-[8px] border border-[#444] bg-[#292929] pl-9 pr-3 text-[11px] text-white outline-none placeholder:text-[#68686d] focus:border-[#2997ff]"
+                                        className="h-9 w-full rounded-[8px] border border-[#444] bg-[#292929] pl-9 pr-3 text-[13px] text-white outline-none placeholder:text-[#68686d] focus:border-[#2997ff]"
                                     />
                                 </label>
                             </div>
@@ -592,7 +595,7 @@ export default function PmoScheduleTaskLinkModal({
                                 ))}
                             </div>
                             {!filteredTasks.length && (
-                                <div className="rounded-[12px] border border-[#3c3c3c] py-8 text-center text-[11px] text-[#86868B]">
+                                <div className="rounded-[12px] border border-[#3c3c3c] py-8 text-center text-[13px] text-[#86868B]">
                                     검색 조건에 맞는 통합업무가 없습니다.
                                 </div>
                             )}
@@ -602,11 +605,11 @@ export default function PmoScheduleTaskLinkModal({
                     <form onSubmit={submitNewTask} className="timeline-scrollbar min-h-0 flex-1 overflow-y-auto">
                         <div className="grid grid-cols-2 gap-4 p-5">
                             <label className="block">
-                                <span className="mb-1.5 block text-[10px] font-bold text-[#a1a1aa]">프로젝트</span>
+                                <span className="mb-1.5 block text-[12px] font-bold text-[#a1a1aa]">프로젝트</span>
                                 <select
                                     value={form.projectCode}
                                     onChange={(event) => updateForm('projectCode', event.target.value)}
-                                    className="h-10 w-full rounded-[8px] border border-[#444] bg-[#292929] px-3 text-[12px] text-white outline-none focus:border-[#2997ff]"
+                                    className="h-10 w-full rounded-[8px] border border-[#444] bg-[#292929] px-3 text-[14px] text-white outline-none focus:border-[#2997ff]"
                                 >
                                     {projects.map((project) => (
                                         <option key={project.project_code} value={project.project_code}>
@@ -616,11 +619,11 @@ export default function PmoScheduleTaskLinkModal({
                                 </select>
                             </label>
                             <label className="block">
-                                <span className="mb-1.5 block text-[10px] font-bold text-[#a1a1aa]">업무분류</span>
+                                <span className="mb-1.5 block text-[12px] font-bold text-[#a1a1aa]">업무분류</span>
                                 <select
                                     value={form.categoryMain}
                                     onChange={(event) => updateForm('categoryMain', event.target.value)}
-                                    className="h-10 w-full rounded-[8px] border border-[#444] bg-[#292929] px-3 text-[12px] text-white outline-none focus:border-[#2997ff]"
+                                    className="h-10 w-full rounded-[8px] border border-[#444] bg-[#292929] px-3 text-[14px] text-white outline-none focus:border-[#2997ff]"
                                 >
                                     {CATEGORY_OPTIONS.map((category) => (
                                         <option key={category} value={category}>{category}</option>
@@ -628,38 +631,38 @@ export default function PmoScheduleTaskLinkModal({
                                 </select>
                             </label>
                             <label className="col-span-2 block">
-                                <span className="mb-1.5 block text-[10px] font-bold text-[#a1a1aa]">업무명</span>
+                                <span className="mb-1.5 block text-[12px] font-bold text-[#a1a1aa]">업무명</span>
                                 <input
                                     required
                                     value={form.taskName}
                                     onChange={(event) => updateForm('taskName', event.target.value)}
-                                    className="h-10 w-full rounded-[8px] border border-[#444] bg-[#292929] px-3 text-[13px] font-bold text-white outline-none focus:border-[#2997ff]"
+                                    className="h-10 w-full rounded-[8px] border border-[#444] bg-[#292929] px-3 text-[15px] font-bold text-white outline-none focus:border-[#2997ff]"
                                 />
                             </label>
                             <label className="block">
-                                <span className="mb-1.5 block text-[10px] font-bold text-[#a1a1aa]">업무 목적</span>
+                                <span className="mb-1.5 block text-[12px] font-bold text-[#a1a1aa]">업무 목적</span>
                                 <textarea
                                     value={form.taskPurpose}
                                     onChange={(event) => updateForm('taskPurpose', event.target.value)}
                                     rows={3}
-                                    className="w-full resize-none rounded-[8px] border border-[#444] bg-[#292929] px-3 py-2 text-[11px] leading-[1.6] text-white outline-none focus:border-[#2997ff]"
+                                    className="w-full resize-none rounded-[8px] border border-[#444] bg-[#292929] px-3 py-2 text-[13px] leading-[1.6] text-white outline-none focus:border-[#2997ff]"
                                 />
                             </label>
                             <label className="block">
-                                <span className="mb-1.5 block text-[10px] font-bold text-[#a1a1aa]">필요 산출물</span>
+                                <span className="mb-1.5 block text-[12px] font-bold text-[#a1a1aa]">필요 산출물</span>
                                 <textarea
                                     value={form.deliverables}
                                     onChange={(event) => updateForm('deliverables', event.target.value)}
                                     rows={3}
-                                    className="w-full resize-none rounded-[8px] border border-[#444] bg-[#292929] px-3 py-2 text-[11px] leading-[1.6] text-white outline-none focus:border-[#2997ff]"
+                                    className="w-full resize-none rounded-[8px] border border-[#444] bg-[#292929] px-3 py-2 text-[13px] leading-[1.6] text-white outline-none focus:border-[#2997ff]"
                                 />
                             </label>
                             <label className="block">
-                                <span className="mb-1.5 block text-[10px] font-bold text-[#a1a1aa]">주관 조직</span>
+                                <span className="mb-1.5 block text-[12px] font-bold text-[#a1a1aa]">주관 조직</span>
                                 <select
                                     value={form.leadDeptCode}
                                     onChange={(event) => updateForm('leadDeptCode', event.target.value)}
-                                    className="h-10 w-full rounded-[8px] border border-[#444] bg-[#292929] px-3 text-[12px] text-white outline-none focus:border-[#2997ff]"
+                                    className="h-10 w-full rounded-[8px] border border-[#444] bg-[#292929] px-3 text-[14px] text-white outline-none focus:border-[#2997ff]"
                                 >
                                     <option value="">미정</option>
                                     {validDepartments.map((department) => (
@@ -670,20 +673,20 @@ export default function PmoScheduleTaskLinkModal({
                                 </select>
                             </label>
                             <label className="block">
-                                <span className="mb-1.5 block text-[10px] font-bold text-[#a1a1aa]">담당자</span>
+                                <span className="mb-1.5 block text-[12px] font-bold text-[#a1a1aa]">담당자</span>
                                 <input
                                     value={form.assignee}
                                     onChange={(event) => updateForm('assignee', event.target.value)}
                                     placeholder="미정"
-                                    className="h-10 w-full rounded-[8px] border border-[#444] bg-[#292929] px-3 text-[12px] text-white outline-none placeholder:text-[#68686d] focus:border-[#2997ff]"
+                                    className="h-10 w-full rounded-[8px] border border-[#444] bg-[#292929] px-3 text-[14px] text-white outline-none placeholder:text-[#68686d] focus:border-[#2997ff]"
                                 />
                             </label>
                             <label className="block">
-                                <span className="mb-1.5 block text-[10px] font-bold text-[#a1a1aa]">최종 목표축</span>
+                                <span className="mb-1.5 block text-[12px] font-bold text-[#a1a1aa]">최종 목표축</span>
                                 <select
                                     value={form.targetAxis}
                                     onChange={(event) => updateForm('targetAxis', event.target.value)}
-                                    className="h-10 w-full rounded-[8px] border border-[#444] bg-[#292929] px-3 text-[12px] text-white outline-none focus:border-[#2997ff]"
+                                    className="h-10 w-full rounded-[8px] border border-[#444] bg-[#292929] px-3 text-[14px] text-white outline-none focus:border-[#2997ff]"
                                 >
                                     {TARGET_AXIS_OPTIONS.map((targetAxis) => (
                                         <option key={targetAxis} value={targetAxis}>{targetAxis}</option>
@@ -691,20 +694,20 @@ export default function PmoScheduleTaskLinkModal({
                                 </select>
                             </label>
                             <label className="block">
-                                <span className="mb-1.5 block text-[10px] font-bold text-[#a1a1aa]">마감기한</span>
+                                <span className="mb-1.5 block text-[12px] font-bold text-[#a1a1aa]">마감기한</span>
                                 <input
                                     type="date"
                                     value={form.dueDate}
                                     onChange={(event) => updateForm('dueDate', event.target.value)}
-                                    className="h-10 w-full rounded-[8px] border border-[#444] bg-[#292929] px-3 text-[12px] text-white outline-none focus:border-[#2997ff]"
+                                    className="h-10 w-full rounded-[8px] border border-[#444] bg-[#292929] px-3 text-[14px] text-white outline-none focus:border-[#2997ff]"
                                 />
                             </label>
                             <label className="block">
-                                <span className="mb-1.5 block text-[10px] font-bold text-[#a1a1aa]">상태</span>
+                                <span className="mb-1.5 block text-[12px] font-bold text-[#a1a1aa]">상태</span>
                                 <select
                                     value={form.status}
                                     onChange={(event) => updateForm('status', event.target.value)}
-                                    className="h-10 w-full rounded-[8px] border border-[#444] bg-[#292929] px-3 text-[12px] text-white outline-none focus:border-[#2997ff]"
+                                    className="h-10 w-full rounded-[8px] border border-[#444] bg-[#292929] px-3 text-[14px] text-white outline-none focus:border-[#2997ff]"
                                 >
                                     {STATUS_OPTIONS.map((status) => (
                                         <option key={status} value={status}>{status}</option>
@@ -712,11 +715,11 @@ export default function PmoScheduleTaskLinkModal({
                                 </select>
                             </label>
                             <label className="block">
-                                <span className="mb-1.5 block text-[10px] font-bold text-[#a1a1aa]">중요도</span>
+                                <span className="mb-1.5 block text-[12px] font-bold text-[#a1a1aa]">중요도</span>
                                 <select
                                     value={form.importanceLevel}
                                     onChange={(event) => updateForm('importanceLevel', event.target.value)}
-                                    className="h-10 w-full rounded-[8px] border border-[#444] bg-[#292929] px-3 text-[12px] text-white outline-none focus:border-[#2997ff]"
+                                    className="h-10 w-full rounded-[8px] border border-[#444] bg-[#292929] px-3 text-[14px] text-white outline-none focus:border-[#2997ff]"
                                 >
                                     {IMPORTANCE_OPTIONS.map((importance) => (
                                         <option key={importance} value={importance}>{importance}</option>
@@ -733,7 +736,7 @@ export default function PmoScheduleTaskLinkModal({
                                         type="button"
                                         aria-pressed={form[field]}
                                         onClick={() => updateForm(field, !form[field])}
-                                        className={`h-9 rounded-[8px] border px-3 text-[11px] font-bold ${
+                                        className={`h-9 rounded-[8px] border px-3 text-[13px] font-bold ${
                                             form[field]
                                                 ? 'border-[#9a3e39] bg-[#ff453a]/15 text-[#ff7169]'
                                                 : 'border-[#444] bg-[#292929] text-[#a1a1aa]'
@@ -743,7 +746,7 @@ export default function PmoScheduleTaskLinkModal({
                                     </button>
                                 ))}
                             </div>
-                            <div className="col-span-2 rounded-[10px] border border-[#3f4852] bg-[#252b31] px-3 py-2.5 text-[10px] leading-[1.6] text-[#a1a1aa]">
+                            <div className="col-span-2 rounded-[10px] border border-[#3f4852] bg-[#252b31] px-3 py-2.5 text-[12px] leading-[1.6] text-[#a1a1aa]">
                                 저장하면 통합업무보드에 정규 업무가 등록되고 이 일정과 즉시 연결됩니다.
                                 우선순위 점수와 회의상정 등급은 현재 DB 정책으로 자동 계산됩니다.
                             </div>
@@ -753,14 +756,14 @@ export default function PmoScheduleTaskLinkModal({
                                 type="button"
                                 onClick={onClose}
                                 disabled={busy}
-                                className="h-10 flex-1 rounded-[8px] border border-[#444] text-[12px] font-bold text-[#a1a1aa] hover:bg-white/5 disabled:opacity-50"
+                                className="h-10 flex-1 rounded-[8px] border border-[#444] text-[14px] font-bold text-[#a1a1aa] hover:bg-white/5 disabled:opacity-50"
                             >
                                 취소
                             </button>
                             <button
                                 type="submit"
                                 disabled={busy || !canManage || !form.taskName.trim()}
-                                className="h-10 flex-1 rounded-[8px] border border-[#1f6fb2] bg-[#2997ff] text-[12px] font-bold text-white hover:bg-[#3ba1ff] disabled:cursor-not-allowed disabled:opacity-50"
+                                className="h-10 flex-1 rounded-[8px] border border-[#1f6fb2] bg-[#2997ff] text-[14px] font-bold text-white hover:bg-[#3ba1ff] disabled:cursor-not-allowed disabled:opacity-50"
                             >
                                 {busy ? '등록 중' : canManage ? '등록하고 연결' : '등록 권한 없음'}
                             </button>

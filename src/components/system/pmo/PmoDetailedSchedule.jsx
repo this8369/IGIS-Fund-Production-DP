@@ -1224,7 +1224,8 @@ export default function PmoDetailedSchedule() {
                                 : startIndex === endIndex
                                     ? IOTA_SCHEDULE_PERIODS[startIndex]?.label
                                     : `${IOTA_SCHEDULE_PERIODS[startIndex]?.label} ~ ${IOTA_SCHEDULE_PERIODS[endIndex]?.label}`;
-                            const showLead = !isGroup || item.leadLabel !== '미정';
+                            const isLeadUnassigned = !item.leadLabel || item.leadLabel === '미정';
+                            const showLead = !isGroup || !isLeadUnassigned;
 
                             return (
                                 <tr
@@ -1319,18 +1320,11 @@ export default function PmoDetailedSchedule() {
                                                 </div>
                                                 <div className="mt-0 flex items-center gap-2 pl-7 text-[10px] text-[#86868B]">
                                                     {showLead && (
-                                                        <>
-                                                            <span className={item.leadLabel === '미정' ? 'font-bold text-[#ff5f57]' : ''}>
-                                                                <span className="font-normal text-[#6e6e73]">주관 : </span>
-                                                                {item.leadLabel}
-                                                            </span>
-                                                            <span className="text-[#4f4f52]">·</span>
-                                                        </>
+                                                        <span className={isLeadUnassigned ? 'font-bold text-[#ff5f57]' : ''}>
+                                                            {isLeadUnassigned ? '주관부서미정' : item.leadLabel}
+                                                        </span>
                                                     )}
-                                                    <span>
-                                                        <span className="text-[#6e6e73]">업무분류 : </span>
-                                                        {item.categoryMain}
-                                                    </span>
+                                                    <span>{item.categoryMain}</span>
                                                     {isGroup && (
                                                         <>
                                                             <span className="text-[#4f4f52]">·</span>
