@@ -12,7 +12,6 @@ const PERIOD_INDEX = new Map(
 const normalizeDbItem = (item) => ({
     sourceKey: item.source_key,
     sourceOrder: item.source_order,
-    sourceRow: item.source_row,
     itemType: item.item_type,
     parentSourceKey: item.parent_source_key,
     lv1: item.lv1,
@@ -24,10 +23,7 @@ const normalizeDbItem = (item) => ({
     categoryMain: item.category_main,
     startPeriod: item.start_period,
     endPeriod: item.end_period,
-    milestonePeriod: item.milestone_period,
-    managementNote: item.management_note,
-    boardLinkState: item.board_link_state,
-    linkedTaskId: item.linked_task_id
+    milestonePeriod: item.milestone_period
 });
 
 const getScheduleState = (item) => {
@@ -50,55 +46,6 @@ const getAncestors = (item, itemMap) => {
         parentKey = itemMap.get(parentKey)?.parentSourceKey;
     }
     return ancestors;
-};
-
-const buildScheduleSummaries = (items) => {
-    const children = new Map();
-    for (const item of items) {
-        if (!item.parentSourceKey) continue;
-        const siblings = children.get(item.parentSourceKey) || [];
-        siblings.push(item);
-        children.set(item.parentSourceKey, siblings);
-    }
-
-    const summaries = new Map();
-    const visit = (item) => {
-        const descendants = children.get(item.sourceKey) || [];
-        const childSummaries = descendants.map(visit);
-        const ownStart = PERIOD_INDEX.get(item.startPeriod);
-        const ownEnd = PERIOD_INDEX.get(item.endPeriod);
-        const starts = [
-            ...(ownStart === undefined ? [] : [ownStart]),
-            ...childSummaries.flatMap((summary) => (
-                summary.startIndex === null ? [] : [summary.startIndex]
-            ))
-        ];
-        const ends = [
-            ...(ownEnd === undefined ? [] : [ownEnd]),
-            ...childSummaries.flatMap((summary) => (
-                summary.endIndex === null ? [] : [summary.endIndex]
-            ))
-        ];
-        const ownTask = item.itemType === 'task';
-        const scheduledTaskCount = (ownTask && item.startPeriod && item.endPeriod ? 1 : 0)
-            + childSummaries.reduce((sum, summary) => sum + summary.scheduledTaskCount, 0);
-        const unscheduledTaskCount = (ownTask && (!item.startPeriod || !item.endPeriod) ? 1 : 0)
-            + childSummaries.reduce((sum, summary) => sum + summary.unscheduledTaskCount, 0);
-        const milestoneCount = (item.milestonePeriod ? 1 : 0)
-            + childSummaries.reduce((sum, summary) => sum + summary.milestoneCount, 0);
-        const summary = {
-            startIndex: starts.length ? Math.min(...starts) : null,
-            endIndex: ends.length ? Math.max(...ends) : null,
-            scheduledTaskCount,
-            unscheduledTaskCount,
-            milestoneCount
-        };
-        summaries.set(item.sourceKey, summary);
-        return summary;
-    };
-
-    items.filter((item) => item.itemType === 'lv1').forEach(visit);
-    return summaries;
 };
 
 const SelectControl = ({ value, onChange, options, label }) => (
@@ -143,7 +90,6 @@ export default function PmoDetailedSchedule() {
                 .select(`
                     source_key,
                     source_order,
-                    source_row,
                     item_type,
                     parent_source_key,
                     lv1,
@@ -155,10 +101,7 @@ export default function PmoDetailedSchedule() {
                     category_main,
                     start_period,
                     end_period,
-                    milestone_period,
-                    management_note,
-                    board_link_state,
-                    linked_task_id
+                    milestone_period
                 `)
                 .eq('is_active', true)
                 .order('source_order', { ascending: true });
@@ -189,7 +132,6 @@ export default function PmoDetailedSchedule() {
         () => new Map(items.map((item) => [item.sourceKey, item])),
         [items]
     );
-    const summaries = useMemo(() => buildScheduleSummaries(items), [items]);
     const taskItems = useMemo(
         () => items.filter((item) => item.itemType === 'task'),
         [items]
@@ -204,7 +146,9 @@ export default function PmoDetailedSchedule() {
     const filterOptions = useMemo(() => ({
         lv1: [...new Set(items.map((item) => item.lv1).filter(Boolean))],
         category: [...new Set(items.map((item) => item.categoryMain).filter(Boolean))],
-        lead: [...new Set(items.map((item) => item.leadLabel).filter(Boolean))]
+        lead: [...new Set(items
+            .map((item) => item.leadLabel)
+            .filter((value) => value && value !== '미정'))]
     }), [items]);
 
     const includedKeys = useMemo(() => {
@@ -309,9 +253,9 @@ export default function PmoDetailedSchedule() {
     ));
 
     return (
-        <section className="w-full overflow-hidden rounded-[32px] border border-[#3c3c3c] bg-[#272726] shadow-sm">
+        <section className="-mr-[calc(50vw-50%)] overflow-hidden rounded-l-[24px] border border-r-0 border-[#3c3c3c] bg-[#272726] shadow-sm">
             <div className="border-b border-[#3c3c3c] bg-[#242423] px-5 py-4">
-                <div className="flex items-start justify-between gap-5">
+                <div className="flex items-start justify-between gap-5 pr-[60px]">
                     <div>
                         <div className="flex items-center gap-2.5">
                             <h2 className="text-[17px] font-bold text-white">2026 통합 상세 일정</h2>
@@ -324,7 +268,7 @@ export default function PmoDetailedSchedule() {
                             </span>
                         </div>
                         <p className="mt-1 text-[12px] text-[#86868B]">
-                            대분류·중분류를 펼쳐 세부업무의 주차별 수행기간과 마일스톤을 확인합니다.
+                            원본의 Lv1·Lv2·표시업무·주관·연동대분류와 주차별 일정을 조회합니다.
                         </p>
                     </div>
                     <div className="flex items-center gap-2">
@@ -345,7 +289,7 @@ export default function PmoDetailedSchedule() {
                     </div>
                 </div>
 
-                <div className="mt-4 grid grid-cols-4 gap-2">
+                <div className="mt-4 grid grid-cols-4 gap-2 pr-[60px]">
                     {[
                         ['전체 세부업무', statistics.total, '#E5E5E5'],
                         ['일정 등록', statistics.scheduled, '#60a5fa'],
@@ -359,31 +303,31 @@ export default function PmoDetailedSchedule() {
                     ))}
                 </div>
 
-                <div className="mt-3 flex items-center gap-2">
+                <div className="mt-3 flex items-center gap-2 pr-[60px]">
                     <div className="relative h-[34px] min-w-[220px] flex-1">
                         <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[13px] text-[#86868B]">⌕</span>
                         <input
                             value={searchTerm}
                             onChange={(event) => setSearchTerm(event.target.value)}
-                            placeholder="일정·업무·주관 검색"
+                            placeholder="Lv1, Lv2, 표시업무, 주관 검색"
                             className="h-full w-full rounded-[8px] border border-[#3c3c3c] bg-[#2c2c2b] pl-8 pr-3 text-[12px] text-white outline-none placeholder:text-[#68686d] focus:border-[#2997ff]"
                         />
                     </div>
                     <SelectControl
-                        label="대분류"
+                        label="Lv1"
                         value={selectedLv1}
                         onChange={setSelectedLv1}
                         options={[
-                            { value: '전체', label: '대분류 전체' },
+                            { value: '전체', label: 'Lv1 전체' },
                             ...filterOptions.lv1.map((value) => ({ value, label: value }))
                         ]}
                     />
                     <SelectControl
-                        label="연동분류"
+                        label="연동대분류"
                         value={selectedCategory}
                         onChange={setSelectedCategory}
                         options={[
-                            { value: '전체', label: '연동분류 전체' },
+                            { value: '전체', label: '연동대분류 전체' },
                             ...filterOptions.category.map((value) => ({ value, label: value }))
                         ]}
                     />
@@ -410,180 +354,176 @@ export default function PmoDetailedSchedule() {
                 </div>
             </div>
 
-            <div className="timeline-scrollbar w-full overflow-x-auto">
-                <table className="w-[1616px] min-w-[1616px] table-fixed border-collapse text-left">
-                    <thead className="sticky top-0 z-20">
-                        <tr className="h-[30px] border-b border-[#3c3c3c] bg-[#242423]">
-                            <th
-                                rowSpan={2}
-                                className="sticky left-0 z-30 w-[464px] min-w-[464px] border-r border-[#464646] bg-[#242423] px-4 text-[11px] font-bold text-[#86868B]"
-                            >
-                                일정 계층 / 주관 / 기간
-                            </th>
-                            {[7, 8, 9, 10, 11, 12].map((month) => (
-                                <th
-                                    key={month}
-                                    colSpan={4}
-                                    className="border-r border-[#505050] text-center text-[11px] font-bold text-[#bdbba7]"
-                                >
-                                    {month}월
+            <div className="timeline-scrollbar w-full overflow-x-auto pb-1">
+                <div className="w-fit">
+                    <table className="w-[2802px] min-w-[2802px] table-fixed border-collapse text-left">
+                        <thead>
+                            <tr className="h-[30px] border-b border-[#3c3c3c] bg-[#242423] text-[11px] font-bold text-[#86868B]">
+                                <th rowSpan={2} className="sticky left-0 z-40 w-[50px] min-w-[50px] bg-[#242423] text-center">NO</th>
+                                <th rowSpan={2} className="sticky left-[50px] z-40 w-[130px] min-w-[130px] bg-[#242423] px-3">Lv1</th>
+                                <th rowSpan={2} className="sticky left-[180px] z-40 w-[150px] min-w-[150px] bg-[#242423] px-3">Lv2</th>
+                                <th rowSpan={2} className="sticky left-[330px] z-40 w-[280px] min-w-[280px] border-r border-[#464646] bg-[#242423] px-4 shadow-[inset_-1px_0_0_0_#3c3c3c]">
+                                    업무명(표시업무)
                                 </th>
-                            ))}
-                        </tr>
-                        <tr className="h-[28px] border-b border-[#464646] bg-[#292928]">
-                            {IOTA_SCHEDULE_PERIODS.map((period, index) => (
-                                <th
-                                    key={period.key}
-                                    className={`w-[48px] min-w-[48px] text-center text-[10px] font-bold text-[#86868B] ${
-                                        (index + 1) % 4 === 0
-                                            ? 'border-r border-[#505050]'
-                                            : 'border-r border-[#3a3a3a]'
-                                    }`}
-                                >
-                                    {period.weekLabel}
+                                <th rowSpan={2} className="w-[110px] min-w-[110px] bg-[#242423] px-3 text-center">주관</th>
+                                <th rowSpan={2} className="w-[130px] min-w-[130px] border-r border-[#505050] bg-[#242423] px-3 text-center">
+                                    대분류<br /><span className="text-[10px] font-medium">(연동대분류)</span>
                                 </th>
-                            ))}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {visibleItems.map((item) => {
-                            const depth = getDepth(item);
-                            const isGroup = item.itemType !== 'task';
-                            const isExpanded = expandedGroups.has(item.sourceKey);
-                            const summary = summaries.get(item.sourceKey) || {};
-                            const startIndex = item.startPeriod
-                                ? PERIOD_INDEX.get(item.startPeriod)
-                                : summary.startIndex;
-                            const endIndex = item.endPeriod
-                                ? PERIOD_INDEX.get(item.endPeriod)
-                                : summary.endIndex;
-                            const state = getScheduleState(item);
-                            const periodLabel = startIndex === null || startIndex === undefined
-                                ? '일정 미정'
-                                : startIndex === endIndex
-                                    ? IOTA_SCHEDULE_PERIODS[startIndex]?.label
-                                    : `${IOTA_SCHEDULE_PERIODS[startIndex]?.label} ~ ${IOTA_SCHEDULE_PERIODS[endIndex]?.label}`;
+                                {[7, 8, 9, 10, 11, 12].map((month) => (
+                                    <th
+                                        key={month}
+                                        colSpan={4}
+                                        className="border-r border-[#505050] text-center text-[11px] font-bold text-[#bdbba7]"
+                                    >
+                                        {month}월
+                                    </th>
+                                ))}
+                                <th rowSpan={2} className="w-[800px] min-w-[800px] bg-[#272726]" />
+                            </tr>
+                            <tr className="h-[28px] border-b border-[#464646] bg-[#292928]">
+                                {IOTA_SCHEDULE_PERIODS.map((period, index) => (
+                                    <th
+                                        key={period.key}
+                                        className={`w-[48px] min-w-[48px] text-center text-[10px] font-bold text-[#86868B] ${
+                                            (index + 1) % 4 === 0
+                                                ? 'border-r border-[#505050]'
+                                                : 'border-r border-[#3a3a3a]'
+                                        }`}
+                                    >
+                                        {period.weekLabel}
+                                    </th>
+                                ))}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {visibleItems.map((item, itemIndex) => {
+                                const isExpanded = expandedGroups.has(item.sourceKey);
+                                const isGroup = item.itemType !== 'task';
+                                const depth = getDepth(item);
+                                const startIndex = item.startPeriod
+                                    ? PERIOD_INDEX.get(item.startPeriod)
+                                    : undefined;
+                                const endIndex = item.endPeriod
+                                    ? PERIOD_INDEX.get(item.endPeriod)
+                                    : undefined;
+                                const stickyBackground = item.itemType === 'lv1'
+                                    ? 'bg-[#2c3440] group-hover:bg-[#344052]'
+                                    : item.itemType === 'lv2'
+                                        ? 'bg-[#2d2d2c] group-hover:bg-[#343433]'
+                                        : 'bg-[#272726] group-hover:bg-[#30302f]';
+                                const rowBackground = item.itemType === 'lv1'
+                                    ? 'bg-[#2c3440]'
+                                    : item.itemType === 'lv2'
+                                        ? 'bg-[#2d2d2c]'
+                                        : 'bg-[#272726] hover:bg-[#30302f]';
+                                const displayedLead = item.leadLabel === '미정'
+                                    ? ''
+                                    : item.leadLabel;
 
-                            return (
-                                <tr
-                                    key={item.sourceKey}
-                                    className={`h-[48px] border-b border-[#393939] ${
-                                        item.itemType === 'lv1'
-                                            ? 'bg-[#2c3440]'
-                                            : item.itemType === 'lv2'
-                                                ? 'bg-[#2d2d2c]'
-                                                : 'bg-[#272726] hover:bg-[#30302f]'
-                                    }`}
-                                >
-                                    <td className={`sticky left-0 z-10 w-[464px] min-w-[464px] border-r border-[#464646] px-3 ${
-                                        item.itemType === 'lv1'
-                                            ? 'bg-[#2c3440]'
-                                            : item.itemType === 'lv2'
-                                                ? 'bg-[#2d2d2c]'
-                                                : 'bg-[#272726]'
-                                    }`}>
-                                        <div className="flex items-center justify-between gap-3">
+                                return (
+                                    <tr
+                                        key={item.sourceKey}
+                                        className={`group h-[50px] border-b border-[#393939] ${rowBackground}`}
+                                    >
+                                        <td className={`sticky left-0 z-20 w-[50px] min-w-[50px] text-center font-mono text-[11px] text-[#86868B] transition-colors ${stickyBackground}`}>
+                                            {item.sourceOrder}
+                                        </td>
+                                        <td className={`sticky left-[50px] z-20 w-[130px] min-w-[130px] px-3 text-[12px] transition-colors ${stickyBackground}`}>
+                                            <span className="block truncate font-bold text-[#E5E5E5]" title={item.lv1 || ''}>
+                                                {item.lv1 || ''}
+                                            </span>
+                                        </td>
+                                        <td className={`sticky left-[180px] z-20 w-[150px] min-w-[150px] px-3 text-[12px] transition-colors ${stickyBackground}`}>
+                                            <span className="block truncate font-medium text-[#c7c7c2]" title={item.lv2 || ''}>
+                                                {item.lv2 || ''}
+                                            </span>
+                                        </td>
+                                        <td className={`sticky left-[330px] z-20 w-[280px] min-w-[280px] border-r border-[#464646] px-4 text-[12px] font-medium text-[#E5E5E5] shadow-[inset_-1px_0_0_0_#3c3c3c] transition-colors ${stickyBackground}`}>
                                             <div
-                                                className="min-w-0 flex-1"
+                                                className="flex min-w-0 items-center gap-2"
                                                 style={{ paddingLeft: `${depth * 18}px` }}
                                             >
-                                                <div className="flex min-w-0 items-center gap-2">
-                                                    {isGroup ? (
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => toggleGroup(item.sourceKey)}
-                                                            className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-[10px] text-[#a1a1aa] hover:bg-white/10 hover:text-white"
-                                                            aria-label={`${item.displayName} ${isExpanded ? '접기' : '펼치기'}`}
-                                                        >
-                                                            {isExpanded ? '▼' : '▶'}
-                                                        </button>
-                                                    ) : (
-                                                        <span className="w-5 shrink-0 text-center font-mono text-[8px] text-[#666]">•</span>
-                                                    )}
-                                                    <span className={`truncate ${
-                                                        item.itemType === 'lv1'
-                                                            ? 'text-[13px] font-bold text-white'
-                                                            : item.itemType === 'lv2'
-                                                                ? 'text-[12px] font-bold text-[#E5E5E5]'
-                                                                : 'text-[12px] font-medium text-[#c7c7c2]'
-                                                    }`}>
-                                                        {item.displayName}
-                                                    </span>
-                                                    <span className="shrink-0 font-mono text-[9px] text-[#68686d]">
-                                                        {item.sourceKey}
-                                                    </span>
-                                                </div>
-                                                <div className="mt-1 flex items-center gap-2 pl-7 text-[10px] text-[#86868B]">
-                                                    <span>{item.leadLabel || '미정'}</span>
-                                                    <span className="text-[#4f4f52]">·</span>
-                                                    <span>{item.categoryMain}</span>
-                                                    {isGroup && (
-                                                        <>
-                                                            <span className="text-[#4f4f52]">·</span>
-                                                            <span>
-                                                                일정 {summary.scheduledTaskCount || 0}
-                                                                {summary.unscheduledTaskCount ? ` / 미정 ${summary.unscheduledTaskCount}` : ''}
-                                                            </span>
-                                                        </>
-                                                    )}
-                                                </div>
-                                            </div>
-                                            <div className="w-[122px] shrink-0 text-right">
-                                                <div className={`text-[10px] font-bold ${
-                                                    state === 'milestone'
-                                                        ? 'text-[#F59E0B]'
-                                                        : startIndex === null || startIndex === undefined
-                                                            ? 'text-[#6e6e73]'
-                                                            : 'text-[#60a5fa]'
-                                                }`}>
-                                                    {periodLabel}
-                                                </div>
-                                                {item.linkedTaskId && (
-                                                    <div className="mt-0.5 text-[9px] text-[#34c759]">업무판 연결</div>
+                                                {isGroup ? (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => toggleGroup(item.sourceKey)}
+                                                        className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-[10px] text-[#a1a1aa] hover:bg-white/10 hover:text-white"
+                                                        aria-label={`${item.displayName} ${isExpanded ? '접기' : '펼치기'}`}
+                                                    >
+                                                        {isExpanded ? '▼' : '▶'}
+                                                    </button>
+                                                ) : (
+                                                    <span className="w-5 shrink-0 text-center font-mono text-[8px] text-[#666]">•</span>
                                                 )}
+                                                <span className={`block truncate ${
+                                                    item.itemType === 'lv1'
+                                                        ? 'font-bold text-white'
+                                                        : item.itemType === 'lv2'
+                                                            ? 'font-bold text-[#E5E5E5]'
+                                                            : 'font-medium text-[#c7c7c2]'
+                                                }`} title={item.displayName || ''}>
+                                                    {item.displayName || ''}
+                                                </span>
                                             </div>
-                                        </div>
-                                    </td>
+                                        </td>
+                                        <td className="w-[110px] min-w-[110px] px-3 text-center text-[12px] font-semibold text-[#E5E5E5]">
+                                            {displayedLead}
+                                        </td>
+                                        <td className="w-[130px] min-w-[130px] border-r border-[#505050] px-3 text-center text-[11px] text-[#bdbba7]">
+                                            {item.categoryMain || ''}
+                                        </td>
 
-                                    {IOTA_SCHEDULE_PERIODS.map((period, periodIndex) => {
-                                        const inRange = startIndex !== null
-                                            && startIndex !== undefined
-                                            && endIndex !== null
-                                            && endIndex !== undefined
-                                            && periodIndex >= startIndex
-                                            && periodIndex <= endIndex;
-                                        const isStart = inRange && periodIndex === startIndex;
-                                        const isEnd = inRange && periodIndex === endIndex;
-                                        const isMilestone = item.milestonePeriod === period.key;
-                                        return (
+                                        {IOTA_SCHEDULE_PERIODS.map((period, periodIndex) => {
+                                            const inRange = startIndex !== undefined
+                                                && endIndex !== undefined
+                                                && periodIndex >= startIndex
+                                                && periodIndex <= endIndex;
+                                            const isStart = inRange && periodIndex === startIndex;
+                                            const isEnd = inRange && periodIndex === endIndex;
+                                            const isMilestone = item.milestonePeriod === period.key;
+                                            return (
+                                                <td
+                                                    key={period.key}
+                                                    className={`relative h-[50px] w-[48px] min-w-[48px] ${
+                                                        (periodIndex + 1) % 4 === 0
+                                                            ? 'border-r border-[#505050]'
+                                                            : 'border-r border-[#383838]'
+                                                    }`}
+                                                >
+                                                    {inRange && (
+                                                        <div
+                                                            className={`absolute left-0 right-0 top-1/2 h-[12px] -translate-y-1/2 bg-[#2997ff]/70 ${
+                                                                isStart ? 'rounded-l-full' : ''
+                                                            } ${isEnd ? 'rounded-r-full' : ''}`}
+                                                        />
+                                                    )}
+                                                    {isMilestone && (
+                                                        <span className="absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2 text-[20px] font-black leading-none text-[#F59E0B] drop-shadow-[0_0_5px_rgba(245,158,11,0.45)]">
+                                                            ◆
+                                                        </span>
+                                                    )}
+                                                </td>
+                                            );
+                                        })}
+                                        {itemIndex === 0 && (
                                             <td
-                                                key={period.key}
-                                                className={`relative h-[48px] w-[48px] min-w-[48px] ${
-                                                    (periodIndex + 1) % 4 === 0
-                                                        ? 'border-r border-[#505050]'
-                                                        : 'border-r border-[#383838]'
-                                                }`}
+                                                rowSpan={visibleItems.length}
+                                                className="w-[800px] min-w-[800px] bg-[#272726] px-20 align-top"
                                             >
-                                                {inRange && (
-                                                    <div
-                                                        className={`absolute left-0 right-0 top-1/2 h-[12px] -translate-y-1/2 ${
-                                                            isGroup ? 'bg-[#5279a5]/55' : 'bg-[#2997ff]/70'
-                                                        } ${isStart ? 'rounded-l-full' : ''} ${isEnd ? 'rounded-r-full' : ''}`}
-                                                    />
-                                                )}
-                                                {isMilestone && (
-                                                    <span className="absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2 text-[20px] font-black leading-none text-[#F59E0B] drop-shadow-[0_0_5px_rgba(245,158,11,0.45)]">
-                                                        ◆
-                                                    </span>
-                                                )}
+                                                <div
+                                                    className="sticky top-[20px] flex h-[500px] w-full select-none items-center whitespace-nowrap font-bold leading-[0.9] tracking-tighter text-white opacity-[0.04] pointer-events-none"
+                                                    style={{ fontSize: 'clamp(45px, 8.5vw, 135px)' }}
+                                                >
+                                                    IOTA Seoul<br />Cross Functional<br />Team
+                                                </div>
                                             </td>
-                                        );
-                                    })}
-                                </tr>
-                            );
-                        })}
-                    </tbody>
-                </table>
+                                        )}
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
             {!visibleItems.length && (
@@ -591,6 +531,7 @@ export default function PmoDetailedSchedule() {
                     조건에 맞는 일정이 없습니다.
                 </div>
             )}
+
         </section>
     );
 }
