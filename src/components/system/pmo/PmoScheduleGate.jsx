@@ -333,10 +333,10 @@ export default function PmoScheduleGate() {
                 }
             `}</style>
             {/* Header */}
-            <div className="w-full flex items-end justify-between mb-[16px]">
+            <div className="w-full flex items-end justify-between mb-[2px]">
                 <div className="flex items-center gap-[16px]">
                     <h1 className="text-[32px] font-bold text-white tracking-tight leading-none">마일스톤</h1>
-                    <div className="flex h-[34px] items-center rounded-[9px] border border-[#3c3c3c] bg-[#252524] p-0.5">
+                    <div className="flex h-[30px] items-center rounded-[9px] border border-[#3c3c3c] bg-[#252524]">
                         <button
                             type="button"
                             onClick={() => setTimelineView('detail')}

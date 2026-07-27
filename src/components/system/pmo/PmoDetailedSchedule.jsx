@@ -381,7 +381,7 @@ export default function PmoDetailedSchedule() {
                         <tr className="h-[30px] border-b border-[#3c3c3c] bg-[#242423]">
                             <th
                                 rowSpan={2}
-                                className="sticky left-0 z-30 w-[450px] min-w-[450px] border-r border-[#464646] bg-[#242423] px-4 text-[11px] font-bold text-[#86868B]"
+                                className="sticky left-0 z-30 w-[450px] min-w-[450px] border-r border-[#464646] bg-[#242423] px-4 text-[12px] font-bold text-[#86868B]"
                             >
                                 업무명 / 주관 조직 / 기간
                             </th>
@@ -425,7 +425,7 @@ export default function PmoDetailedSchedule() {
                             const state = getScheduleState(item);
                             const hasSchedule = startIndex !== null && startIndex !== undefined;
                             const periodLabel = !hasSchedule
-                                ? isGroup ? '' : '미정'
+                                ? isGroup ? '' : '일정 미정'
                                 : startIndex === endIndex
                                     ? IOTA_SCHEDULE_PERIODS[startIndex]?.label
                                     : `${IOTA_SCHEDULE_PERIODS[startIndex]?.label} ~ ${IOTA_SCHEDULE_PERIODS[endIndex]?.label}`;
