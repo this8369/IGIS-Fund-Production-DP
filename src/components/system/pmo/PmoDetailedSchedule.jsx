@@ -1427,7 +1427,7 @@ export default function PmoDetailedSchedule() {
                                                     </span>
                                                 )}
                                                 {showUnscheduledText && (
-                                                    <span className="pointer-events-none absolute left-3 top-1/2 z-10 -translate-y-1/2 whitespace-nowrap text-[9px] font-semibold tracking-[0.18em] text-[#ff8a84]/40">
+                                                    <span className="pointer-events-none absolute left-3 top-1/2 z-10 -translate-y-1/2 whitespace-nowrap text-[11px] font-semibold text-[#ff8a84]/40">
                                                         일정 미정
                                                     </span>
                                                 )}
