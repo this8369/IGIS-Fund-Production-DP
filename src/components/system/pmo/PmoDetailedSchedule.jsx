@@ -1243,15 +1243,10 @@ export default function PmoDetailedSchedule() {
                                 item,
                                 todayMarker?.periodIndex
                             );
-                            const attentionAnimationClass = scheduleAttention === 'overdue'
-                                ? 'schedule-attention-overdue'
+                            const attentionIndicatorClass = scheduleAttention === 'overdue'
+                                ? 'schedule-attention-indicator-overdue'
                                 : scheduleAttention === 'due_this_week'
-                                    ? 'schedule-attention-due'
-                                    : '';
-                            const attentionTitleClass = scheduleAttention === 'overdue'
-                                ? 'schedule-attention-title-overdue'
-                                : scheduleAttention === 'due_this_week'
-                                    ? 'schedule-attention-title-due'
+                                    ? 'schedule-attention-indicator-due'
                                     : '';
                             const itemLinks = item.scheduleItemId
                                 ? linksByScheduleItemId.get(item.scheduleItemId) || []
@@ -1261,7 +1256,7 @@ export default function PmoDetailedSchedule() {
                                 && Boolean(item.scheduleItemId);
                             const hasSchedule = startIndex !== null && startIndex !== undefined;
                             const periodLabel = !hasSchedule
-                                ? isGroup ? '' : '일정 미정'
+                                ? ''
                                 : startIndex === endIndex
                                     ? IOTA_SCHEDULE_PERIODS[startIndex]?.label
                                     : `${IOTA_SCHEDULE_PERIODS[startIndex]?.label} ~ ${IOTA_SCHEDULE_PERIODS[endIndex]?.label}`;
@@ -1275,35 +1270,33 @@ export default function PmoDetailedSchedule() {
                                         if (canOpenTaskLink) openTaskLinkModal(item);
                                     }}
                                     data-task-link-source={canOpenTaskLink ? item.sourceKey : undefined}
-                                    className={`group h-[48px] border-b border-[#393939] ${attentionAnimationClass} ${
+                                    className={`group h-[48px] border-b border-[#393939] ${
                                         canOpenTaskLink ? 'cursor-pointer' : ''
                                     } ${
                                         item.itemType === 'lv1'
                                             ? 'bg-[#2c3440] hover:bg-[#343e4d]'
                                             : item.itemType === 'lv2'
                                                 ? 'bg-[#2d2d2c] hover:bg-[#363635]'
-                                                : scheduleAttention === 'overdue'
-                                                    ? 'bg-[#3a2525] hover:bg-[#482c2c]'
-                                                    : scheduleAttention === 'due_this_week'
-                                                        ? 'bg-[#393020] hover:bg-[#453923]'
-                                                        : state === 'unscheduled'
-                                                            ? 'bg-[#342727] hover:bg-[#422e2e]'
-                                                            : 'bg-[#272726] hover:bg-[#30302f]'
+                                                : 'bg-[#272726] hover:bg-[#30302f]'
                                     }`}
                                 >
-                                    <td className={`sticky left-0 z-10 w-[450px] min-w-[450px] px-3 shadow-[inset_-1px_0_0_#464646] ${attentionAnimationClass} ${
+                                    <td className={`sticky left-0 z-10 w-[450px] min-w-[450px] px-3 shadow-[inset_-1px_0_0_#464646] ${
                                         item.itemType === 'lv1'
                                             ? 'bg-[#2c3440] group-hover:bg-[#343e4d]'
                                             : item.itemType === 'lv2'
                                                 ? 'bg-[#2d2d2c] group-hover:bg-[#363635]'
-                                                : scheduleAttention === 'overdue'
-                                                    ? 'bg-[#3a2525] group-hover:bg-[#482c2c]'
-                                                    : scheduleAttention === 'due_this_week'
-                                                        ? 'bg-[#393020] group-hover:bg-[#453923]'
-                                                        : state === 'unscheduled'
-                                                            ? 'bg-[#342727] group-hover:bg-[#422e2e]'
-                                                            : 'bg-[#272726] group-hover:bg-[#30302f]'
+                                                : 'bg-[#272726] group-hover:bg-[#30302f]'
                                     }`}>
+                                        {!isGroup && scheduleAttention && (
+                                            <span
+                                                aria-hidden="true"
+                                                className={`absolute inset-y-[5px] left-0 w-[4px] rounded-r-full ${
+                                                    scheduleAttention === 'overdue'
+                                                        ? 'bg-[#ff5f57]'
+                                                        : 'bg-[#F59E0B]'
+                                                } ${attentionIndicatorClass}`}
+                                            />
+                                        )}
                                         <div className="flex items-center justify-between gap-3">
                                             <div
                                                 className="min-w-0 flex-1"
@@ -1322,19 +1315,20 @@ export default function PmoDetailedSchedule() {
                                                     ) : (
                                                         <span className="w-5 shrink-0 text-center font-mono text-[8px] text-[#666]">•</span>
                                                     )}
-                                                    <span className={`truncate ${attentionTitleClass} ${
+                                                    <span className={`truncate ${
                                                         item.itemType === 'lv1'
                                                             ? 'text-[14px] font-bold text-white'
                                                             : item.itemType === 'lv2'
                                                                 ? 'text-[13px] font-bold text-[#E5E5E5]'
-                                                                : scheduleAttention === 'overdue'
-                                                                    ? 'text-[13px] font-bold text-[#ff7169]'
-                                                                    : scheduleAttention === 'due_this_week'
-                                                                        ? 'text-[13px] font-bold text-[#f6ad3c]'
-                                                                        : 'text-[13px] font-medium text-[#c7c7c2]'
+                                                                : 'text-[13px] font-medium text-[#c7c7c2]'
                                                     }`}>
                                                         {item.displayName}
                                                     </span>
+                                                    {!isGroup && scheduleAttention === 'overdue' && (
+                                                        <span className={`shrink-0 rounded-full border border-[#ff5f57]/45 bg-[#ff5f57]/12 px-1.5 py-0.5 text-[8px] font-bold text-[#ff7169] ${attentionIndicatorClass}`}>
+                                                            일정 지연
+                                                        </span>
+                                                    )}
                                                     {item.itemType === 'task' && (
                                                         <span className={`shrink-0 rounded-full border px-1.5 py-0.5 text-[8px] font-bold ${
                                                             PROGRESS_STATUS_STYLES[progressStatus]
@@ -1359,7 +1353,7 @@ export default function PmoDetailedSchedule() {
                                                 <div className="mt-0 flex items-center gap-2 pl-7 text-[10px] text-[#86868B]">
                                                     {showLead && (
                                                         <span className={isLeadUnassigned ? 'font-bold text-[#ff5f57]' : ''}>
-                                                            {isLeadUnassigned ? '주관부서미정' : item.leadLabel}
+                                                            {isLeadUnassigned ? '주관부서 미정' : item.leadLabel}
                                                         </span>
                                                     )}
                                                     <span>{item.categoryMain}</span>
@@ -1395,6 +1389,13 @@ export default function PmoDetailedSchedule() {
                                         const isStart = inRange && periodIndex === startIndex;
                                         const isEnd = inRange && periodIndex === endIndex;
                                         const isMilestone = item.milestonePeriod === period.key;
+                                        const showDueThisWeek = !isGroup
+                                            && scheduleAttention === 'due_this_week'
+                                            && periodIndex === endIndex;
+                                        const showUnscheduledLane = !isGroup
+                                            && state === 'unscheduled';
+                                        const showUnscheduledText = showUnscheduledLane
+                                            && periodIndex === 0;
                                         return (
                                             <td
                                                 key={period.key}
@@ -1402,6 +1403,10 @@ export default function PmoDetailedSchedule() {
                                                     (periodIndex + 1) % 4 === 0
                                                         ? 'shadow-[inset_-1px_0_0_#505050]'
                                                         : 'shadow-[inset_-1px_0_0_#383838]'
+                                                } ${
+                                                    showUnscheduledLane
+                                                        ? 'bg-[repeating-linear-gradient(135deg,rgba(255,95,87,0.045)_0px,rgba(255,95,87,0.045)_6px,transparent_6px,transparent_12px)]'
+                                                        : ''
                                                 }`}
                                             >
                                                 {inRange && (
@@ -1414,6 +1419,16 @@ export default function PmoDetailedSchedule() {
                                                 {isMilestone && (
                                                     <span className="absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2 text-[20px] font-black leading-none text-[#F59E0B] drop-shadow-[0_0_5px_rgba(245,158,11,0.45)]">
                                                         ◆
+                                                    </span>
+                                                )}
+                                                {showDueThisWeek && (
+                                                    <span className={`absolute left-1/2 top-1/2 z-20 -translate-x-1/2 -translate-y-1/2 whitespace-nowrap rounded-full border border-[#F59E0B]/55 bg-[#4b3718] px-1.5 py-0.5 text-[8px] font-bold text-[#f6ad3c] shadow-[0_0_6px_rgba(245,158,11,0.22)] ${attentionIndicatorClass}`}>
+                                                        기한 임박
+                                                    </span>
+                                                )}
+                                                {showUnscheduledText && (
+                                                    <span className="pointer-events-none absolute left-3 top-1/2 z-10 -translate-y-1/2 whitespace-nowrap text-[9px] font-semibold tracking-[0.18em] text-[#ff8a84]/40">
+                                                        일정 미정
                                                     </span>
                                                 )}
                                             </td>

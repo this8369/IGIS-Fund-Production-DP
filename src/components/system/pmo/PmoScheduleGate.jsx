@@ -332,51 +332,35 @@ export default function PmoScheduleGate() {
                     scrollbar-width: thin;
                     scrollbar-color: rgba(255, 255, 255, 0.12) rgba(255, 255, 255, 0.02);
                 }
-                @keyframes scheduleDuePulse {
-                    0%, 100% { background-color: #342d22; }
-                    50% { background-color: #49391f; }
-                }
-                @keyframes scheduleOverduePulse {
-                    0%, 100% { background-color: #352525; }
-                    50% { background-color: #4b2929; }
-                }
-                @keyframes scheduleDueTitlePulse {
+                @keyframes scheduleDueIndicatorPulse {
                     0%, 100% {
-                        color: #d99a3b;
-                        text-shadow: 0 0 0 rgba(245, 158, 11, 0);
+                        opacity: 0.58;
+                        box-shadow: 0 0 0 rgba(245, 158, 11, 0);
                     }
                     50% {
-                        color: #fbbf24;
-                        text-shadow: 0 0 8px rgba(245, 158, 11, 0.45);
+                        opacity: 1;
+                        box-shadow: 0 0 8px rgba(245, 158, 11, 0.5);
                     }
                 }
-                @keyframes scheduleOverdueTitlePulse {
+                @keyframes scheduleOverdueIndicatorPulse {
                     0%, 100% {
-                        color: #e35f58;
-                        text-shadow: 0 0 0 rgba(255, 95, 87, 0);
+                        opacity: 0.58;
+                        box-shadow: 0 0 0 rgba(255, 95, 87, 0);
                     }
                     50% {
-                        color: #ff7169;
-                        text-shadow: 0 0 8px rgba(255, 95, 87, 0.42);
+                        opacity: 1;
+                        box-shadow: 0 0 8px rgba(255, 95, 87, 0.5);
                     }
                 }
-                .schedule-attention-due {
-                    animation: scheduleDuePulse 1.6s ease-in-out infinite;
+                .schedule-attention-indicator-due {
+                    animation: scheduleDueIndicatorPulse 1.6s ease-in-out infinite;
                 }
-                .schedule-attention-overdue {
-                    animation: scheduleOverduePulse 1.4s ease-in-out infinite;
-                }
-                .schedule-attention-title-due {
-                    animation: scheduleDueTitlePulse 1.6s ease-in-out infinite;
-                }
-                .schedule-attention-title-overdue {
-                    animation: scheduleOverdueTitlePulse 1.4s ease-in-out infinite;
+                .schedule-attention-indicator-overdue {
+                    animation: scheduleOverdueIndicatorPulse 1.4s ease-in-out infinite;
                 }
                 @media (prefers-reduced-motion: reduce) {
-                    .schedule-attention-due,
-                    .schedule-attention-overdue,
-                    .schedule-attention-title-due,
-                    .schedule-attention-title-overdue {
+                    .schedule-attention-indicator-due,
+                    .schedule-attention-indicator-overdue {
                         animation: none;
                     }
                 }
