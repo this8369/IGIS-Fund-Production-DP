@@ -5,6 +5,8 @@ import { useAuth } from '../../../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import WorkspaceActivityLog from './WorkspaceActivityLog';
 import MarketingPipeline from './MarketingPipeline';
+import { fetchCachedStakeholderMaster } from '../../../utils/workspaceDirectoryCache';
+import { fetchCachedWorkspaceTasks, updateCachedWorkspaceTasks } from '../../../utils/workspaceTaskCache';
 
 export default function WorkspaceMarketing() {
     const { memberInfo } = useAuth();
@@ -134,12 +136,10 @@ export default function WorkspaceMarketing() {
         }, 300);
     };
 
-    const fetchMasterStakeholders = async () => {
+    const fetchMasterStakeholders = async (force = false) => {
         try {
-            const { data, error } = await supabase.from('iota_stakeholder_master').select('*');
-            if (!error && data) {
-                setMasterStakeholders(data);
-            }
+            const data = await fetchCachedStakeholderMaster({ force });
+            setMasterStakeholders(data);
         } catch (e) {
             console.error('Master stakeholder fetch error:', e);
         }
@@ -151,7 +151,7 @@ export default function WorkspaceMarketing() {
                 company_name: companyQuery
             });
             if (!error) {
-                await fetchMasterStakeholders();
+                await fetchMasterStakeholders(true);
                 setShowNewStakeholderModal(false);
             } else {
                 alert('이해관계자 등록 중 오류가 발생했습니다.');
@@ -217,14 +217,10 @@ export default function WorkspaceMarketing() {
         }
     };
 
-    const fetchTasks = async () => {
+    const fetchTasks = async (force = false) => {
         try {
-            const { data, error } = await supabase
-                .from('iota_marketing_tasks')
-                .select('*')
-                .order('created_at', { ascending: false });
-            if (error) throw error;
-            setTasks(data || []);
+            const data = await fetchCachedWorkspaceTasks('iota_marketing_tasks', { force });
+            setTasks(data);
         } catch (e) {
             console.error('Failed to fetch tasks:', e);
         } finally {
@@ -314,7 +310,7 @@ export default function WorkspaceMarketing() {
             setIsAdding(false);
             setEditingTaskId(null);
             setIsSubmittingTask(false);
-            fetchTasks();
+            fetchTasks(true);
         } catch (e) {
             console.error('Failed to save task:', e);
             alert('저장 중 오류가 발생했습니다.');
@@ -327,7 +323,7 @@ export default function WorkspaceMarketing() {
         try {
             const { error } = await supabase.from('iota_marketing_tasks').delete().eq('id', id);
             if (error) throw error;
-            fetchTasks();
+            fetchTasks(true);
         } catch (e) {
             console.error('Failed to delete task:', e);
             alert('삭제 중 오류가 발생했습니다.');
@@ -396,6 +392,7 @@ export default function WorkspaceMarketing() {
             return t;
         });
         setTasks(newTasks);
+        updateCachedWorkspaceTasks('iota_marketing_tasks', newTasks);
         
         try {
             await supabase.from('iota_marketing_tasks').update({ created_at: newCurrentTime }).eq('id', current.id);
@@ -426,6 +423,7 @@ export default function WorkspaceMarketing() {
             return t;
         });
         setTasks(newTasks);
+        updateCachedWorkspaceTasks('iota_marketing_tasks', newTasks);
         
         try {
             await supabase.from('iota_marketing_tasks').update({ created_at: newCurrentTime }).eq('id', current.id);

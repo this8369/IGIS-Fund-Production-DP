@@ -17,6 +17,11 @@ const TASK_SELECT = `
     created_at,
     lead_dept:iota_departments!lead_dept_code(dept_name)
 `;
+const TASK_CACHE_TTL_MS = 5 * 60 * 1000;
+
+let cachedPmoTasks = null;
+let cachedPmoTasksAt = 0;
+let pendingPmoTasksRequest = null;
 
 export const PMO_PROJECT_LABELS = {
     IOTA_SEOUL: 'IOTA 공통',
@@ -50,21 +55,35 @@ const normalizeTask = (task, index) => ({
     createdAt: task.created_at,
 });
 
-export const fetchPmoTaskOptions = async () => {
-    const { data, error } = await executeWithTimeout(
-        supabase
-            .schema('iota_v2')
-            .from('iota_pmo_tasks')
-            .select(TASK_SELECT)
-            .neq('task_type', '팝업')
-            .order('created_at', { ascending: true })
-            .order('id', { ascending: true })
-    );
+export const fetchPmoTaskOptions = async ({ force = false } = {}) => {
+    const now = Date.now();
+    if (!force && cachedPmoTasks && now - cachedPmoTasksAt < TASK_CACHE_TTL_MS) {
+        return cachedPmoTasks;
+    }
+    if (!force && pendingPmoTasksRequest) return pendingPmoTasksRequest;
 
-    if (error) throw error;
-    return [...(data || [])]
-        .sort(compareTasksByCreatedAt)
-        .map(normalizeTask);
+    pendingPmoTasksRequest = (async () => {
+        const { data, error } = await executeWithTimeout(
+            supabase
+                .schema('iota_v2')
+                .from('iota_pmo_tasks')
+                .select(TASK_SELECT)
+                .neq('task_type', '팝업')
+                .order('created_at', { ascending: true })
+                .order('id', { ascending: true })
+        );
+
+        if (error) throw error;
+        cachedPmoTasks = [...(data || [])]
+            .sort(compareTasksByCreatedAt)
+            .map(normalizeTask);
+        cachedPmoTasksAt = Date.now();
+        return cachedPmoTasks;
+    })().finally(() => {
+        pendingPmoTasksRequest = null;
+    });
+
+    return pendingPmoTasksRequest;
 };
 
 const normalizeTaskIds = (taskIds) => [...new Set(
@@ -112,26 +131,30 @@ export const fetchLinkedTasksByLogIds = async (logsOrIds) => {
         return groupedTaskIds;
     }, {});
 
-    const { data: linkRows, error: linkError } = await executeWithTimeout(
-        supabase
-            .from('iota_seoul_log_links')
-            .select('link_id, log_id, proj_id, created_at')
-            .in('log_id', normalizedLogIds)
-            .eq('relation_type', 'pmo_task')
-            .order('created_at', { ascending: true })
-    );
+    const logIdsWithoutMetadata = normalizedLogIds.filter((logId) => (
+        !taskIdsByLogId[logId]?.length
+    ));
+    if (logIdsWithoutMetadata.length > 0) {
+        const { data: linkRows, error: linkError } = await executeWithTimeout(
+            supabase
+                .from('iota_seoul_log_links')
+                .select('log_id, proj_id')
+                .in('log_id', logIdsWithoutMetadata)
+                .eq('relation_type', 'pmo_task')
+        );
 
-    if (linkError && Object.keys(taskIdsByLogId).length === 0) throw linkError;
-    if (linkError) {
-        console.error('Workspace post task link index could not be loaded.', linkError);
+        if (linkError && Object.keys(taskIdsByLogId).length === 0) throw linkError;
+        if (linkError) {
+            console.error('Workspace post task link index could not be loaded.', linkError);
+        }
+        (linkRows || []).forEach((link) => {
+            const logId = String(link.log_id);
+            taskIdsByLogId[logId] = normalizeTaskIds([
+                ...(taskIdsByLogId[logId] || []),
+                link.proj_id,
+            ]);
+        });
     }
-    (linkRows || []).forEach((link) => {
-        const logId = String(link.log_id);
-        taskIdsByLogId[logId] = normalizeTaskIds([
-            ...(taskIdsByLogId[logId] || []),
-            link.proj_id,
-        ]);
-    });
 
     const linkedTaskIds = normalizeTaskIds(Object.values(taskIdsByLogId).flat());
     if (linkedTaskIds.length === 0) return {};

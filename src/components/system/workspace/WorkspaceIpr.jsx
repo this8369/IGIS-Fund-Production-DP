@@ -3,6 +3,8 @@ import { notifyVIPsOnTaskCreation, notifyMembersOnTaskCreation } from '../../../
 import { useAuth } from '../../../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../../../utils/supabaseClient';
+import { fetchCachedStakeholderMaster } from '../../../utils/workspaceDirectoryCache';
+import { fetchCachedWorkspaceTasks, updateCachedWorkspaceTasks } from '../../../utils/workspaceTaskCache';
 import WorkspaceActivityLog from './WorkspaceActivityLog';
 
 export default function WorkspaceIpr() {
@@ -118,12 +120,10 @@ export default function WorkspaceIpr() {
         if (saved) setCustomAssets(JSON.parse(saved));
     }, []);
 
-    const fetchMasterStakeholders = async () => {
+    const fetchMasterStakeholders = async (force = false) => {
         try {
-            const { data, error } = await supabase.from('iota_stakeholder_master').select('*');
-            if (!error && data) {
-                setMasterStakeholders(data);
-            }
+            const data = await fetchCachedStakeholderMaster({ force });
+            setMasterStakeholders(data);
         } catch (e) {
             console.error('Master stakeholder fetch error:', e);
         }
@@ -136,7 +136,7 @@ export default function WorkspaceIpr() {
                 role_category: newStakeholderRole
             });
             if (!error) {
-                await fetchMasterStakeholders();
+                await fetchMasterStakeholders(true);
                 setShowNewStakeholderModal(false);
             } else {
                 alert('이해관계자 등록 중 오류가 발생했습니다.');
@@ -216,21 +216,11 @@ export default function WorkspaceIpr() {
         }
     };
 
-    const fetchTasks = async () => {
+    const fetchTasks = async (force = false) => {
         setIsLoadingTasks(true);
         try {
-            const { data, error } = await supabase
-                .from('iota_ipr_tasks')
-                .select('*')
-                .order('created_at', { ascending: false });
-            if (error) {
-                console.warn('Falling back to local storage for tasks:', error);
-                const localData = localStorage.getItem('iota_ipr_tasks_fallback');
-                if (localData) setTasks(JSON.parse(localData));
-                else setTasks([]);
-            } else {
-                setTasks(data || []);
-            }
+            const data = await fetchCachedWorkspaceTasks('iota_ipr_tasks', { force });
+            setTasks(data);
         } catch (e) {
             console.error('Failed to fetch tasks:', e);
             const localData = localStorage.getItem('iota_ipr_tasks_fallback');
@@ -328,7 +318,7 @@ export default function WorkspaceIpr() {
         setIsAdding(false);
         setEditingTaskId(null);
         setIsSubmittingTask(false);
-        fetchTasks();
+        fetchTasks(true);
     };
 
     const handleDeleteRow = async (id) => {
@@ -341,7 +331,7 @@ export default function WorkspaceIpr() {
             const updated = tasks.filter(t => t.id !== id);
             localStorage.setItem('iota_ipr_tasks_fallback', JSON.stringify(updated));
         } finally {
-            fetchTasks();
+            fetchTasks(true);
             setIsDeleting(false);
             setItemToDelete(null);
         }
@@ -383,6 +373,7 @@ export default function WorkspaceIpr() {
             return t;
         });
         setTasks(newTasks);
+        updateCachedWorkspaceTasks('iota_ipr_tasks', newTasks);
         
         try {
             await supabase.from('iota_ipr_tasks').update({ created_at: newCurrentTime }).eq('id', current.id);
@@ -413,6 +404,7 @@ export default function WorkspaceIpr() {
             return t;
         });
         setTasks(newTasks);
+        updateCachedWorkspaceTasks('iota_ipr_tasks', newTasks);
         
         try {
             await supabase.from('iota_ipr_tasks').update({ created_at: newCurrentTime }).eq('id', current.id);

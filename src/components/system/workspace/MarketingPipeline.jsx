@@ -212,7 +212,7 @@ export default function MarketingPipeline({ memberInfo, masterStakeholders, fetc
             if (error && error.code !== '23505') {
                 alert('이해관계자 등록 중 오류가 발생했습니다.');
             } else {
-                if (fetchMasterStakeholders) await fetchMasterStakeholders();
+                if (fetchMasterStakeholders) await fetchMasterStakeholders(true);
                 setShowNewStakeholderModal(false);
                 // Removed automatic submitPipeline() here based on user feedback
             }

@@ -31,6 +31,19 @@ const LFC_MEMBERS = new Set(['박준호', '강석민', '정리훈', '손유정',
 const DEVELOPMENT_MEMBERS = new Set(['홍장군', '채원', '김보성', '전승희', '김대익', '장성진', '이정훈', '박봉서', '김형주']);
 const MARKETING_MEMBERS = new Set(['김민지', '고아라']);
 const SPATIAL_MEMBERS = new Set(['김현수', '현철호', '신민호', '이가현', '정수명']);
+const KAM_MEMBERS = new Set(['김행단']);
+const IPR_MEMBERS = new Set(['윤용택']);
+
+const WORKSPACE_CODE_ALIASES = {
+    WS_PM1: ['WS_PM1', 'WS_PM'],
+    WS_PM2: ['WS_PM2', 'WS_PM'],
+    WS_LFC: ['WS_LFC', 'WS_FINANCING'],
+    WS_DSC: ['WS_DSC', 'WS_DEVELOPMENT'],
+    WS_EMC: ['WS_EMC', 'WS_MARKETING'],
+    WS_SSC: ['WS_SSC', 'WS_DIGITAL'],
+    WS_KAM: ['WS_KAM', 'WS_FUND'],
+    WS_IPR: ['WS_IPR'],
+};
 
 const compactOrganizationName = (value) => String(value || '')
     .trim()
@@ -77,9 +90,29 @@ export const getIotaOrganizationByStaff = (staffName, fallback = '공통') => {
     if (DEVELOPMENT_MEMBERS.has(staffName)) return '개발솔루션';
     if (MARKETING_MEMBERS.has(staffName)) return '기업마케팅';
     if (SPATIAL_MEMBERS.has(staffName)) return '공간솔루션';
-    if (staffName === '김행단') return 'KAM';
-    if (staffName === '윤용택') return 'IPR';
+    if (KAM_MEMBERS.has(staffName)) return 'KAM';
+    if (IPR_MEMBERS.has(staffName)) return 'IPR';
     return fallback;
+};
+
+export const getIotaStaffNamesByOrganization = (organizationName) => {
+    const normalizedOrganization = normalizeIotaOrganization(organizationName);
+    const membersByOrganization = {
+        사업1파트: PM1_MEMBERS,
+        사업2파트: PM2_MEMBERS,
+        LFC: LFC_MEMBERS,
+        개발솔루션: DEVELOPMENT_MEMBERS,
+        기업마케팅: MARKETING_MEMBERS,
+        공간솔루션: SPATIAL_MEMBERS,
+        KAM: KAM_MEMBERS,
+        IPR: IPR_MEMBERS,
+    };
+    return [...(membersByOrganization[normalizedOrganization] || [])];
+};
+
+export const getIotaWorkspaceCodeAliases = (workspaceCode) => {
+    const normalizedCode = normalizeIotaWorkspaceCode(workspaceCode);
+    return [...(WORKSPACE_CODE_ALIASES[normalizedCode] || [normalizedCode].filter(Boolean))];
 };
 
 export const getIotaOrganizationFromWorkspace = (workspaceCode, staffName = '', fallback = '') => {

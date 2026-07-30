@@ -4,15 +4,103 @@ import { supabase } from '../../../utils/supabaseClient';
 import { executeWithTimeout } from '../../../utils/supabaseHelper';
 import { notifyMembersOnCommentCreation } from '../../../utils/notificationHelpers';
 import { getDirectorLogCell } from '../../../utils/directorWorkflowLogs';
-import { normalizeIotaOrganization } from '../../../utils/iotaOrganizations.js';
+import {
+    getIotaStaffNamesByOrganization,
+    getIotaWorkspaceCodeAliases,
+    normalizeIotaOrganization,
+} from '../../../utils/iotaOrganizations.js';
 import { buildMentionCandidates } from '../../../utils/mentionHelpers.js';
 import { fetchLinkedTasksByLogIds, PMO_PROJECT_LABELS } from '../../../utils/pmoTaskLinks.js';
+import { fetchWorkspaceDirectoryData } from '../../../utils/workspaceDirectoryCache.js';
 import { useAuth } from '../../../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import LogWriteBox from '../LogWriteBox';
 import ReactionAvatarStack from '../ReactionAvatarStack';
 
 const LazyPmoTaskBoardStaging = React.lazy(() => import('../pmo/PmoTaskBoardStaging.jsx'));
+const WORKSPACE_LOG_CACHE_TTL_MS = 30 * 1000;
+
+const workspaceLogCache = new Map();
+const pendingWorkspaceLogRequests = new Map();
+
+const getWorkspaceLogCacheKey = ({ workspaceCode, isTaskBoard, taskId }) => (
+    isTaskBoard
+        ? `task:${String(taskId || '')}`
+        : `workspace:${String(workspaceCode || '')}`
+);
+
+const fetchWorkspaceLogData = async ({
+    workspaceCode,
+    workspaceLabel,
+    isTaskBoard,
+    taskId,
+    preferCache = false,
+}) => {
+    const cacheKey = getWorkspaceLogCacheKey({ workspaceCode, isTaskBoard, taskId });
+    const cachedEntry = workspaceLogCache.get(cacheKey);
+    if (
+        preferCache
+        && cachedEntry
+        && Date.now() - cachedEntry.cachedAt < WORKSPACE_LOG_CACHE_TTL_MS
+    ) {
+        return cachedEntry.logs;
+    }
+    if (pendingWorkspaceLogRequests.has(cacheKey)) {
+        return pendingWorkspaceLogRequests.get(cacheKey);
+    }
+
+    const request = (async () => {
+        let query = supabase
+            .from('iota_seoul_logs')
+            .select(`
+                log_id,
+                work_date,
+                raw_text,
+                summary,
+                updated_at,
+                created_at,
+                writer_staff_id,
+                writer_name,
+                input_status,
+                source_system,
+                metadata,
+                iota_seoul_log_stakeholders(sh_name, role_category)
+            `);
+
+        if (isTaskBoard && taskId) {
+            query = query.eq('metadata->>task_id', String(taskId));
+        } else if (!isTaskBoard && workspaceCode) {
+            const workspaceAliases = getIotaWorkspaceCodeAliases(workspaceCode);
+            const staffNames = getIotaStaffNamesByOrganization(workspaceLabel);
+            const candidateFilters = [
+                workspaceAliases.length > 0
+                    ? `metadata->>workspace_code.in.(${workspaceAliases.join(',')})`
+                    : null,
+                workspaceLabel
+                    ? `metadata->>workspace_label.ilike.*${workspaceLabel}*`
+                    : null,
+                staffNames.length > 0
+                    ? `writer_name.in.(${staffNames.join(',')})`
+                    : null,
+            ].filter(Boolean);
+            if (candidateFilters.length > 0) query = query.or(candidateFilters.join(','));
+        }
+
+        const { data, error } = await query
+            .order('work_date', { ascending: isTaskBoard })
+            .order('created_at', { ascending: isTaskBoard });
+        if (error) throw error;
+
+        const logs = data || [];
+        workspaceLogCache.set(cacheKey, { logs, cachedAt: Date.now() });
+        return logs;
+    })().finally(() => {
+        pendingWorkspaceLogRequests.delete(cacheKey);
+    });
+
+    pendingWorkspaceLogRequests.set(cacheKey, request);
+    return request;
+};
 
 const LinkedPmoTaskCards = ({ tasks, onOpenTask }) => {
     if (!tasks?.length) return null;
@@ -455,53 +543,28 @@ export default function WorkspaceActivityLog({ workspaceCode, workspaceLabel, is
         });
     };
 
-    const fetchMasterStakeholders = async () => {
-        const { data, error } = await supabase
-            .from('iota_stakeholder_master')
-            .select('*')
-            .limit(5000);
-        if (data && !error) {
-            setMasterStakeholders(data);
-        }
-        
-        const { data: pilotData, error: pilotError } = await supabase
-            .from('iota_seoul_pilot_members')
-            .select('auth_id, email, staff_name, org_name, role_code, workspace_code, is_active');
-        if (!pilotError && pilotData) {
-            setPilotMembers(pilotData);
+    const fetchMasterStakeholders = async (force = false) => {
+        try {
+            const directory = await fetchWorkspaceDirectoryData({ force });
+            setMasterStakeholders(directory.stakeholders);
+            setPilotMembers(directory.pilotMembers);
+        } catch (directoryError) {
+            console.error('Workspace directory could not be loaded.', directoryError);
         }
     };
 
-    const fetchLogs = async () => {
+    const fetchLogs = async ({ preferCache = false } = {}) => {
         setIsLoading(true);
         try {
-            let query = supabase
-                .from('iota_seoul_logs')
-                .select('*, iota_seoul_log_stakeholders(sh_name, role_category)');
-
-            if (isTaskBoard && taskId) {
-                query = query.eq('metadata->>task_id', String(taskId));
-            }
-
-            const { data, error } = await query
-                .order('work_date', { ascending: isTaskBoard })
-                .order('created_at', { ascending: isTaskBoard });
-            if (error) throw error;
-            
-            const fetchedLogs = data || [];
+            const fetchedLogs = await fetchWorkspaceLogData({
+                workspaceCode,
+                workspaceLabel,
+                isTaskBoard,
+                taskId,
+                preferCache,
+            });
             setLogs(fetchedLogs);
-            if (isTaskBoard) {
-                setLinkedTasksByLogId({});
-            } else {
-                try {
-                    setLinkedTasksByLogId(
-                        await fetchLinkedTasksByLogIds(fetchedLogs)
-                    );
-                } catch (taskLinkError) {
-                    console.error('Workspace post task links could not be loaded.', taskLinkError);
-                    setLinkedTasksByLogId({});
-                }
-            }
+            if (isTaskBoard) setLinkedTasksByLogId({});
             if (mobileMode) {
                 setExpandedLogs((current) => fetchedLogs.reduce((expanded, log) => {
                     if (log.writer_name !== '시스템' && log.metadata?.comments?.length > 0) {
@@ -518,9 +581,9 @@ export default function WorkspaceActivityLog({ workspaceCode, workspaceLabel, is
     };
 
     useEffect(() => {
-        fetchLogs();
+        fetchLogs({ preferCache: true });
         fetchMasterStakeholders();
-    }, [taskId]);
+    }, [taskId, workspaceCode]);
 
     useEffect(() => {
         const handleUpdate = (e) => {
@@ -673,6 +736,7 @@ export default function WorkspaceActivityLog({ workspaceCode, workspaceLabel, is
             if (error) throw error;
             
             setLogs(prev => prev.filter(l => l.log_id !== logId));
+            workspaceLogCache.delete(getWorkspaceLogCacheKey({ workspaceCode, isTaskBoard, taskId }));
             setLogToDelete(null);
         } catch (error) {
             console.error('Error deleting log:', error);
@@ -1065,6 +1129,41 @@ export default function WorkspaceActivityLog({ workspaceCode, workspaceLabel, is
     });
     const totalPages = Math.max(1, Math.ceil(filteredLogs.length / logsPerPage));
     const displayedLogs = filteredLogs.slice((currentPage - 1) * logsPerPage, currentPage * logsPerPage);
+    const displayedLogLinkKey = displayedLogs.map((log) => [
+        log.log_id,
+        log.updated_at,
+        ...(log.metadata?.linked_pmo_task_ids || []),
+    ].join(':')).join('|');
+
+    useEffect(() => {
+        let isActive = true;
+
+        const loadDisplayedLogTaskLinks = async () => {
+            if (isTaskBoard || displayedLogs.length === 0) {
+                if (isActive && isTaskBoard) setLinkedTasksByLogId({});
+                return;
+            }
+
+            try {
+                const displayedTaskLinks = await fetchLinkedTasksByLogIds(displayedLogs);
+                if (!isActive) return;
+                setLinkedTasksByLogId((currentTaskLinks) => {
+                    const nextTaskLinks = { ...currentTaskLinks };
+                    displayedLogs.forEach((log) => {
+                        delete nextTaskLinks[log.log_id];
+                    });
+                    return { ...nextTaskLinks, ...displayedTaskLinks };
+                });
+            } catch (taskLinkError) {
+                console.error('Workspace post task links could not be loaded.', taskLinkError);
+            }
+        };
+
+        loadDisplayedLogTaskLinks();
+        return () => {
+            isActive = false;
+        };
+    }, [displayedLogLinkKey, isTaskBoard]);
 
     return (
         <div className="w-full flex flex-col mt-0">

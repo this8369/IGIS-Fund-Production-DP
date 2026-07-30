@@ -429,7 +429,7 @@ export default function LogWriteBox({ memberInfo, masterStakeholders, pilotMembe
                 console.error('Master insert error:', masterError);
                 alert('이해관계자 등록 중 오류가 발생했습니다.');
             } else {
-                if(fetchMasterStakeholders) await fetchMasterStakeholders();
+                if(fetchMasterStakeholders) await fetchMasterStakeholders(true);
                 setShowNewStakeholderModal(false);
             }
         } catch (err) {
@@ -541,7 +541,7 @@ export default function LogWriteBox({ memberInfo, masterStakeholders, pilotMembe
                     if (masterError && masterError.code !== '23505') {
                         console.error('Master insert error:', masterError);
                     } else {
-                        if(fetchMasterStakeholders) fetchMasterStakeholders();
+                        if(fetchMasterStakeholders) fetchMasterStakeholders(true);
                     }
                 }
             }
