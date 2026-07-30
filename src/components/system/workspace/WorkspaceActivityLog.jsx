@@ -1,14 +1,59 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { supabase } from '../../../utils/supabaseClient';
 import { executeWithTimeout } from '../../../utils/supabaseHelper';
 import { notifyMembersOnCommentCreation } from '../../../utils/notificationHelpers';
 import { getDirectorLogCell } from '../../../utils/directorWorkflowLogs';
 import { normalizeIotaOrganization } from '../../../utils/iotaOrganizations.js';
 import { buildMentionCandidates } from '../../../utils/mentionHelpers.js';
+import { fetchLinkedTasksByLogIds, PMO_PROJECT_LABELS } from '../../../utils/pmoTaskLinks.js';
 import { useAuth } from '../../../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import LogWriteBox from '../LogWriteBox';
 import ReactionAvatarStack from '../ReactionAvatarStack';
+
+const LazyPmoTaskBoardStaging = React.lazy(() => import('../pmo/PmoTaskBoardStaging.jsx'));
+
+const LinkedPmoTaskCards = ({ tasks, onOpenTask }) => {
+    if (!tasks?.length) return null;
+
+    return (
+        <div className="mb-[16px] border-t border-[#333] pt-[12px]">
+            <div className="mb-[8px] flex items-center justify-between">
+                <span className="text-[12px] font-bold text-[#86868B]">연결된 통합업무</span>
+                <span className="text-[12px] font-bold text-[#4ade80]">{tasks.length}건</span>
+            </div>
+            <div className="grid grid-cols-1 gap-[8px] xl:grid-cols-2">
+                {tasks.map((task) => (
+                    <button
+                        key={task.id}
+                        type="button"
+                        onClick={(event) => {
+                            event.stopPropagation();
+                            onOpenTask(task.id);
+                        }}
+                        className="rounded-[10px] border border-[#30d158]/25 bg-[#30d158]/5 px-[12px] py-[10px] text-left transition-colors hover:border-[#30d158]/45 hover:bg-[#30d158]/10"
+                    >
+                        <div className="flex items-center gap-[8px]">
+                            <span className="font-mono text-[12px] font-black text-[#60a5fa]">{task.displayId}</span>
+                            <span className="rounded-[4px] border border-[#494949] bg-[#343434] px-[5px] py-[1px] text-[10px] font-bold text-[#d8d8d4]">
+                                {PMO_PROJECT_LABELS[task.projectCode] || task.projectCode || 'IOTA 공통'}
+                            </span>
+                            <span className="ml-auto text-[11px] font-bold text-[#A1A1AA]">{task.status || '미착수'}</span>
+                        </div>
+                        <div className="mt-[6px] truncate text-[14px] font-bold text-[#E5E5E5]">{task.taskName}</div>
+                        <div className="mt-[3px] flex items-center gap-[6px] text-[11px] text-[#86868B]">
+                            <span className="truncate">{task.categoryMain || '업무분류 미정'}</span>
+                            <span>·</span>
+                            <span className="truncate">{task.leadDeptName || '주관 미정'}</span>
+                            <span className="ml-auto shrink-0 font-bold text-[#60a5fa]">상세보기 →</span>
+                        </div>
+                    </button>
+                ))}
+            </div>
+        </div>
+    );
+};
 
 const getWorkspaceMessageTitle = (workspaceCode, workspaceLabel) => {
     const workspaceTitles = {
@@ -347,6 +392,8 @@ export default function WorkspaceActivityLog({ workspaceCode, workspaceLabel, is
     const [logSearchQuery, setLogSearchQuery] = useState('');
     const [masterStakeholders, setMasterStakeholders] = useState([]);
     const [pilotMembers, setPilotMembers] = useState([]);
+    const [linkedTasksByLogId, setLinkedTasksByLogId] = useState({});
+    const [embeddedTaskDetailOpen, setEmbeddedTaskDetailOpen] = useState(false);
     
     // Delete states
     const [logToDelete, setLogToDelete] = useState(null);
@@ -443,6 +490,18 @@ export default function WorkspaceActivityLog({ workspaceCode, workspaceLabel, is
             
             const fetchedLogs = data || [];
             setLogs(fetchedLogs);
+            if (isTaskBoard) {
+                setLinkedTasksByLogId({});
+            } else {
+                try {
+                    setLinkedTasksByLogId(
+                        await fetchLinkedTasksByLogIds(fetchedLogs.map((log) => log.log_id))
+                    );
+                } catch (taskLinkError) {
+                    console.error('Workspace post task links could not be loaded.', taskLinkError);
+                    setLinkedTasksByLogId({});
+                }
+            }
             if (mobileMode) {
                 setExpandedLogs((current) => fetchedLogs.reduce((expanded, log) => {
                     if (log.writer_name !== '시스템' && log.metadata?.comments?.length > 0) {
@@ -550,6 +609,60 @@ export default function WorkspaceActivityLog({ workspaceCode, workspaceLabel, is
         window.addEventListener('popstate', handleTargetLog);
         return () => window.removeEventListener('popstate', handleTargetLog);
     }, [logs]);
+
+    useEffect(() => {
+        const syncEmbeddedTaskDetail = () => {
+            const url = new URL(window.location.href);
+            const currentTaskId = url.searchParams.get('taskId');
+            const currentState = window.history.state && typeof window.history.state === 'object'
+                ? window.history.state
+                : {};
+            if (!currentTaskId || currentState.workspaceTaskDetail !== currentTaskId) {
+                setEmbeddedTaskDetailOpen(false);
+            }
+        };
+
+        window.addEventListener('popstate', syncEmbeddedTaskDetail);
+        return () => window.removeEventListener('popstate', syncEmbeddedTaskDetail);
+    }, []);
+
+    const openTaskDetail = (taskIdToOpen) => {
+        if (!taskIdToOpen) return;
+        const url = new URL(window.location.href);
+        url.searchParams.set('taskId', taskIdToOpen);
+        const currentState = window.history.state && typeof window.history.state === 'object'
+            ? window.history.state
+            : {};
+        window.history.pushState(
+            { ...currentState, workspaceTaskDetail: String(taskIdToOpen) },
+            '',
+            `${url.pathname}${url.search}${url.hash}`
+        );
+        setEmbeddedTaskDetailOpen(true);
+    };
+
+    const closeEmbeddedTaskDetail = () => {
+        const url = new URL(window.location.href);
+        const currentTaskId = url.searchParams.get('taskId');
+        const currentState = window.history.state && typeof window.history.state === 'object'
+            ? window.history.state
+            : {};
+
+        if (currentTaskId && currentState.workspaceTaskDetail === currentTaskId) {
+            window.history.back();
+            return;
+        }
+
+        url.searchParams.delete('taskId');
+        const nextState = { ...currentState };
+        delete nextState.workspaceTaskDetail;
+        window.history.replaceState(
+            nextState,
+            '',
+            `${url.pathname}${url.search}${url.hash}`
+        );
+        setEmbeddedTaskDetailOpen(false);
+    };
 
     const handleDelete = async (logId) => {
         setIsDeleting(true);
@@ -1583,6 +1696,13 @@ export default function WorkspaceActivityLog({ workspaceCode, workspaceLabel, is
                                             </div>
                                         )}
                                         <div className="clear-both mb-[16px]"></div>
+
+                                        {checkUserAccess(log) && (
+                                            <LinkedPmoTaskCards
+                                                tasks={linkedTasksByLogId[log.log_id]}
+                                                onOpenTask={openTaskDetail}
+                                            />
+                                        )}
                                         
                                         {/* Attached Files List */}
                                         {checkUserAccess(log) && log.metadata?.attachedFiles && log.metadata.attachedFiles.length > 0 && (
@@ -1865,6 +1985,22 @@ export default function WorkspaceActivityLog({ workspaceCode, workspaceLabel, is
                         />
                     </div>
                 </div>
+            )}
+
+            {embeddedTaskDetailOpen && createPortal(
+                <React.Suspense
+                    fallback={(
+                        <div className="fixed inset-0 z-[190] flex items-center justify-center bg-black/70">
+                            <span className="text-[15px] font-bold text-[#A1A1AA]">업무 상세를 불러오는 중입니다.</span>
+                        </div>
+                    )}
+                >
+                    <LazyPmoTaskBoardStaging
+                        embeddedDetailOnly
+                        onEmbeddedDetailClose={closeEmbeddedTaskDetail}
+                    />
+                </React.Suspense>,
+                document.body
             )}
 
             {/* Delete Confirmation Modal */}

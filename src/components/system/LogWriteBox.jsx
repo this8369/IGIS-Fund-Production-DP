@@ -7,6 +7,12 @@ import {
     buildMentionCandidates,
     getActiveMentionEntities,
 } from '../../utils/mentionHelpers.js';
+import {
+    fetchLogTaskIds,
+    fetchPmoTaskOptions,
+    replaceLogTaskLinks,
+} from '../../utils/pmoTaskLinks.js';
+import PmoTaskPickerModal from './pmo/PmoTaskPickerModal.jsx';
 
 export default function LogWriteBox({ memberInfo, masterStakeholders, pilotMembers = [], fetchLogs, fetchMasterStakeholders, workspaceCode, workspaceLabel, defaultExpanded = false, editMode = false, initialData = null, onCancel = null, onSuccess = null, isTaskBoard = false, taskId = null, taskProject = null, mobileMode = false }) {
     const uniqueIdSuffix = editMode ? `${workspaceCode}-edit` : workspaceCode;
@@ -40,6 +46,12 @@ export default function LogWriteBox({ memberInfo, masterStakeholders, pilotMembe
     const [showNewStakeholderModal, setShowNewStakeholderModal] = useState(false);
     const [showCompanyWarningModal, setShowCompanyWarningModal] = useState(false);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
+    const [showTaskPickerModal, setShowTaskPickerModal] = useState(false);
+    const [pmoTaskOptions, setPmoTaskOptions] = useState([]);
+    const [linkedTaskIds, setLinkedTaskIds] = useState([]);
+    const [taskPickerLoading, setTaskPickerLoading] = useState(false);
+    const [taskPickerError, setTaskPickerError] = useState('');
+    const [taskLinksReady, setTaskLinksReady] = useState(!editMode || isTaskBoard);
     
 
     // Mention states
@@ -166,6 +178,42 @@ export default function LogWriteBox({ memberInfo, masterStakeholders, pilotMembe
             }
         }
     }, [editMode, initialData, masterStakeholders]);
+
+    useEffect(() => {
+        let isMounted = true;
+        const loadExistingTaskLinks = async () => {
+            if (!editMode || isTaskBoard) {
+                setTaskLinksReady(true);
+                return;
+            }
+            if (!initialData?.log_id) {
+                setTaskLinksReady(false);
+                return;
+            }
+            setTaskLinksReady(false);
+            setTaskPickerError('');
+            try {
+                const [taskIds, tasks] = await Promise.all([
+                    fetchLogTaskIds(initialData.log_id),
+                    fetchPmoTaskOptions(),
+                ]);
+                if (!isMounted) return;
+                setLinkedTaskIds(taskIds);
+                setPmoTaskOptions(tasks);
+                setTaskLinksReady(true);
+            } catch (error) {
+                console.error('Workspace post task links could not be loaded.', error);
+                if (isMounted) {
+                    setTaskPickerError('기존 통합업무 연결정보를 불러오지 못했습니다. 다시 시도해 주세요.');
+                }
+            }
+        };
+
+        loadExistingTaskLinks();
+        return () => {
+            isMounted = false;
+        };
+    }, [editMode, initialData?.log_id, isTaskBoard]);
 
     useEffect(() => {
         const textarea = document.getElementById(`log-textarea-${uniqueIdSuffix}`);
@@ -345,6 +393,22 @@ export default function LogWriteBox({ memberInfo, masterStakeholders, pilotMembe
         setAttachedFiles(prev => prev.filter((_, idx) => idx !== indexToRemove));
     };
 
+    const openTaskPicker = async () => {
+        setShowTaskPickerModal(true);
+        setTaskPickerError('');
+        if (pmoTaskOptions.length > 0) return;
+
+        setTaskPickerLoading(true);
+        try {
+            setPmoTaskOptions(await fetchPmoTaskOptions());
+        } catch (error) {
+            console.error('PMO tasks could not be loaded for workspace post linking.', error);
+            setTaskPickerError('통합업무 원장을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.');
+        } finally {
+            setTaskPickerLoading(false);
+        }
+    };
+
     const registerMasterStakeholder = async () => {
 
         if (!stakeholderCat) return alert('이해관계자 분류를 선택해주세요.');
@@ -416,7 +480,12 @@ export default function LogWriteBox({ memberInfo, masterStakeholders, pilotMembe
                 const { error: logError } = await executeWithTimeout(supabase.from('iota_seoul_logs').update(logData).eq('log_id', logId));
                 if (logError) throw logError;
                 
-                await executeWithTimeout(supabase.from('iota_seoul_log_links').delete().eq('log_id', logId));
+                await executeWithTimeout(
+                    supabase
+                        .from('iota_seoul_log_links')
+                        .delete()
+                        .eq('link_id', `link_${logId}`)
+                );
                 await executeWithTimeout(supabase.from('iota_seoul_log_stakeholders').delete().eq('log_id', logId));
             } else {
                 const { error: logError } = await executeWithTimeout(supabase.from('iota_seoul_logs').insert({
@@ -447,7 +516,12 @@ export default function LogWriteBox({ memberInfo, masterStakeholders, pilotMembe
             }));
             if (linkError) throw linkError;
 
-            // 3. Update master DB if new
+            // 3. Replace linked PMO tasks for workspace posts
+            if (!isTaskBoard) {
+                await replaceLogTaskLinks(logId, linkedTaskIds);
+            }
+
+            // 4. Update master DB if new
             if (companyQuery) {
                 const existing = masterStakeholders.find(s => s.company_name === companyQuery && (s.contact_name || '') === (contactQuery || ''));
                 if (!existing) {
@@ -464,7 +538,7 @@ export default function LogWriteBox({ memberInfo, masterStakeholders, pilotMembe
                 }
             }
 
-            // 4. Insert into iota_seoul_log_stakeholders
+            // 5. Insert into iota_seoul_log_stakeholders
             if (stakeholderCat || companyQuery || contactQuery) {
                 const combinedName = [companyQuery, contactQuery].filter(Boolean).join(' - ');
                 const { error: shError } = await executeWithTimeout(supabase.from('iota_seoul_log_stakeholders').insert({
@@ -486,6 +560,7 @@ export default function LogWriteBox({ memberInfo, masterStakeholders, pilotMembe
                 setVisibilityIndividuals([]);
                 setMentionedEntities([]);
                 setAttachedFiles([]);
+                setLinkedTaskIds([]);
             }
             if(fetchLogs) {
                 setTimeout(() => {
@@ -522,6 +597,10 @@ export default function LogWriteBox({ memberInfo, masterStakeholders, pilotMembe
             resolvedTitle = content.trim().split('\n')[0].slice(0, 50) || '업무 로그';
         }
         if (!resolvedTitle.trim() || !content.trim()) return;
+        if (editMode && !isTaskBoard && !taskLinksReady) {
+            alert(taskPickerError || '기존 통합업무 연결정보를 확인 중입니다. 잠시 후 다시 시도해 주세요.');
+            return;
+        }
         if (isTaskBoard) {
             handleSubmit(e);
         } else if (visibilityGroups.length === 0 && visibilityIndividuals.length === 0) {
@@ -591,6 +670,18 @@ export default function LogWriteBox({ memberInfo, masterStakeholders, pilotMembe
     };
 
     const displayLabel = workspaceLabel ? workspaceLabel.split('-')[0].trim() : '';
+    const selectedPmoTasks = pmoTaskOptions.filter((task) => (
+        linkedTaskIds.some((taskId) => String(taskId) === String(task.id))
+    ));
+    const selectedProjectCode = projectId === 'P00030'
+        ? 'PFV_427'
+        : projectId === 'P00037'
+            ? 'PFV_816'
+            : projectId === '112614'
+                ? 'FUND_421'
+                : projectId === 'EXTERNAL'
+                    ? 'EXTERNAL'
+                    : 'IOTA_SEOUL';
 
     const collapsedText = '업무 메시지, 협업 사항 또는 공유할 내용을 등록하세요.';
 
@@ -881,6 +972,39 @@ export default function LogWriteBox({ memberInfo, masterStakeholders, pilotMembe
                         </div>
                     )}
 
+                    {!isTaskBoard && selectedPmoTasks.length > 0 && (
+                        <div className="mt-[16px] border-t border-[#333] pt-[12px]">
+                            <div className="mb-[8px] flex items-center justify-between">
+                                <span className="text-[12px] font-bold text-[#A1A1AA]">연결할 통합업무</span>
+                                <span className="text-[12px] font-bold text-[#4ade80]">{selectedPmoTasks.length}건</span>
+                            </div>
+                            <div className="flex flex-wrap gap-[8px]">
+                                {selectedPmoTasks.map((task) => (
+                                    <div
+                                        key={task.id}
+                                        className="flex max-w-full items-center gap-[8px] rounded-[8px] border border-[#30d158]/30 bg-[#30d158]/5 px-[10px] py-[7px]"
+                                    >
+                                        <span className="font-mono text-[12px] font-black text-[#60a5fa]">{task.displayId}</span>
+                                        <span className="max-w-[320px] truncate text-[13px] font-bold text-[#E5E5E5]">{task.taskName}</span>
+                                        <button
+                                            type="button"
+                                            aria-label={`${task.taskName} 연결 해제`}
+                                            onClick={() => setLinkedTaskIds((currentTaskIds) => (
+                                                currentTaskIds.filter((taskId) => String(taskId) !== String(task.id))
+                                            ))}
+                                            className="ml-[2px] text-[#86868B] hover:text-[#FF453A]"
+                                        >
+                                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+                                                <line x1="18" y1="6" x2="6" y2="18" />
+                                                <line x1="6" y1="6" x2="18" y2="18" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
                     {/* Mention Dropdown */}
                     {showMentionDropdown && filteredMentions.length > 0 && (
                         <div 
@@ -1033,6 +1157,24 @@ export default function LogWriteBox({ memberInfo, masterStakeholders, pilotMembe
                             multiple 
                         />
                         {!isTaskBoard && (
+                            <button
+                                type="button"
+                                onClick={openTaskPicker}
+                                className={`px-[16px] ${btnPadding} ${btnRounding} border ${
+                                    linkedTaskIds.length > 0
+                                        ? 'border-[#30d158]/40 bg-[#30d158]/10 text-[#4ade80]'
+                                        : 'border-[#296da8] bg-[#2997ff]/10 text-[#7cc0ff]'
+                                } font-bold text-[13px] hover:bg-[#2997ff]/20 transition-colors cursor-pointer flex items-center gap-2 whitespace-nowrap`}
+                            >
+                                통합업무 연결
+                                {linkedTaskIds.length > 0 && (
+                                    <span className="rounded-full bg-black/20 px-[6px] py-[1px] text-[11px]">
+                                        {linkedTaskIds.length}
+                                    </span>
+                                )}
+                            </button>
+                        )}
+                        {!isTaskBoard && (
                             <button 
                                 type="button"
                                 onClick={() => setShowFileSecurityModal(true)}
@@ -1086,6 +1228,26 @@ export default function LogWriteBox({ memberInfo, masterStakeholders, pilotMembe
             </div>
 
             {/* Modals */}
+
+            {showTaskPickerModal && !isTaskBoard && (
+                <PmoTaskPickerModal
+                    tasks={pmoTaskOptions}
+                    selectedTaskIds={linkedTaskIds}
+                    reference={{
+                        title,
+                        content,
+                        workspaceLabel: displayLabel,
+                        projectCode: selectedProjectCode,
+                    }}
+                    loading={taskPickerLoading}
+                    errorMessage={taskPickerError}
+                    onClose={() => setShowTaskPickerModal(false)}
+                    onApply={(selectedTaskIds) => {
+                        setLinkedTaskIds(selectedTaskIds);
+                        setShowTaskPickerModal(false);
+                    }}
+                />
+            )}
 
             {/* Permission Modal */}
             {showVisibilityModal && (
