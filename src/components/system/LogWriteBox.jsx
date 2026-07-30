@@ -60,6 +60,7 @@ export default function LogWriteBox({ memberInfo, masterStakeholders, pilotMembe
     const [mentionCursorIndex, setMentionCursorIndex] = useState(0);
     const [mentionPosition, setMentionPosition] = useState({ top: 0, left: 0 });
     const [mentionedEntities, setMentionedEntities] = useState([]);
+    const [isContentFocused, setIsContentFocused] = useState(false);
 
     // Permission states
     const [visibilityGroups, setVisibilityGroups] = useState([]);
@@ -932,7 +933,9 @@ export default function LogWriteBox({ memberInfo, masterStakeholders, pilotMembe
                         {/* Background Div for Highlights */}
                         <div 
                         id={`highlight-bg-${uniqueIdSuffix}`}
-                        className="absolute inset-0 pointer-events-none whitespace-pre-wrap break-words text-[15px] leading-relaxed overflow-hidden font-sans p-0 border-0 m-0 box-border"
+                        className={`absolute inset-0 pointer-events-none whitespace-pre-wrap break-words text-[15px] leading-relaxed overflow-hidden font-sans p-0 border-0 m-0 box-border ${
+                            isContentFocused ? 'invisible' : 'visible'
+                        }`}
                         aria-hidden="true"
                     >
                         {renderHighlightedText()}
@@ -943,13 +946,19 @@ export default function LogWriteBox({ memberInfo, masterStakeholders, pilotMembe
                         ref={textareaRef}
                         id={`log-textarea-${uniqueIdSuffix}`}
                         value={content}
+                        placeholder={'진행 이력, 협업 요청, 리스크 판단 필요사항, 의사결정 필요항목을 입력하세요.\n(@로 담당부서 또는 담당자를 맨션할 수 있습니다)'}
                         onChange={handleContentChange}
+                        onFocus={() => setIsContentFocused(true)}
+                        onBlur={() => setIsContentFocused(false)}
                         onScroll={(e) => {
                             const bg = document.getElementById(`highlight-bg-${uniqueIdSuffix}`);
                             if (bg) bg.scrollTop = e.target.scrollTop;
                         }}
-                        className="w-full bg-transparent text-transparent caret-white outline-none resize-y h-[80px] leading-relaxed text-[15px] relative z-10 font-sans p-0 border-0 m-0 box-border"
+                        className={`w-full bg-transparent caret-white outline-none resize-y h-[80px] leading-relaxed text-[15px] relative z-10 font-sans p-0 border-0 m-0 box-border ${
+                            isContentFocused ? 'text-[#E5E5E5] placeholder:text-[#bbb9af]' : 'text-transparent placeholder:text-transparent'
+                        }`}
                         style={{ caretColor: '#E5E5E5' }}
+                        spellCheck={false}
                         required
                     ></textarea>
                     
