@@ -4,20 +4,11 @@ import { useAuth } from '../../context/AuthContext';
 import { notifyMembersOnCommentCreation } from '../../utils/notificationHelpers';
 import { fetchDirectorWorkflowLogs, getDirectorLogCell, getDirectorStaffCell } from '../../utils/directorWorkflowLogs';
 import { normalizeIotaOrganization } from '../../utils/iotaOrganizations.js';
+import { fetchPmoBoardTasks } from '../../utils/pmoBoardDataCache.js';
+import { fetchWorkspaceDirectoryData } from '../../utils/workspaceDirectoryCache.js';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactionAvatarStack from './ReactionAvatarStack';
 import PmoTaskBoardStaging, { FALLBACK_BOARD_TASKS } from './pmo/PmoTaskBoardStaging';
-
-const WORKSPACE_CONFIG = [
-    { id: 'pm1', name: '사업1파트', path: 'platform/iotaseoul/workspace/pm1', table: 'iota_pm_tasks', color: 'bg-[#bdbba7]' },
-    { id: 'pm2', name: '사업2파트', path: 'platform/iotaseoul/workspace/pm2', table: 'iota_pm_tasks', color: 'bg-[#bdbba7]' },
-    { id: 'financing', name: 'LFC', path: 'platform/iotaseoul/workspace/financing', table: 'iota_financing_tasks', color: 'bg-[#30d158]' },
-    { id: 'development', name: '개발솔루션', path: 'platform/iotaseoul/workspace/development', table: 'iota_development_tasks', color: 'bg-[#0a84ff]' },
-    { id: 'marketing', name: '기업마케팅', path: 'platform/iotaseoul/workspace/marketing', table: 'iota_marketing_tasks', color: 'bg-[#64d2ff]' },
-    { id: 'digital', name: '공간솔루션', path: 'platform/iotaseoul/workspace/digital', table: 'iota_digital_tasks', color: 'bg-[#ffd60a]' },
-    { id: 'fund', name: 'KAM', path: 'platform/iotaseoul/workspace/fund', table: 'iota_fund_tasks', color: 'bg-[#bf5af2]' },
-    { id: 'ipr', name: 'IPR', path: 'platform/iotaseoul/workspace/ipr', table: 'iota_ipr_tasks', color: 'bg-[#ff453a]' }
-];
 
 export default function DecisionLog() {
         const navigate = (path) => {
@@ -36,12 +27,6 @@ export default function DecisionLog() {
     const [logsViewMode, setLogsViewMode] = useState('full');
     const [currentPage, setCurrentPage] = useState(1);
     const [logSearchQuery, setLogSearchQuery] = useState('');
-    
-    // Focus Tasks states
-    const [focusTasks, setFocusTasks] = useState({});
-    const [isLoadingFocus, setIsLoadingFocus] = useState(true);
-    const [activeWorkspaceTab, setActiveWorkspaceTab] = useState('pm');
-    const [expandedFocusTaskId, setExpandedFocusTaskId] = useState(null);
     
     // Header Filter states
     const [filterStakeholder, setFilterStakeholder] = useState('');
@@ -233,14 +218,9 @@ export default function DecisionLog() {
 
     const fetchMasterStakeholders = async () => {
         try {
-            const { data, error } = await supabase.from('iota_stakeholder_master').select('*');
-            if (!error && data) {
-                setMasterStakeholders(data);
-            }
-            const { data: pilotData, error: pilotError } = await supabase.from('iota_seoul_pilot_members').select('email, staff_name, org_name, role_code');
-            if (!pilotError && pilotData) {
-                setPilotMembers(pilotData);
-            }
+            const directory = await fetchWorkspaceDirectoryData();
+            setMasterStakeholders(directory.stakeholders);
+            setPilotMembers(directory.pilotMembers);
         } catch (e) {
             console.error(e);
         }
@@ -261,23 +241,17 @@ export default function DecisionLog() {
             setLogs(validLogs);
 
             try {
-                const { data: taskData, error: taskError } = await supabase
-                    .schema('iota_v2')
-                    .from('iota_pmo_tasks')
-                    .select('*');
-                if (!taskError && taskData) {
-                    const sorted = [...taskData].sort((a, b) => {
-                        const dateA = new Date(a.created_at || 0).getTime();
-                        const dateB = new Date(b.created_at || 0).getTime();
-                        if (dateA !== dateB) return dateA - dateB;
-                        return String(a.id).localeCompare(String(b.id));
-                    });
-                    const tasksWithDisplayIds = sorted.map((t, idx) => ({
-                        ...t,
-                        displayId: `T-${String(idx + 1).padStart(3, '0')}`
-                    }));
-                    setPmoTasks(tasksWithDisplayIds);
-                }
+                const taskData = await fetchPmoBoardTasks();
+                const sorted = [...taskData].sort((a, b) => {
+                    const dateA = new Date(a.created_at || 0).getTime();
+                    const dateB = new Date(b.created_at || 0).getTime();
+                    if (dateA !== dateB) return dateA - dateB;
+                    return String(a.id).localeCompare(String(b.id));
+                });
+                setPmoTasks(sorted.map((task, index) => ({
+                    ...task,
+                    displayId: `T-${String(index + 1).padStart(3, '0')}`,
+                })));
             } catch (err) {
                 console.warn("Failed to fetch PMO tasks in DecisionLog:", err);
             }
@@ -365,44 +339,11 @@ export default function DecisionLog() {
     };
 
     useEffect(() => {
-        const fetchFocusTasks = async () => {
-            setIsLoadingFocus(true);
-            try {
-                const results = {};
-                const priorityWeight = { '높음': 3, '중간': 2, '낮음': 1 };
-                
-                await Promise.all(WORKSPACE_CONFIG.map(async (ws) => {
-                    const { data, error } = await supabase
-                        .from(ws.table)
-                        .select('*')
-                        .order('created_at', { ascending: false })
-                        .limit(20);
-                        
-                    if (!error && data) {
-                        const isCoreAsset = (asset) => {
-                            if (!asset || typeof asset !== 'string') return false;
-                            const lower = asset.toLowerCase();
-                            return lower.includes('iota') || lower.includes('이오타') || lower.includes('427') || lower.includes('816') || lower.includes('421') || lower.includes('공통');
-                        };
-                        const filteredData = data.filter(t => isCoreAsset(t.related_asset)).slice(0, 3);
-                        results[ws.id] = filteredData;
-                    } else {
-                        results[ws.id] = [];
-                    }
-                }));
-                
-                setFocusTasks(results);
-            } catch (err) {
-                console.error("Error fetching focus tasks:", err);
-            } finally {
-                setIsLoadingFocus(false);
-            }
-        };
-
-        fetchFocusTasks();
-        fetchLogs();
-        fetchMasterStakeholders();
-        fetchIotaLogs();
+        const deferredDataTimer = window.setTimeout(() => {
+            fetchLogs();
+            fetchMasterStakeholders();
+            fetchIotaLogs();
+        }, 300);
         
         const handleRefetch = () => {
             fetchLogs();
@@ -411,7 +352,10 @@ export default function DecisionLog() {
         };
         window.addEventListener('refetch-data', handleRefetch);
         
-        return () => window.removeEventListener('refetch-data', handleRefetch);
+        return () => {
+            window.clearTimeout(deferredDataTimer);
+            window.removeEventListener('refetch-data', handleRefetch);
+        };
     }, []);
 
     useEffect(() => {

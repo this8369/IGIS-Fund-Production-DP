@@ -5,6 +5,13 @@ import WorkspaceActivityLog from '../workspace/WorkspaceActivityLog';
 import { notifyMembersOnTaskCreation } from '../../../utils/notificationHelpers';
 import { calculatePmoPriorityScore as calculatePriorityScore, comparePmoTasksByCreatedAt, comparePmoTasksByPriority, getPmoMeetingGrade, matchesPmoStatusFilter, parseTaskBoolean as parseBool } from '../../../utils/pmoTaskPriority';
 import { normalizeIotaDepartmentList, normalizeIotaOrganization } from '../../../utils/iotaOrganizations.js';
+import {
+    fetchPmoBoardReferenceData,
+    fetchPmoBoardTasks,
+    fetchRecentPmoActiveTaskIds,
+    getCachedPmoBoardTasks,
+    invalidatePmoBoardTasksCache,
+} from '../../../utils/pmoBoardDataCache.js';
 import toast from 'react-hot-toast';
 
 const RAW_FALLBACK_BOARD_TASKS = [
@@ -1206,6 +1213,13 @@ export const FALLBACK_BOARD_TASKS = RAW_FALLBACK_BOARD_TASKS.map((task) => ({
     coop_depts: normalizeIotaDepartmentList(task.coop_depts).join(';'),
 }));
 
+const decoratePmoBoardTasks = (taskRows) => [...(taskRows || [])]
+    .sort(comparePmoTasksByCreatedAt)
+    .map((task, index) => ({
+        ...task,
+        displayId: `T-${String(index + 1).padStart(3, '0')}`,
+    }));
+
 // Department name normalization helper
 const normalizeDeptName = (name, isCoop = false) => {
     if (!name) return isCoop ? '' : '사업2파트';
@@ -1344,9 +1358,10 @@ export default function PmoTaskBoardStaging({
     onEmbeddedDetailClose = null
 }) {
     const { memberInfo } = useAuth();
-    const [tasks, setTasks] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [isDbMode, setIsDbMode] = useState(false);
+    const initialCachedTasksRef = useRef(getCachedPmoBoardTasks());
+    const [tasks, setTasks] = useState(() => decoratePmoBoardTasks(initialCachedTasksRef.current));
+    const [loading, setLoading] = useState(() => !initialCachedTasksRef.current);
+    const [isDbMode, setIsDbMode] = useState(() => Boolean(initialCachedTasksRef.current));
 
     // Table header filters state
     const [selectedProject, setSelectedProject] = useState('전체보기');
@@ -1676,154 +1691,31 @@ export default function PmoTaskBoardStaging({
         return ['A_즉시상정', 'B_회의점검', 'C_주간관리', 'D_대기'];
     }, []);
 
-    async function fetchTasks(showLoading = true) {
+    const applyReferenceData = (referenceData) => {
+        if (referenceData.projects.length > 0) setProjects(referenceData.projects);
+        if (referenceData.departments.length > 0) {
+            let mapped = [...referenceData.departments];
+            if (!mapped.some((department) => department.dept_code === 'DEPT_PO')) {
+                mapped = [
+                    ...mapped.filter((department) => department.dept_code === 'DEPT_PM2'),
+                    { dept_code: 'DEPT_PO', dept_name: '기획추진' },
+                    ...mapped.filter((department) => department.dept_code !== 'DEPT_PM2'),
+                ];
+            }
+            setDepartments(mapped);
+        }
+        if (referenceData.stakeholders.length > 0) setStakeholders(referenceData.stakeholders);
+        setMasterStakeholders(referenceData.masterStakeholders);
+        setSubsectors(referenceData.subsectors);
+        setSupportOptions(referenceData.supportOptions);
+    };
+
+    async function fetchTasks(showLoading = true, force = false) {
         try {
-            if (showLoading) setLoading(true);
-            
-            // Load base projects
-            try {
-                const { data: projData } = await supabase
-                    .schema('iota_v2')
-                    .from('iota_projects')
-                    .select('*');
-                if (projData && projData.length > 0) setProjects(projData);
-            } catch (e) {
-                console.warn("Projects load failed, using defaults:", e);
-            }
-
-            // Load departments
-            try {
-                const { data: deptData } = await supabase
-                    .schema('iota_v2')
-                    .from('iota_departments')
-                    .select('*');
-                if (deptData && deptData.length > 0) {
-                    let mapped = [...deptData];
-                    if (!mapped.some(d => d.dept_code === 'DEPT_PO')) {
-                        mapped = [
-                            ...mapped.filter(d => d.dept_code === 'DEPT_PM2'),
-                            { dept_code: 'DEPT_PO', dept_name: '기획추진' },
-                            ...mapped.filter(d => d.dept_code !== 'DEPT_PM2')
-                        ];
-                    }
-                    setDepartments(mapped);
-                }
-            } catch (e) {
-                console.warn("Departments load failed, using defaults:", e);
-            }
-
-            // Load iota_v2 stakeholders
-            try {
-                const { data: stakeData } = await supabase
-                    .schema('iota_v2')
-                    .from('iota_stakeholders')
-                    .select('*');
-                if (stakeData && stakeData.length > 0) setStakeholders(stakeData);
-            } catch (e) {
-                console.warn("iota_v2 stakeholders load failed, using defaults:", e);
-            }
-
-            // Load master public stakeholders
-            try {
-                const { data: shData } = await supabase
-                    .from('iota_stakeholder_master')
-                    .select('*');
-                if (shData) setMasterStakeholders(shData);
-            } catch (e) {
-                console.warn("master stakeholders load failed:", e);
-            }
-
-            // Load subsectors
-            try {
-                const { data: subData } = await supabase
-                    .schema('iota_v2')
-                    .from('iota_subsectors')
-                    .select('subsector_name');
-                if (subData) {
-                    setSubsectors(subData.map(s => s.subsector_name));
-                }
-            } catch (e) {
-                console.warn("Subsectors load failed, using defaults:", e);
-            }
-
-            // Load support options
-            try {
-                const { data: supportData } = await supabase
-                    .schema('iota_v2')
-                    .from('iota_support_options')
-                    .select('option_name');
-                if (supportData) {
-                    setSupportOptions(supportData.map(o => o.option_name));
-                }
-            } catch (e) {
-                console.warn("Support options load failed, using defaults:", e);
-            }
-
-            const { error: prioritySyncError } = await supabase
-                .schema('iota_v2')
-                .rpc('sync_pmo_priority_scores');
-
-            if (prioritySyncError) {
-                const missingFunction = prioritySyncError.code === 'PGRST202' || prioritySyncError.code === '42883';
-                if (missingFunction) {
-                    console.warn('Priority DB sync function is not installed yet.');
-                    toast.error('DB 우선순위 동기화 설정이 필요합니다.', { id: 'pmo-priority-db-sync' });
-                } else {
-                    console.error('Priority DB sync failed:', prioritySyncError);
-                    toast.error('DB 우선순위 점수 저장에 실패했습니다.', { id: 'pmo-priority-db-sync' });
-                }
-            }
-
-            const { data, error } = await supabase
-                .schema('iota_v2')
-                .from('iota_pmo_tasks')
-                .select(`
-                    *,
-                    lead_dept:iota_departments!lead_dept_code(dept_name),
-                    external_party:iota_stakeholders!external_party_code(stakeholder_name)
-                `)
-                .neq('task_type', '팝업')
-                .order('created_at', { ascending: true })
-                .order('id', { ascending: true });
-
-            if (error) throw error;
-
-            // Fetch active task IDs (recent logs within 48 hours, but only after feature deployment)
-            try {
-                const fortyEightHoursAgo = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
-                const featureStartTime = '2026-07-13T09:02:39.000Z';
-                const fetchStartTime = fortyEightHoursAgo > featureStartTime ? fortyEightHoursAgo : featureStartTime;
-
-                const { data: recentLogs } = await supabase
-                    .from('iota_seoul_logs')
-                    .select('metadata')
-                    .gte('created_at', fetchStartTime)
-                    .contains('metadata', { is_task_board: true })
-                    .order('created_at', { ascending: false });
-                
-                const activeIds = new Set();
-                if (recentLogs) {
-                    recentLogs.forEach(log => {
-                        if (log.metadata && log.metadata.task_id) {
-                            activeIds.add(log.metadata.task_id);
-                        }
-                    });
-                }
-                setActiveTaskIds(activeIds);
-            } catch (e) {
-                console.warn("Failed to fetch recent active tasks:", e);
-            }
-
-            if (data) {
-                const sorted = [...data].sort(comparePmoTasksByCreatedAt);
-                const tasksWithDisplayIds = sorted.map((t, idx) => ({
-                    ...t,
-                    displayId: `T-${String(idx + 1).padStart(3, '0')}`
-                }));
-                setTasks(tasksWithDisplayIds);
-                setIsDbMode(true);
-            }
- 
+            if (showLoading && tasks.length === 0) setLoading(true);
+            const data = await fetchPmoBoardTasks({ force });
+            setTasks(decoratePmoBoardTasks(data));
+            setIsDbMode(true);
             initialUrlCheckedRef.current = true;
         } catch (err) {
             console.error("Failed to fetch tasks from DB:", err);
@@ -1837,12 +1729,14 @@ export default function PmoTaskBoardStaging({
     }
 
     useEffect(() => {
-        fetchTasks();
-
+        let isActive = true;
         let refreshTimeoutId;
+        let supportingDataTimeoutId;
+        let prioritySyncTimeoutId;
+
         const scheduleRefresh = () => {
             window.clearTimeout(refreshTimeoutId);
-            refreshTimeoutId = window.setTimeout(() => fetchTasks(false), 300);
+            refreshTimeoutId = window.setTimeout(() => fetchTasks(false, true), 300);
         };
 
         const channel = supabase
@@ -1854,8 +1748,53 @@ export default function PmoTaskBoardStaging({
             }, scheduleRefresh)
             .subscribe();
 
+        const initializeBoard = async () => {
+            await fetchTasks(!initialCachedTasksRef.current);
+            if (!isActive) return;
+
+            supportingDataTimeoutId = window.setTimeout(async () => {
+                const [referenceResult, activeTaskIdsResult] = await Promise.allSettled([
+                    fetchPmoBoardReferenceData(),
+                    fetchRecentPmoActiveTaskIds(),
+                ]);
+                if (!isActive) return;
+                if (referenceResult.status === 'fulfilled') {
+                    applyReferenceData(referenceResult.value);
+                } else {
+                    console.warn('PMO reference data load failed, using defaults:', referenceResult.reason);
+                }
+                if (activeTaskIdsResult.status === 'fulfilled') {
+                    setActiveTaskIds(activeTaskIdsResult.value);
+                } else {
+                    console.warn('Failed to fetch recent active tasks:', activeTaskIdsResult.reason);
+                }
+            }, 0);
+
+            prioritySyncTimeoutId = window.setTimeout(async () => {
+                const { error: prioritySyncError } = await supabase
+                    .schema('iota_v2')
+                    .rpc('sync_pmo_priority_scores');
+
+                if (!prioritySyncError) return;
+                const missingFunction = prioritySyncError.code === 'PGRST202'
+                    || prioritySyncError.code === '42883';
+                if (missingFunction) {
+                    console.warn('Priority DB sync function is not installed yet.');
+                    toast.error('DB 우선순위 동기화 설정이 필요합니다.', { id: 'pmo-priority-db-sync' });
+                } else {
+                    console.error('Priority DB sync failed:', prioritySyncError);
+                    toast.error('DB 우선순위 점수 저장에 실패했습니다.', { id: 'pmo-priority-db-sync' });
+                }
+            }, 400);
+        };
+
+        initializeBoard();
+
         return () => {
+            isActive = false;
             window.clearTimeout(refreshTimeoutId);
+            window.clearTimeout(supportingDataTimeoutId);
+            window.clearTimeout(prioritySyncTimeoutId);
             supabase.removeChannel(channel);
         };
     }, []);
@@ -2265,6 +2204,7 @@ export default function PmoTaskBoardStaging({
                     .eq('id', rowId);
 
                 if (error) throw error;
+                invalidatePmoBoardTasksCache();
             } catch (err) {
                 console.error("Failed to delete task from DB:", err);
                 alert("DB 삭제에 실패했습니다.");
@@ -2350,6 +2290,7 @@ export default function PmoTaskBoardStaging({
                         .eq('id', editingItem.id);
 
                     if (error) throw error;
+                    invalidatePmoBoardTasksCache();
                 } catch (err) {
                     console.error("Failed to update task in DB:", err);
                     alert("DB 저장에 실패했습니다: " + (err.message || err));
@@ -2505,6 +2446,7 @@ export default function PmoTaskBoardStaging({
                         .select();
 
                     if (error) throw error;
+                    invalidatePmoBoardTasksCache();
 
                     if (data && data[0]) {
                         window.history.replaceState(null, '', `${window.location.pathname}?taskId=${data[0].id}`);
@@ -2521,7 +2463,7 @@ export default function PmoTaskBoardStaging({
                             memberInfo?.email || ''
                         );
                     }
-                    fetchTasks(); // Reload from DB
+                    fetchTasks(false, true);
                 } catch (err) {
                     console.error("Failed to insert task in DB:", err);
                 }
