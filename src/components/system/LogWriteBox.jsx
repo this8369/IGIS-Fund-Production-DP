@@ -195,7 +195,7 @@ export default function LogWriteBox({ memberInfo, masterStakeholders, pilotMembe
             setTaskPickerError('');
             try {
                 const [taskIds, tasks] = await Promise.all([
-                    fetchLogTaskIds(initialData.log_id),
+                    fetchLogTaskIds(initialData.log_id, initialData.metadata?.linked_pmo_task_ids),
                     fetchPmoTaskOptions(),
                 ]);
                 if (!isMounted) return;
@@ -471,6 +471,9 @@ export default function LogWriteBox({ memberInfo, masterStakeholders, pilotMembe
                     },
                     mentions: activeMentions,
                     attachedFiles: attachedFiles,
+                    linked_pmo_task_ids: isTaskBoard
+                        ? (isEditing ? initialData.metadata?.linked_pmo_task_ids : undefined)
+                        : linkedTaskIds.map(String),
                     task_id: isTaskBoard ? taskId : (isEditing ? initialData.metadata?.task_id : undefined),
                     is_task_board: isTaskBoard ? true : (isEditing ? initialData.metadata?.is_task_board : undefined)
                 }
@@ -519,7 +522,11 @@ export default function LogWriteBox({ memberInfo, masterStakeholders, pilotMembe
 
             // 3. Replace linked PMO tasks for workspace posts
             if (!isTaskBoard) {
-                await replaceLogTaskLinks(logId, linkedTaskIds);
+                try {
+                    await replaceLogTaskLinks(logId, linkedTaskIds);
+                } catch (taskLinkError) {
+                    console.error('Workspace post task link index could not be synchronized.', taskLinkError);
+                }
             }
 
             // 4. Update master DB if new

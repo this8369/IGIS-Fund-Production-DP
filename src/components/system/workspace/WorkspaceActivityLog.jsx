@@ -495,7 +495,7 @@ export default function WorkspaceActivityLog({ workspaceCode, workspaceLabel, is
             } else {
                 try {
                     setLinkedTasksByLogId(
-                        await fetchLinkedTasksByLogIds(fetchedLogs.map((log) => log.log_id))
+                        await fetchLinkedTasksByLogIds(fetchedLogs)
                     );
                 } catch (taskLinkError) {
                     console.error('Workspace post task links could not be loaded.', taskLinkError);
@@ -1556,6 +1556,11 @@ export default function WorkspaceActivityLog({ workspaceCode, workspaceLabel, is
                                                     </div>
                                                 )}
                                                 <span className="truncate">{log.summary || (log.raw_text ? log.raw_text.split('\n')[0] : '')}</span>
+                                                {linkedTasksByLogId[log.log_id]?.length > 0 && (
+                                                    <span className="shrink-0 rounded-[5px] border border-[#30d158]/30 bg-[#30d158]/10 px-[6px] py-[2px] text-[11px] font-bold text-[#4ade80]">
+                                                        연결업무 {linkedTasksByLogId[log.log_id].length}
+                                                    </span>
+                                                )}
                                                 {log.metadata?.comments?.length > 0 && <span className="text-[#3b82f6] ml-[6px] font-bold text-[13px] shrink-0">({log.metadata.comments.length})</span>}
                                             </div>
                                         </div>

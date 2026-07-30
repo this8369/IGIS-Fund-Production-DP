@@ -67,8 +67,13 @@ export const fetchPmoTaskOptions = async () => {
         .map(normalizeTask);
 };
 
-export const fetchLogTaskIds = async (logId) => {
-    if (!logId) return [];
+const normalizeTaskIds = (taskIds) => [...new Set(
+    (taskIds || []).filter(Boolean).map(String)
+)];
+
+export const fetchLogTaskIds = async (logId, metadataTaskIds = []) => {
+    const normalizedMetadataTaskIds = normalizeTaskIds(metadataTaskIds);
+    if (!logId) return normalizedMetadataTaskIds;
     const { data, error } = await executeWithTimeout(
         supabase
             .from('iota_seoul_log_links')
@@ -78,13 +83,34 @@ export const fetchLogTaskIds = async (logId) => {
             .order('created_at', { ascending: true })
     );
 
-    if (error) throw error;
-    return (data || []).map((link) => link.proj_id).filter(Boolean);
+    if (error) {
+        if (normalizedMetadataTaskIds.length > 0) {
+            console.error('Workspace post task link index could not be loaded.', error);
+            return normalizedMetadataTaskIds;
+        }
+        throw error;
+    }
+    return normalizeTaskIds([
+        ...normalizedMetadataTaskIds,
+        ...(data || []).map((link) => link.proj_id),
+    ]);
 };
 
-export const fetchLinkedTasksByLogIds = async (logIds) => {
-    const normalizedLogIds = [...new Set((logIds || []).filter(Boolean).map(String))];
+export const fetchLinkedTasksByLogIds = async (logsOrIds) => {
+    const entries = (logsOrIds || []).filter(Boolean);
+    const normalizedLogIds = [...new Set(entries.map((entry) => (
+        typeof entry === 'object' ? entry.log_id : entry
+    )).filter(Boolean).map(String))];
     if (normalizedLogIds.length === 0) return {};
+
+    const taskIdsByLogId = entries.reduce((groupedTaskIds, entry) => {
+        if (typeof entry !== 'object' || !entry.log_id) return groupedTaskIds;
+        const metadataTaskIds = normalizeTaskIds(entry.metadata?.linked_pmo_task_ids);
+        if (metadataTaskIds.length > 0) {
+            groupedTaskIds[String(entry.log_id)] = metadataTaskIds;
+        }
+        return groupedTaskIds;
+    }, {});
 
     const { data: linkRows, error: linkError } = await executeWithTimeout(
         supabase
@@ -95,24 +121,36 @@ export const fetchLinkedTasksByLogIds = async (logIds) => {
             .order('created_at', { ascending: true })
     );
 
-    if (linkError) throw linkError;
-    if (!linkRows?.length) return {};
+    if (linkError && Object.keys(taskIdsByLogId).length === 0) throw linkError;
+    if (linkError) {
+        console.error('Workspace post task link index could not be loaded.', linkError);
+    }
+    (linkRows || []).forEach((link) => {
+        const logId = String(link.log_id);
+        taskIdsByLogId[logId] = normalizeTaskIds([
+            ...(taskIdsByLogId[logId] || []),
+            link.proj_id,
+        ]);
+    });
+
+    const linkedTaskIds = normalizeTaskIds(Object.values(taskIdsByLogId).flat());
+    if (linkedTaskIds.length === 0) return {};
 
     const tasks = await fetchPmoTaskOptions();
     const taskById = new Map(tasks.map((task) => [String(task.id), task]));
 
-    return linkRows.reduce((groupedTasks, link) => {
-        const task = taskById.get(String(link.proj_id));
-        if (!task) return groupedTasks;
-        if (!groupedTasks[link.log_id]) groupedTasks[link.log_id] = [];
-        groupedTasks[link.log_id].push(task);
+    return Object.entries(taskIdsByLogId).reduce((groupedTasks, [logId, taskIds]) => {
+        const linkedTasks = taskIds
+            .map((taskId) => taskById.get(String(taskId)))
+            .filter(Boolean);
+        if (linkedTasks.length > 0) groupedTasks[logId] = linkedTasks;
         return groupedTasks;
     }, {});
 };
 
 export const replaceLogTaskLinks = async (logId, taskIds) => {
     if (!logId) return;
-    const normalizedTaskIds = [...new Set((taskIds || []).filter(Boolean).map(String))];
+    const normalizedTaskIds = normalizeTaskIds(taskIds);
     const existingTaskIds = await fetchLogTaskIds(logId);
     const existingTaskIdSet = new Set(existingTaskIds.map(String));
     const selectedTaskIdSet = new Set(normalizedTaskIds);
