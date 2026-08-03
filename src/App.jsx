@@ -45,7 +45,11 @@ export default function App() {
         ? 'mobile'
         : 'platform/iotaseoul/home';
   };
-  const toUrl = (page) => page === 'home' ? BASE : `${BASE}${page}`;
+  const toUrl = (page) => {
+      if (page === 'home') return BASE;
+      if (page === 'mobile') return `${BASE}mobile/`;
+      return `${BASE}${page}`;
+  };
 
   const [currentPage, setCurrentPage] = React.useState(() => getPage());
 
@@ -101,6 +105,7 @@ export default function App() {
       }
 
       if (!loading && !user && (currentPage.startsWith('platform') || currentPage.startsWith('mobile')) && !recoveryMode) {
+          if (currentPage.startsWith('mobile')) return;
           navigateTo('auth-setup');
           return;
       }

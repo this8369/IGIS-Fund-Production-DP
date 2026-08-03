@@ -1,6 +1,23 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
+import { copyFile, mkdir } from 'node:fs/promises'
+import { resolve } from 'node:path'
+
+const emitMobileEntry = () => ({
+  name: 'emit-mobile-entry',
+  apply: 'build',
+  async closeBundle() {
+    const distDirectory = resolve(process.cwd(), 'dist')
+    const mobileDirectory = resolve(distDirectory, 'mobile')
+
+    await mkdir(mobileDirectory, { recursive: true })
+    await copyFile(
+      resolve(distDirectory, 'index.html'),
+      resolve(mobileDirectory, 'index.html'),
+    )
+  },
+})
 
 // https://vite.dev/config/
 export default defineConfig(({ command, mode }) => ({
@@ -8,6 +25,7 @@ export default defineConfig(({ command, mode }) => ({
   plugins: [
     react(),
     tailwindcss(),
+    emitMobileEntry(),
   ],
   server: {
     host: true,
