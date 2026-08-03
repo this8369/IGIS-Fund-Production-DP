@@ -2,6 +2,7 @@ import React from 'react';
 import { useAnimations } from './hooks/useAnimations';
 import { useLanguage } from './context/LanguageContext';
 import { useAuth } from './context/AuthContext';
+import AuthSetup from './components/system/AuthSetup';
 
 const Header = React.lazy(() => import('./components/Header'));
 const MainLayout = React.lazy(() => import('./components/MainLayout'));
@@ -9,7 +10,6 @@ const Notes = React.lazy(() => import('./components/Notes'));
 const SystemCore = React.lazy(() => import('./components/system/SystemCore'));
 const SystemPlan = React.lazy(() => import('./components/system/SystemPlan'));
 const SystemLogin = React.lazy(() => import('./components/system/SystemLogin'));
-const AuthSetup = React.lazy(() => import('./components/system/AuthSetup'));
 const PlatformCore = React.lazy(() => import('./components/system/PlatformCore'));
 const WorkspaceArchive = React.lazy(() => import('./components/system/workspace/WorkspaceArchive'));
 const IotaLogsArchive = React.lazy(() => import('./components/system/workspace/IotaLogsArchive'));
@@ -32,8 +32,18 @@ export default function App() {
       const base = BASE.endsWith('/') ? BASE.slice(0, -1) : BASE;
       let path = window.location.pathname.replace(base, '').replace(/^\//, '');
       if (path.endsWith('/')) path = path.slice(0, -1);
-      // 'platform/iotaseoul/home'을 기본 경로로 설정
-      return path || 'platform/iotaseoul/home';
+      if (path) return path;
+
+      const isNativeApp = ['capacitor:', 'ionic:'].includes(window.location.protocol)
+        || Boolean(window.Capacitor?.isNativePlatform?.());
+      const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+      const isMobileDevice = /android|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent.toLowerCase())
+        || window.innerWidth < 768;
+      const forcePC = localStorage.getItem('force_pc_mode') === 'true';
+
+      return (isNativeApp || isMobileDevice) && !forcePC
+        ? 'mobile'
+        : 'platform/iotaseoul/home';
   };
   const toUrl = (page) => page === 'home' ? BASE : `${BASE}${page}`;
 
@@ -148,6 +158,25 @@ export default function App() {
   const isSmallScreen = window.innerWidth < 768;
   const isMobile = isMobileUA || isSmallScreen;
   const forcePC = localStorage.getItem('force_pc_mode') === 'true';
+
+  const isProtectedPage = currentPage.startsWith('platform') || currentPage.startsWith('mobile');
+  const shouldRenderAuthSetup = (recoveryMode && currentPage !== 'auth-setup')
+    || (!user && isProtectedPage && !recoveryMode);
+
+  if (shouldRenderAuthSetup) {
+    return (
+      <React.Suspense fallback={<RouteFallback />}>
+        <div className="w-full h-[100dvh] overflow-hidden">
+          <AuthSetup
+            onLogin={() => {
+              const forcePCMode = localStorage.getItem('force_pc_mode') === 'true';
+              navigateTo(isMobile && !forcePCMode ? 'mobile' : 'platform/iotaseoul/home');
+            }}
+          />
+        </div>
+      </React.Suspense>
+    );
+  }
 
   return (
     <React.Suspense fallback={<RouteFallback />}>

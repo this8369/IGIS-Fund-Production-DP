@@ -4,6 +4,30 @@ import { supabase } from '../utils/supabaseClient';
 const AuthContext = createContext();
 
 const AUTH_BOOT_TIMEOUT_MS = 6000;
+const AUTH_STORAGE_KEY = 'sb-iota-auth-token';
+
+const readStoredSession = () => {
+    try {
+        const rawSession = localStorage.getItem(AUTH_STORAGE_KEY);
+        if (!rawSession) return null;
+
+        const parsedSession = JSON.parse(rawSession);
+        const session = parsedSession?.currentSession || parsedSession?.session || parsedSession;
+        if (!session?.access_token || !session?.user) {
+            localStorage.removeItem(AUTH_STORAGE_KEY);
+            return null;
+        }
+        return session;
+    } catch (_) {
+        localStorage.removeItem(AUTH_STORAGE_KEY);
+        return null;
+    }
+};
+
+const isStoredSessionFresh = (session) => {
+    const expiresAt = Number(session?.expires_at || 0) * 1000;
+    return expiresAt > Date.now() + 30000;
+};
 
 const clearStoredAuthState = () => {
     [localStorage, sessionStorage].forEach(storage => {
@@ -50,7 +74,9 @@ export function AuthProvider({ children }) {
     const [memberInfo, setMemberInfo] = useState(null);
     const [loading, setLoading] = useState(true);
     const [recoveryMode, setRecoveryMode] = useState(false);
-    const isMobileEntry = window.location.pathname.replace(/\/$/, '').endsWith('/mobile');
+    const isNativeApp = ['capacitor:', 'ionic:'].includes(window.location.protocol)
+        || Boolean(window.Capacitor?.isNativePlatform?.());
+    const isMobileEntry = isNativeApp || window.location.pathname.replace(/\/$/, '').endsWith('/mobile');
 
     // Shared signout logic to avoid dependency issues in useEffect
     const handleSignOut = async () => {
@@ -79,6 +105,7 @@ export function AuthProvider({ children }) {
         // Fetch current session and setup listener
         let subscription;
         let activityIntervalId;
+        let isActive = true;
 
         // 5. 브라우저 탭 복귀 시 조용히 세션 예열 (Auto-warmup) - Explicit refreshSession disabled to prevent signout on silent failures
         const handleVisibilityChange = () => {
@@ -141,6 +168,40 @@ export function AuthProvider({ children }) {
                     localStorage.setItem('iota_last_activity', Date.now().toString());
                 }, 60000);
 
+                const storedSession = readStoredSession();
+                if (!storedSession) {
+                    setUser(null);
+                    setMemberInfo(null);
+                    return;
+                }
+
+                if (isStoredSessionFresh(storedSession)) {
+                    setUser(storedSession.user);
+
+                    withTimeout(supabase.auth.getSession(), AUTH_BOOT_TIMEOUT_MS)
+                        .then(({ data: currentSessionData, error: currentSessionError }) => {
+                            if (!isActive) return;
+                            if (currentSessionError) {
+                                if (isInvalidRefreshTokenError(currentSessionError)) {
+                                    clearStoredAuthState();
+                                    setUser(null);
+                                    setMemberInfo(null);
+                                }
+                                return;
+                            }
+                            setUser(currentSessionData.session?.user || null);
+                        })
+                        .catch(error => {
+                            if (!isActive || error?.code === 'auth_boot_timeout') return;
+                            if (isInvalidRefreshTokenError(error)) {
+                                clearStoredAuthState();
+                                setUser(null);
+                                setMemberInfo(null);
+                            }
+                        });
+                    return;
+                }
+
                 const { data: sessionData, error: sessionError } = await withTimeout(
                     supabase.auth.getSession(),
                     AUTH_BOOT_TIMEOUT_MS
@@ -164,6 +225,9 @@ export function AuthProvider({ children }) {
                     setUser(null);
                     setMemberInfo(null);
                 } else if (err?.code === 'auth_boot_timeout') {
+                    clearStoredAuthState();
+                    setUser(null);
+                    setMemberInfo(null);
                     console.warn("Auth initialization exceeded 6 seconds; continuing without blocking the UI.");
                 } else {
                     console.error("Auth initialization error:", err);
@@ -176,6 +240,7 @@ export function AuthProvider({ children }) {
         initializeAuth();
 
         return () => {
+            isActive = false;
             if (subscription) subscription.unsubscribe();
             if (activityIntervalId) clearInterval(activityIntervalId);
             window.removeEventListener('visibilitychange', handleVisibilityChange);
