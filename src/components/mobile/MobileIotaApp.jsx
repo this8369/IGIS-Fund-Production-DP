@@ -344,7 +344,7 @@ export default function MobileIotaApp({ navigateTo }) {
                     <MobileNotifications 
                         memberInfo={memberInfo} 
                         onRead={() => setUnreadNotiCount(Math.max(0, unreadNotiCount - 1))} 
-                        onNotificationClick={(noti) => {
+                        onNotificationClick={async (noti) => {
                             try {
                                 console.log('[MobileIotaApp] 알림 터치 수신:', noti);
                                 const isLogNotif = noti.type === 'log' || 
@@ -415,6 +415,36 @@ export default function MobileIotaApp({ navigateTo }) {
                                         } else {
                                             taskId = refStr;
                                         }
+                                    }
+
+                                    const combinedText = `${noti.title || ''} ${noti.body || ''}`;
+                                    let isPopupTask = wsCode === 'WS_POPUP_REQUESTS'
+                                        || combinedText.includes('단발성')
+                                        || combinedText.includes('팝업');
+
+                                    if (!isPopupTask && taskId) {
+                                        const { data: notifiedTask, error: taskTypeError } = await supabase
+                                            .schema('iota_v2')
+                                            .from('iota_pmo_tasks')
+                                            .select('task_type')
+                                            .eq('id', taskId)
+                                            .maybeSingle();
+
+                                        if (taskTypeError) {
+                                            console.warn('[MobileIotaApp] 알림 업무 유형 확인 실패:', taskTypeError);
+                                        } else {
+                                            isPopupTask = notifiedTask?.task_type === '팝업';
+                                        }
+                                    }
+
+                                    if (isPopupTask && taskId) {
+                                        setCollaborationEntryRequest({
+                                            department: '전체',
+                                            itemId: `popup-${taskId}`,
+                                            requestedAt: Date.now(),
+                                        });
+                                        setActiveTab(2);
+                                        return;
                                     }
                                     
                                     if (!wsCode) {
