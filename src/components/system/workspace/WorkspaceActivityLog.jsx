@@ -587,7 +587,10 @@ export default function WorkspaceActivityLog({ workspaceCode, workspaceLabel, is
 
     useEffect(() => {
         const handleUpdate = (e) => {
-            if (e.detail?.taskId === taskId) {
+            if (String(e.detail?.taskId || '') === String(taskId || '')) {
+                const cacheKey = getWorkspaceLogCacheKey({ workspaceCode, isTaskBoard, taskId });
+                workspaceLogCache.delete(cacheKey);
+                pendingWorkspaceLogRequests.delete(cacheKey);
                 fetchLogs();
             }
         };

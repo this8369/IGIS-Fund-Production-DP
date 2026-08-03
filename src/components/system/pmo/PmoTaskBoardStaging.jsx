@@ -13,6 +13,7 @@ import {
     invalidatePmoBoardTasksCache,
 } from '../../../utils/pmoBoardDataCache.js';
 import toast from 'react-hot-toast';
+import { savePmoTaskChangeLog } from '../../../utils/pmoTaskChangeLog';
 
 const RAW_FALLBACK_BOARD_TASKS = [
   {
@@ -2280,6 +2281,7 @@ export default function PmoTaskBoardStaging({
         if (editingItem) {
             // EDITING
             setTasks(prev => prev.map(t => t.id === editingItem.id ? { ...t, ...localMapping } : t));
+            const changeLogStartedAt = new Date().toISOString();
 
             if (isDbMode) {
                 try {
@@ -2385,37 +2387,15 @@ export default function PmoTaskBoardStaging({
                 }
 
                 if (changes.length > 0) {
-                    const logId = `iota_issue_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
-                    const logData = {
-                        log_id: logId,
-                        writer_name: '시스템',
-                        writer_staff_id: 'system',
-                        work_date: new Date().toISOString().slice(0, 10),
-                        summary: '업무 변경 이력',
-                        raw_text: `${changes.join('\n')}`,
-                        input_status: 'submitted',
-                        source_system: 'task_board',
-                        metadata: {
-                            is_task_board: true,
-                            task_id: String(editingItem.id),
-                            task_project: resolvedProjectCode || 'IOTA_SEOUL',
-                            workspace_code: 'WS_PMO',
-                            workspace_label: '통합업무보드',
-                            editor_name: memberInfo?.staff_name || memberInfo?.name || '시스템',
-                            structured_changes: structuredChanges
-                        }
-                    };
-                    const { error: logErr } = await supabase.from('iota_seoul_logs').insert(logData);
-                    if (logErr) throw logErr;
-
-                    // Insert log link to match LogWriteBox structure
-                    const { error: linkErr } = await supabase.from('iota_seoul_log_links').insert({
-                        link_id: `link_${logId}`,
-                        log_id: logId,
-                        proj_id: resolvedProjectCode || 'IOTA_SEOUL',
-                        relation_type: 'direct_input'
+                    await savePmoTaskChangeLog({
+                        taskId: editingItem.id,
+                        taskProject: resolvedProjectCode || 'IOTA_SEOUL',
+                        workspaceLabel: '통합업무보드',
+                        editorName: memberInfo?.staff_name || memberInfo?.name || '시스템',
+                        changes,
+                        structuredChanges,
+                        updateStartedAt: changeLogStartedAt,
                     });
-                    if (linkErr) throw linkErr;
 
                     window.dispatchEvent(new CustomEvent('iota_log_updated', { detail: { taskId: editingItem.id } }));
                 }

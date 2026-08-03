@@ -4,6 +4,7 @@ import { useAuth } from '../../../context/AuthContext';
 import toast, { Toaster } from 'react-hot-toast';
 import WorkspaceActivityLog from '../workspace/WorkspaceActivityLog';
 import { notifyMembersOnTaskCreation } from '../../../utils/notificationHelpers';
+import { savePmoTaskChangeLog } from '../../../utils/pmoTaskChangeLog';
 
 // Local Fallbacks to prevent UI crashes if DB queries return empty or fail
 const FALLBACK_PROJECTS = [
@@ -508,67 +509,72 @@ export default function PmoPopupManager() {
             } else {
                 // Track changes first
                 const changes = [];
+                const structuredChanges = [];
                 
                 const oldStatus = selectedPopup.handling_status || '미착수';
                 const newStatus = formHandlingStatus || '미착수';
                 if (oldStatus !== newStatus) {
                     changes.push(`상태가 "${oldStatus}"에서 "${newStatus}"으로 변경되었습니다.`);
+                    structuredChanges.push({ field: '상태', from: oldStatus, to: newStatus });
                 }
 
                 const oldImportance = selectedPopup.impact_level || '중간';
                 const newImportance = formImpactLevel || '중간';
                 if (oldImportance !== newImportance) {
                     changes.push(`중요도가 "${oldImportance}"에서 "${newImportance}"으로 변경되었습니다.`);
+                    structuredChanges.push({ field: '중요도', from: oldImportance, to: newImportance });
                 }
 
                 const oldRequester = selectedPopup.requester || '';
                 const newRequester = formRequester || '';
                 if (oldRequester !== newRequester) {
                     changes.push(`요청부서가 "${oldRequester}"에서 "${newRequester}"으로 변경되었습니다.`);
+                    structuredChanges.push({ field: '요청부서', from: oldRequester, to: newRequester });
                 }
 
                 const oldProj = getProjectName(selectedPopup.project_code);
                 const newProj = getProjectName(formProjectCode);
                 if (oldProj !== newProj) {
                     changes.push(`연계 프로젝트가 "${oldProj || '미지정'}"에서 "${newProj || '미지정'}"으로 변경되었습니다.`);
+                    structuredChanges.push({ field: '연계 프로젝트', from: oldProj || '미지정', to: newProj || '미지정' });
                 }
 
                 const oldCat = selectedPopup.category_name || '';
                 const newCat = formCategoryName || '';
                 if (oldCat !== newCat) {
                     changes.push(`업무 분류가 "${oldCat}"에서 "${newCat}"으로 변경되었습니다.`);
-                }
-
-                const oldDetail = selectedPopup.request_detail || '';
-                const newDetail = formRequestDetail || '';
-                if (oldDetail !== newDetail) {
-                    changes.push(`업무명이 "${oldDetail}"에서 "${newDetail}"으로 변경되었습니다.`);
+                    structuredChanges.push({ field: '업무 분류', from: oldCat, to: newCat });
                 }
 
                 const oldPurpose = selectedPopup.purpose || '';
                 const newPurpose = formPurpose || '';
                 if (oldPurpose !== newPurpose) {
                     changes.push(`요청목적이 변경되었습니다.`);
+                    structuredChanges.push({ field: '요청목적', from: '변경 전', to: '변경 후' });
                 }
 
                 const oldDeliv = selectedPopup.deliverables || '';
                 const newDeliv = formDeliverables || '';
                 if (oldDeliv !== newDeliv) {
                     changes.push(`필요 산출물이 변경되었습니다.`);
+                    structuredChanges.push({ field: '필요 산출물', from: '변경 전', to: '변경 후' });
                 }
 
                 const oldDue = selectedPopup.due_date || '';
                 const newDue = formDueDate || '';
                 if (oldDue !== newDue) {
                     changes.push(`요청기한이 "${oldDue || '미지정'}"에서 "${newDue || '미지정'}"으로 변경되었습니다.`);
+                    structuredChanges.push({ field: '요청기한', from: oldDue || '미지정', to: newDue || '미지정' });
                 }
 
                 const oldDept = getDeptName(selectedPopup.assigned_dept_code);
                 const newDept = getDeptName(formAssignedDeptCode);
                 if (oldDept !== newDept) {
                     changes.push(`수행부서가 "${oldDept || '미지정'}"에서 "${newDept || '미지정'}"으로 변경되었습니다.`);
+                    structuredChanges.push({ field: '수행부서', from: oldDept || '미지정', to: newDept || '미지정' });
                 }
 
+                const changeLogStartedAt = new Date().toISOString();
                 const { error } = await supabase
                     .schema('iota_v2')
                     .from('iota_pmo_tasks')
@@ -580,31 +586,14 @@ export default function PmoPopupManager() {
 
                 // If changes occurred, insert system log
                 if (changes.length > 0) {
-                    const logId = `iota_issue_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
-                    const logData = {
-                        log_id: logId,
-                        writer_name: '시스템',
-                        writer_staff_id: 'system',
-                        work_date: new Date().toISOString().slice(0, 10),
-                        summary: '업무 변경 이력',
-                        raw_text: `${changes.join('\n')}`,
-                        input_status: 'submitted',
-                        source_system: 'task_board',
-                        metadata: {
-                            is_task_board: true,
-                            task_id: selectedPopup.id,
-                            task_project: formProjectCode || 'IOTA_SEOUL',
-                            workspace_code: 'WS_PMO',
-                            workspace_label: '단발성 업무 요청',
-                            editor_name: memberInfo?.staff_name || memberInfo?.name || '시스템'
-                        }
-                    };
-                    await supabase.from('iota_seoul_logs').insert(logData);
-                    await supabase.from('iota_seoul_log_links').insert({
-                        link_id: `link_${logId}`,
-                        log_id: logId,
-                        proj_id: formProjectCode || 'IOTA_SEOUL',
-                        relation_type: 'direct_input'
+                    await savePmoTaskChangeLog({
+                        taskId: selectedPopup.id,
+                        taskProject: formProjectCode || 'IOTA_SEOUL',
+                        workspaceLabel: '단발성 업무 요청',
+                        editorName: memberInfo?.staff_name || memberInfo?.name || '시스템',
+                        changes,
+                        structuredChanges,
+                        updateStartedAt: changeLogStartedAt,
                     });
                     
                     window.dispatchEvent(new CustomEvent('iota_log_updated', { detail: { taskId: selectedPopup.id } }));
@@ -649,6 +638,7 @@ export default function PmoPopupManager() {
         try {
             const popupObj = popups.find(p => p.id === popupId);
             const oldStatus = popupObj ? popupObj.handling_status : '미착수';
+            const changeLogStartedAt = new Date().toISOString();
 
             const { error } = await supabase
                 .schema('iota_v2')
@@ -663,31 +653,14 @@ export default function PmoPopupManager() {
             // Log changes
             if (oldStatus !== newStatus) {
                 const changes = [`상태가 "${oldStatus}"에서 "${newStatus}"으로 변경되었습니다.`];
-                const logId = `iota_issue_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
-                const logData = {
-                    log_id: logId,
-                    writer_name: '시스템',
-                    writer_staff_id: 'system',
-                    work_date: new Date().toISOString().slice(0, 10),
-                    summary: '업무 변경 이력',
-                    raw_text: `${changes.join('\n')}`,
-                    input_status: 'submitted',
-                    source_system: 'task_board',
-                    metadata: {
-                        is_task_board: true,
-                        task_id: popupId,
-                        task_project: popupObj?.project_code || 'IOTA_SEOUL',
-                        workspace_code: 'WS_PMO',
-                        workspace_label: '단발성 업무 요청',
-                        editor_name: memberInfo?.staff_name || memberInfo?.name || '시스템'
-                    }
-                };
-                await supabase.from('iota_seoul_logs').insert(logData);
-                await supabase.from('iota_seoul_log_links').insert({
-                    link_id: `link_${logId}`,
-                    log_id: logId,
-                    proj_id: popupObj?.project_code || 'IOTA_SEOUL',
-                    relation_type: 'direct_input'
+                await savePmoTaskChangeLog({
+                    taskId: popupId,
+                    taskProject: popupObj?.project_code || 'IOTA_SEOUL',
+                    workspaceLabel: '단발성 업무 요청',
+                    editorName: memberInfo?.staff_name || memberInfo?.name || '시스템',
+                    changes,
+                    structuredChanges: [{ field: '상태', from: oldStatus, to: newStatus }],
+                    updateStartedAt: changeLogStartedAt,
                 });
 
                 window.dispatchEvent(new CustomEvent('iota_log_updated', { detail: { taskId: popupId } }));
