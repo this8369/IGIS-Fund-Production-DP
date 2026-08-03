@@ -82,6 +82,11 @@ export default function PmoPopupManager() {
     // Check Roles
     const currentUserEmail = user?.email || memberInfo?.email || '';
     const isAdmin = memberInfo ? (['WS_PM2', 'WS_PM'].includes(memberInfo.workspace_code) || ['master', 'director'].includes(memberInfo.role_code)) : true;
+    const canEditFormStatus = isAdmin || Boolean(
+        modalMode === 'edit'
+        && currentUserEmail
+        && selectedPopup?.created_by_email === currentUserEmail
+    );
 
     // Load Initial Data
     const fetchData = async () => {
@@ -1359,9 +1364,9 @@ export default function PmoPopupManager() {
                                         <select 
                                             value={formHandlingStatus}
                                             onChange={(e) => setFormHandlingStatus(e.target.value)}
-                                            disabled={!isAdmin}
+                                            disabled={!canEditFormStatus}
                                             className={`appearance-none w-full border rounded-[8px] pl-3.5 pr-10 py-2.5 text-[13px] font-bold outline-none transition-colors ${
-                                                isAdmin 
+                                                canEditFormStatus
                                                 ? 'bg-[#2c2c2b] border-[#3c3c3c] text-white focus:border-[#2997ff] cursor-pointer' 
                                                 : 'bg-[#222]/30 border-transparent text-[#86868B] cursor-not-allowed'
                                             }`}
@@ -1370,7 +1375,7 @@ export default function PmoPopupManager() {
                                                 <option key={opt} value={opt}>{opt === '미착수' ? '미착수(접수)' : opt}</option>
                                             ))}
                                         </select>
-                                        {isAdmin && (
+                                        {canEditFormStatus && (
                                             <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-[#86868B] z-10">
                                                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" />
