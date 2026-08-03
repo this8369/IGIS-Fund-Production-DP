@@ -1134,7 +1134,7 @@ export default function PmoDetailedSchedule() {
 
                 <div className="mt-[10px] flex items-stretch gap-2">
                     {[
-                        ['전체 세부업무', statistics.total, '#E5E5E5', '전체'],
+                        ['전체업무', statistics.total, '#E5E5E5', '전체'],
                         ['일정 등록', statistics.scheduled, '#60a5fa', 'scheduled'],
                         ['일정 미정', statistics.unscheduled, '#ff5f57', 'unscheduled'],
                         ['마일스톤', statistics.milestones, '#F59E0B', 'milestone']
