@@ -68,29 +68,43 @@
             var isNativeApp = location.protocol === 'capacitor:'
                 || location.protocol === 'ionic:'
                 || Boolean(capacitor && capacitor.isNativePlatform && capacitor.isNativePlatform());
+            var isMobileEntry = location.pathname.replace(/\/$/, '').endsWith('/mobile');
 
             if (isNativeApp) return;
 
-            document.head.insertAdjacentHTML('beforeend', [
-                '<link rel="preload" href="./img/logo_white.png" as="image" />',
-                '<link rel="preload" href="./img/foster+partners.jpg" as="image" />',
-                '<link rel="preload" href="./img/iota_full.jpg" as="image" />',
-                '<link rel="preload" href="./img/iota_full_3.jpg" as="image" />',
-                '<link rel="preconnect" href="https://fonts.googleapis.com">',
-                '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>',
-                '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;700&display=swap" rel="stylesheet">',
-                '<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">'
-            ].join(''));
+            if (!isMobileEntry) {
+                [
+                    'https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;700&display=swap',
+                    'https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap'
+                ].forEach(function (href) {
+                    var fontStylesheet = document.createElement('link');
+                    fontStylesheet.rel = 'stylesheet';
+                    fontStylesheet.href = href;
+                    fontStylesheet.media = 'print';
+                    fontStylesheet.onload = function () { this.media = 'all'; };
+                    document.head.appendChild(fontStylesheet);
+                });
+            }
 
-            var analyticsScript = document.createElement('script');
-            analyticsScript.async = true;
-            analyticsScript.src = 'https://www.googletagmanager.com/gtag/js?id=G-QNHPD2C1K4';
-            document.head.appendChild(analyticsScript);
+            var loadAnalytics = function () {
+                var analyticsScript = document.createElement('script');
+                analyticsScript.async = true;
+                analyticsScript.src = 'https://www.googletagmanager.com/gtag/js?id=G-QNHPD2C1K4';
+                document.head.appendChild(analyticsScript);
 
-            window.dataLayer = window.dataLayer || [];
-            window.gtag = function () { window.dataLayer.push(arguments); };
-            window.gtag('js', new Date());
-            window.gtag('config', 'G-QNHPD2C1K4');
+                window.dataLayer = window.dataLayer || [];
+                window.gtag = function () { window.dataLayer.push(arguments); };
+                window.gtag('js', new Date());
+                window.gtag('config', 'G-QNHPD2C1K4');
+            };
+
+            if (isMobileEntry) {
+                window.addEventListener('load', function () {
+                    window.setTimeout(loadAnalytics, 1500);
+                }, { once: true });
+            } else {
+                loadAnalytics();
+            }
         })();
     </script>
 
