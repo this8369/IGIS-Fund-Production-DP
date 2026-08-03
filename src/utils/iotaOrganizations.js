@@ -138,6 +138,12 @@ export const getMemberIotaOrganization = (memberInfo, fallback = '전체') => {
         : fallback;
 };
 
+export const canOpenDirectorReportSource = (memberInfo) => {
+    const roleCode = String(memberInfo?.role_code || '').trim().toLowerCase();
+    return roleCode === 'director'
+        || getMemberIotaOrganization(memberInfo, '') === '기획추진';
+};
+
 export const normalizeIotaDepartmentList = (value) => {
     const values = Array.isArray(value)
         ? value

@@ -90,6 +90,7 @@ export default function MobileTaskContainer({
                     />
                 ) : (
                     <MobileWorkflowLogs
+                        memberInfo={memberInfo}
                         initialLogId={entryRequest?.directorLogId}
                         onInitialLogHandled={onEntryHandled}
                         returnToHomeOnInitialDetail={returnToHomeOnDetailClose}

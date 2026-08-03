@@ -3,7 +3,7 @@ import { supabase } from '../../utils/supabaseClient';
 import { useAuth } from '../../context/AuthContext';
 import { notifyMembersOnCommentCreation } from '../../utils/notificationHelpers';
 import { fetchDirectorWorkflowLogs, getDirectorLogCell, getDirectorStaffCell } from '../../utils/directorWorkflowLogs';
-import { normalizeIotaOrganization } from '../../utils/iotaOrganizations.js';
+import { canOpenDirectorReportSource, normalizeIotaOrganization } from '../../utils/iotaOrganizations.js';
 import { fetchPmoBoardTasks } from '../../utils/pmoBoardDataCache.js';
 import { fetchWorkspaceDirectoryData } from '../../utils/workspaceDirectoryCache.js';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -17,6 +17,7 @@ export default function DecisionLog() {
         window.dispatchEvent(new Event('popstate'));
     };
     const { memberInfo } = useAuth();
+    const canOpenDirectorOriginal = canOpenDirectorReportSource(memberInfo);
     const [searchQuery, setSearchQuery] = useState('');
     const [viewMode, setViewMode] = useState('key');
     const [pageSize, setPageSize] = useState(10);
@@ -1125,17 +1126,25 @@ export default function DecisionLog() {
                                                     <span className="text-[12px] text-[#555] font-medium">{formatDateYYMMDD(log.work_date || log.created_at)}</span>
                                                     {(log.metadata?.task_id || workspacePath) && (
                                                         <button
+                                                            type="button"
+                                                            disabled={!canOpenDirectorOriginal}
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
+                                                                if (!canOpenDirectorOriginal) return;
                                                                 if (log.metadata?.task_id) {
                                                                     window.location.href = `${import.meta.env.BASE_URL}platform/iotaseoul/workflow?taskId=${log.metadata.task_id}`;
                                                                 } else {
                                                                     window.location.href = `${import.meta.env.BASE_URL}${workspacePath}`;
                                                                 }
                                                             }}
-                                                            className="text-[11px] text-[#82afb9] hover:text-white font-bold bg-[#82afb9]/10 border border-[#82afb9]/25 hover:bg-[#82afb9]/20 px-[8px] py-[2.5px] rounded-[6px] transition-all cursor-pointer whitespace-nowrap"
+                                                            title={canOpenDirectorOriginal ? '원문보기' : 'Director 및 기획추진실만 원문을 열람할 수 있습니다.'}
+                                                            className={`text-[11px] font-bold border px-[8px] py-[2.5px] rounded-[6px] transition-all whitespace-nowrap ${
+                                                                canOpenDirectorOriginal
+                                                                    ? 'text-[#82afb9] hover:text-white bg-[#82afb9]/10 border-[#82afb9]/25 hover:bg-[#82afb9]/20 cursor-pointer'
+                                                                    : 'text-[#555] bg-[#222] border-[#333] cursor-not-allowed'
+                                                            }`}
                                                         >
-                                                            원문보기 ↗
+                                                            {canOpenDirectorOriginal ? '원문보기 ↗' : '원문보기 🔒'}
                                                         </button>
                                                     )}
                                                 </div>

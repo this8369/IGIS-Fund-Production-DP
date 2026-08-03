@@ -5,11 +5,13 @@ import {
     getDirectorLogLineOptions,
     getDirectorWorkspacePath,
 } from '../../utils/directorWorkflowLogs';
+import { canOpenDirectorReportSource } from '../../utils/iotaOrganizations';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const INITIAL_VISIBLE_COUNT = 20;
 
 export default function MobileWorkflowLogs({
+    memberInfo,
     initialLogId,
     onInitialLogHandled,
     returnToHomeOnInitialDetail = false,
@@ -27,6 +29,7 @@ export default function MobileWorkflowLogs({
     const [selectedLogReturnsHome, setSelectedLogReturnsHome] = useState(false);
     const [alertMessage, setAlertMessage] = useState('');
     const [alertType, setAlertType] = useState('error'); // 'error' | 'success'
+    const canOpenOriginal = canOpenDirectorReportSource(memberInfo);
 
     const fetchWorkflowLogs = useCallback(async (force = false) => {
         setLoading(true);
@@ -89,6 +92,12 @@ export default function MobileWorkflowLogs({
     };
 
     const handleGoToWorkspace = async (log) => {
+        if (!canOpenOriginal) {
+            setAlertType('error');
+            setAlertMessage('Director 및 기획추진실만 원문을 열람할 수 있습니다.');
+            return;
+        }
+
         if (log.source_url) {
             window.open(log.source_url, '_blank', 'noopener,noreferrer');
             return;
@@ -411,10 +420,16 @@ export default function MobileWorkflowLogs({
                                     </button>
                                     {!selectedLog.isDeleted && (selectedLog.source_url || getDirectorWorkspacePath(selectedLog)) && (
                                         <button 
+                                            type="button"
+                                            disabled={!canOpenOriginal}
                                             onClick={() => { handleGoToWorkspace(selectedLog); setSelectedLog(null); }}
-                                            className="flex-1 py-3.5 bg-[#3b82f6] hover:bg-[#2563eb] text-white text-[13px] font-bold rounded-xl transition-colors cursor-pointer"
+                                            className={`flex-1 py-3.5 text-[13px] font-bold rounded-xl transition-colors ${
+                                                canOpenOriginal
+                                                    ? 'bg-[#3b82f6] hover:bg-[#2563eb] text-white cursor-pointer'
+                                                    : 'bg-[#2c2c2e] text-[#636366] cursor-not-allowed'
+                                            }`}
                                         >
-                                            원문보기
+                                            {canOpenOriginal ? '원문보기' : '원문보기 · 권한 제한'}
                                         </button>
                                     )}
                                 </div>
