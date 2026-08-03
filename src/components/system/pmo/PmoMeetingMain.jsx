@@ -1,5 +1,6 @@
 import React from 'react';
 import { supabase } from '../../../utils/supabaseClient';
+import { comparePmoTasksByPriority, matchesPmoStatusFilter } from '../../../utils/pmoTaskPriority';
 import { FALLBACK_BOARD_TASKS } from './PmoTaskBoardStaging';
 
 export default function PmoMeetingMain() {
@@ -32,20 +33,21 @@ export default function PmoMeetingMain() {
  
         const pmoTasks = taskList.filter(t => t.task_type !== '팝업');
         const popupTasks = taskList.filter(t => t.task_type === '팝업');
- 
-        const total = pmoTasks.length;
+        const activePmoTasks = pmoTasks.filter(t => matchesPmoStatusFilter(t, '전체보기'));
+
+        const total = activePmoTasks.length;
         const delayed = pmoTasks.filter(t => t.status === '지연').length;
-        const blockers = pmoTasks.filter(t => parseBool(t.is_blocker)).length;
-        const decisions = pmoTasks.filter(t => parseBool(t.needs_decision)).length;
-        const meetings = pmoTasks.filter(t => t.meeting_grade === 'A' || t.meeting_grade === 'A_즉시상정').length;
+        const blockers = activePmoTasks.filter(t => parseBool(t.is_blocker)).length;
+        const decisions = activePmoTasks.filter(t => parseBool(t.needs_decision)).length;
+        const meetings = activePmoTasks.filter(t => t.meeting_grade === 'A' || t.meeting_grade === 'A_즉시상정').length;
         const inProgress = pmoTasks.filter(t => t.status === '진행중').length;
-        const pfRequired = pmoTasks.filter(t => t.importance_level === 'PF필수').length;
-        const constRequired = pmoTasks.filter(t => t.importance_level === '준공필수').length;
+        const pfRequired = activePmoTasks.filter(t => t.importance_level === 'PF필수').length;
+        const constRequired = activePmoTasks.filter(t => t.importance_level === '준공필수').length;
         const notStarted = pmoTasks.filter(t => t.status === '미착수').length;
         const completed = pmoTasks.filter(t => t.status === '완료').length;
         const onHold = pmoTasks.filter(t => t.status === '보류').length;
         const stopped = pmoTasks.filter(t => t.status === '중단').length;
-        const supportNeeded = pmoTasks.filter(t => {
+        const supportNeeded = activePmoTasks.filter(t => {
             const fallbackItem = FALLBACK_BOARD_TASKS.find(fb => fb.task_name === t.task_name) || {};
             const val = t.support_needed || fallbackItem.support_needed || '';
             const s = val.trim().toLowerCase();
@@ -81,7 +83,7 @@ export default function PmoMeetingMain() {
                 const { data: allTasks, error } = await supabase
                     .schema('iota_v2')
                     .from('iota_pmo_tasks')
-                    .select('id, project_code, task_name, sector_detail, lead_dept_code, lead_dept:iota_departments!lead_dept_code(dept_name), coop_dept_codes, assignee, is_blocker, needs_decision, priority_score, due_date, status, category_main, importance_level, meeting_grade, task_type, support_needed');
+                    .select('id, project_code, task_name, sector_detail, lead_dept_code, lead_dept:iota_departments!lead_dept_code(dept_name), coop_dept_codes, assignee, is_blocker, needs_decision, priority_score, due_date, status, category_main, importance_level, meeting_grade, task_type, support_needed, created_at');
  
                 if (error) throw error;
  
@@ -135,44 +137,62 @@ export default function PmoMeetingMain() {
         // Filter out popup tasks from standard listings except when selecting '단발업무'
         const pmoTasks = tasks.filter(t => t.task_type !== '팝업');
         const popupTasks = tasks.filter(t => t.task_type === '팝업');
+        const activePmoTasks = pmoTasks.filter(t => matchesPmoStatusFilter(t, '전체보기'));
+        let filteredTasks;
         
         switch (selectedFilter) {
             case '진행중':
-                return pmoTasks.filter(t => t.status === '진행중');
+                filteredTasks = pmoTasks.filter(t => t.status === '진행중');
+                break;
             case '지연':
-                return pmoTasks.filter(t => t.status === '지연');
+                filteredTasks = pmoTasks.filter(t => t.status === '지연');
+                break;
             case 'Blocker(병목)':
-                return pmoTasks.filter(t => parseBool(t.is_blocker));
+                filteredTasks = activePmoTasks.filter(t => parseBool(t.is_blocker));
+                break;
             case '의사결정 필요':
-                return pmoTasks.filter(t => parseBool(t.needs_decision));
+                filteredTasks = activePmoTasks.filter(t => parseBool(t.needs_decision));
+                break;
             case '즉시 회의 필요':
-                return pmoTasks.filter(t => t.meeting_grade === 'A' || t.meeting_grade === 'A_즉시상정');
+                filteredTasks = activePmoTasks.filter(t => t.meeting_grade === 'A' || t.meeting_grade === 'A_즉시상정');
+                break;
             case '지원필요':
-                return pmoTasks.filter(t => {
+                filteredTasks = activePmoTasks.filter(t => {
                     const fallbackItem = FALLBACK_BOARD_TASKS.find(fb => fb.task_name === t.task_name) || {};
                     const val = t.support_needed || fallbackItem.support_needed || '';
                     const s = val.trim().toLowerCase();
                     const invalidKeywords = ['', '없음', 'n/a', 'na', '해당사항 없음', '해당사항없음', '-', 'none'];
                     return s && !invalidKeywords.includes(s);
                 });
+                break;
             case '미착수':
-                return pmoTasks.filter(t => t.status === '미착수');
+                filteredTasks = pmoTasks.filter(t => t.status === '미착수');
+                break;
             case 'PF필수':
-                return pmoTasks.filter(t => t.importance_level === 'PF필수');
+                filteredTasks = activePmoTasks.filter(t => t.importance_level === 'PF필수');
+                break;
             case '준공필수':
-                return pmoTasks.filter(t => t.importance_level === '준공필수');
+                filteredTasks = activePmoTasks.filter(t => t.importance_level === '준공필수');
+                break;
             case '완료':
-                return pmoTasks.filter(t => t.status === '완료');
+                filteredTasks = pmoTasks.filter(t => t.status === '완료');
+                break;
             case '보류':
-                return pmoTasks.filter(t => t.status === '보류');
+                filteredTasks = pmoTasks.filter(t => t.status === '보류');
+                break;
             case '중단':
-                return pmoTasks.filter(t => t.status === '중단');
+                filteredTasks = pmoTasks.filter(t => t.status === '중단');
+                break;
             case '단발업무':
                 return popupTasks.filter(t => t.status === '진행중');
             case '전체업무':
             default:
-                return pmoTasks;
+                filteredTasks = activePmoTasks;
         }
+
+        return [...filteredTasks].sort((firstTask, secondTask) => (
+            comparePmoTasksByPriority(firstTask, secondTask, 'desc')
+        ));
     };
 
     const getFilterPath = () => {
@@ -598,6 +618,12 @@ export default function PmoMeetingMain() {
                                         const projName = normalizeProjectName(task.project_code || task.project);
                                         const deptName = task.lead_dept?.dept_name || task.lead_dept || resolveDeptName(task.lead_dept_code) || '미정';
                                         const fallbackItem = FALLBACK_BOARD_TASKS.find(fb => fb.task_name === task.task_name) || {};
+                                        const priorityScore = Number(task.priority_score) || 0;
+                                        const priorityScoreClass = priorityScore >= 60
+                                            ? 'text-[#FF453A]'
+                                            : priorityScore >= 40
+                                                ? 'text-[#bdbba7]'
+                                                : 'text-[#86868B]';
  
                                         return (
                                             <div 
@@ -624,6 +650,9 @@ export default function PmoMeetingMain() {
  
                                                 {/* Metadata & Badges Container */}
                                                 <div className="flex items-center gap-[20px] shrink-0">
+                                                    <span className={`text-[13px] font-bold tabular-nums whitespace-nowrap ${priorityScoreClass}`}>
+                                                        우선 {priorityScore}
+                                                    </span>
                                                     <div className="flex items-center gap-[10px] text-[13px] text-white/50">
                                                         <div className="flex items-center gap-[4px]">
                                                             <span className="text-white/40 font-normal">주관</span>
