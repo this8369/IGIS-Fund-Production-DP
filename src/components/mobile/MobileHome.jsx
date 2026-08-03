@@ -16,7 +16,7 @@ import {
 import { getMemberIotaOrganization } from '../../utils/iotaOrganizations';
 
 const GRADE_CONFIG = [
-    { grade: 'A', label: '즉시상정', color: '#f87171' },
+    { grade: 'A', label: '즉시회의', color: '#f87171' },
     { grade: 'B', label: '회의점검', color: '#fbbf24' },
     { grade: 'C', label: '주간관리', color: '#60a5fa' },
     { grade: 'D', label: '대기', color: '#86868B' },
@@ -431,12 +431,12 @@ export default function MobileHome({ memberInfo, onNavigateToTab }) {
                             }`}
                         >
                             <div className="flex items-baseline justify-center gap-1">
-                                <span className="text-[11px] font-black" style={{ color }}>{grade}</span>
+                                <span className="text-[15px] font-black" style={{ color }}>{grade}</span>
                                 <strong className="text-[15px] font-bold text-white">
                                     {taskLoading ? '-' : gradeCounts[grade]}
                                 </strong>
                             </div>
-                            <span className={`mt-0.5 block truncate text-[9px] ${isSelected ? 'text-white' : 'text-[#86868B]'}`}>
+                            <span className={`mt-0.5 block truncate text-[10px] ${isSelected ? 'text-white' : 'text-[#86868B]'}`}>
                                 {label}
                             </span>
                         </button>
@@ -568,7 +568,7 @@ export default function MobileHome({ memberInfo, onNavigateToTab }) {
                 <div className="flex flex-col gap-2">
                     {taskLoading ? (
                         [...Array(HOME_LIST_LIMIT)].map((_, index) => (
-                            <div key={index} className="h-[76px] animate-pulse rounded-[15px] border border-[#3c3c3c]/60 bg-[#272726]" />
+                            <div key={index} className="h-[68px] animate-pulse rounded-[15px] border border-[#3c3c3c]/60 bg-[#272726]" />
                         ))
                     ) : taskError ? (
                         <button
@@ -587,34 +587,37 @@ export default function MobileHome({ memberInfo, onNavigateToTab }) {
                         const leadDepartment = task.lead_dept?.dept_name || task.lead_dept_code || '주관 미정';
                         const isBlocker = parseTaskBoolean(task.is_blocker);
                         const needsDecision = parseTaskBoolean(task.needs_decision);
+                        const supplementalReasons = task.reasons.filter((reason) => (
+                            reason !== 'Blocker' && reason !== '의사결정 필요'
+                        ));
 
                         return (
                             <button
                                 key={task.id}
                                 type="button"
                                 onClick={() => openTaskBoard(task.id)}
-                                className="relative w-full overflow-hidden rounded-[15px] border border-[#3c3c3c]/70 bg-[#272726] px-3.5 py-2.5 text-left active:bg-[#30302f]"
+                                className="relative w-full overflow-hidden rounded-[15px] border border-[#3c3c3c]/70 bg-[#272726] px-3.5 py-2 text-left active:bg-[#30302f]"
                             >
                                 {(isBlocker || needsDecision) && (
                                     <span className={`absolute inset-y-0 left-0 w-1 ${isBlocker ? 'bg-[#f87171]' : 'bg-[#fb923c]'}`} />
                                 )}
                                 <div className="flex items-center justify-between gap-3">
                                     <div className="flex min-w-0 items-center gap-1.5">
-                                        <span className="truncate text-[10px] font-bold text-[#60a5fa]">{task.project_code || '전사'}</span>
-                                        {isBlocker && <span className="rounded-[4px] bg-[#f87171]/10 px-1.5 py-0.5 text-[8px] font-bold text-[#f87171]">Blocker</span>}
-                                        {needsDecision && <span className="rounded-[4px] bg-[#fb923c]/10 px-1.5 py-0.5 text-[8px] font-bold text-[#fb923c]">의사결정</span>}
+                                        <span className="shrink-0 text-[10px] font-bold text-[#60a5fa]">{task.project_code || '전사'}</span>
+                                        <span className="min-w-0 truncate text-[9px] font-semibold text-[#A1A1AA]">{leadDepartment}</span>
+                                        {isBlocker && <span className="shrink-0 rounded-[4px] bg-[#f87171]/10 px-1.5 py-0.5 text-[8px] font-bold text-[#f87171]">Blocker</span>}
+                                        {needsDecision && <span className="shrink-0 rounded-[4px] bg-[#fb923c]/10 px-1.5 py-0.5 text-[8px] font-bold text-[#fb923c]">의사결정필요</span>}
                                     </div>
                                     <span className={`shrink-0 text-[11px] font-bold ${priorityScore >= 60 ? 'text-[#f87171]' : priorityScore >= 40 ? 'text-[#bdbba7]' : 'text-[#A1A1AA]'}`}>
                                         우선 {priorityScore}
                                     </span>
                                 </div>
-                                <h3 className="mt-1.5 line-clamp-2 break-keep text-[14px] font-bold leading-[1.35] text-white">
+                                <h3 className="mt-1 line-clamp-2 break-keep text-[16px] font-bold leading-[1.3] text-white">
                                     {task.task_name || '제목 없음'}
                                 </h3>
-                                <div className="mt-2 flex items-center justify-between gap-3 text-[10px] text-[#86868B]">
-                                    <div className="flex min-w-0 items-center gap-1.5 overflow-hidden">
-                                        <span className="shrink-0 truncate">{leadDepartment}</span>
-                                        {task.reasons.slice(0, 2).map((reason) => (
+                                {supplementalReasons.length > 0 && (
+                                    <div className="mt-1.5 flex min-w-0 items-center gap-1.5 overflow-hidden text-[10px] text-[#86868B]">
+                                        {supplementalReasons.slice(0, 2).map((reason) => (
                                             <span
                                                 key={reason}
                                                 className="shrink-0 rounded-[4px] bg-white/[0.06] px-1.5 py-0.5 text-[8px] font-bold text-[#D1D1D6]"
@@ -623,10 +626,7 @@ export default function MobileHome({ memberInfo, onNavigateToTab }) {
                                             </span>
                                         ))}
                                     </div>
-                                    <span className={`shrink-0 font-bold ${task.status === '지연' ? 'text-[#f87171]' : 'text-[#D1D1D6]'}`}>
-                                        {getDueLabel(task.due_date, task.status)}
-                                    </span>
-                                </div>
+                                )}
                             </button>
                         );
                     })}
