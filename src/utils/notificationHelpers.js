@@ -252,7 +252,7 @@ export const notifyMembersOnTaskCreation = async (taskId, taskName, workspace, w
         let mentionedAuthIds = [];
 
         if (workspace.code === 'WS_PMO') {
-            // [통합업무보드]는 작성자 본인 + 작성자가 속한 부서의 멤버 + 담당자 + 주관부서 + 협조부서 + @멘션 대상자에게만 발송
+            // [통합업무보드]는 작성자 본인 + 작성자가 속한 부서의 멤버 + 담당자 + 실행주관 + 협조부서 + @멘션 대상자에게만 발송
             const creatorMember = members.find(m => m.email && writerEmail && m.email.toLowerCase() === writerEmail.toLowerCase());
             if (creatorMember) {
                 recipientIds.push(creatorMember.auth_id);
@@ -282,7 +282,7 @@ export const notifyMembersOnTaskCreation = async (taskId, taskName, workspace, w
                         }
                     }
                     
-                    // 주관부서 지정
+                    // 실행주관 지정
                     const leadDeptName = task.lead_dept?.dept_name || task.lead_dept_code;
                     if (leadDeptName) {
                         members.forEach(m => {

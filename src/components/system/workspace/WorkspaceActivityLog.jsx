@@ -133,7 +133,7 @@ const LinkedPmoTaskCards = ({ tasks, onOpenTask }) => {
                         <div className="mt-[3px] flex items-center gap-[6px] text-[11px] text-[#86868B]">
                             <span className="truncate">{task.categoryMain || '업무분류 미정'}</span>
                             <span>·</span>
-                            <span className="truncate">{task.leadDeptName || '주관 미정'}</span>
+                            <span className="truncate">{task.leadDeptName || '실행주관 미정'}</span>
                             <span className="ml-auto shrink-0 font-bold text-[#60a5fa]">상세보기 →</span>
                         </div>
                     </button>

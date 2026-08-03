@@ -41,7 +41,7 @@ export default function PmoCategoryMap() {
             <div className="w-full flex justify-between items-start mb-[32px]">
                 <div>
                     <h1 className="text-[32px] font-bold text-white tracking-tight leading-none mb-[8px]">조직별 R&R</h1>
-                    <p className="text-[16px] text-[#86868B] leading-[26px]">대분류별 주관/협업 R&R 및 필수 산출물 계층 구조 시각화</p>
+                    <p className="text-[16px] text-[#86868B] leading-[26px]">대분류별 실행주관/협업 R&R 및 필수 산출물 계층 구조 시각화</p>
                 </div>
             </div>
 
@@ -68,7 +68,7 @@ export default function PmoCategoryMap() {
                     {/* Left: Roles */}
                     <div className="flex flex-col gap-6">
                         <div className="bg-[#1f1f1e] border border-[#3c3c3c] rounded-xl p-5">
-                            <span className="text-[10px] font-bold text-[#2997ff] uppercase tracking-wider">주관 부서 (LEAD DEPARTMENT)</span>
+                            <span className="text-[10px] font-bold text-[#2997ff] uppercase tracking-wider">실행주관 (LEAD DEPARTMENT)</span>
                             <div className="text-[20px] font-bold text-white mt-2 text-left">
                                 {current.lead}
                             </div>

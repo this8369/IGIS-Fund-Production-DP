@@ -361,7 +361,7 @@ export default function PmoMeetingMain() {
     });
 
     const maxActiveCount = Math.max(...deptRowsData.map(d => {
-        if (activeMetric === '주관업무') return d.leadCount;
+        if (activeMetric === '실행주관 업무') return d.leadCount;
         if (activeMetric === '협업업무') return d.coopCount;
         return d.totalCount;
     }), 1);
@@ -655,7 +655,7 @@ export default function PmoMeetingMain() {
                                                     </span>
                                                     <div className="flex items-center gap-[10px] text-[13px] text-white/50">
                                                         <div className="flex items-center gap-[4px]">
-                                                            <span className="text-white/40 font-normal">주관</span>
+                                                            <span className="text-white/40 font-normal">실행주관</span>
                                                             <span className="text-white/80 font-normal">{deptName}</span>
                                                         </div>
                                                         <span className="text-white/20">|</span>
@@ -693,7 +693,7 @@ export default function PmoMeetingMain() {
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-[16px]">
                                 <h3 className="text-[20px] font-bold text-white tracking-tight mt-[4px]">부서별 실행 현황</h3>
-                                <p className="text-[14px] text-[#A1A1AA] font-medium translate-y-[2px]">주관 부서 및 협업 부서의 업무 현황을 확인 합니다.</p>
+                                <p className="text-[14px] text-[#A1A1AA] font-medium translate-y-[2px]">실행주관 및 협업 부서의 업무 현황을 확인합니다.</p>
                             </div>
                         </div>
  
@@ -703,7 +703,7 @@ export default function PmoMeetingMain() {
                             <div className="col-span-3 bg-[#272726] border border-[#3c3c3c] rounded-[24px] p-4 flex flex-col items-center justify-start h-full">
                                 {/* Segmented Toggles */}
                                 <div className="flex bg-[#2c2c2b] p-0.5 rounded-[8px] border border-[#3c3c3c] text-[13px] font-semibold mb-4 w-full">
-                                    {['총관여', '주관업무', '협업업무'].map(m => {
+                                    {['총관여', '실행주관 업무', '협업업무'].map(m => {
                                         const isActive = activeMetric === m;
                                         return (
                                             <button
@@ -730,7 +730,7 @@ export default function PmoMeetingMain() {
                                     };
  
                                     const metricValues = deptRowsData.map(row => {
-                                        const val = activeMetric === '총관여' ? row.totalCount : (activeMetric === '주관업무' ? row.leadCount : row.coopCount);
+                                        const val = activeMetric === '총관여' ? row.totalCount : (activeMetric === '실행주관 업무' ? row.leadCount : row.coopCount);
                                         return { dept: row.dept, val };
                                     });
  
@@ -871,7 +871,7 @@ export default function PmoMeetingMain() {
                                         <tr className="border-b border-[#3c3c3c] bg-transparent text-[#86868B] font-bold text-[13px] h-[46px] whitespace-nowrap">
                                             <th className="py-[16px] px-[16px] w-[130px] font-bold text-[#86868B] text-center whitespace-nowrap">부서</th>
                                             <th className={`py-[16px] px-[16px] text-center font-bold text-[#86868B] transition-all duration-300 whitespace-nowrap ${activeMetric === '총관여' ? 'w-[140px]' : 'w-[80px]'}`}>총관여</th>
-                                            <th className={`py-[16px] px-[16px] text-center font-bold text-[#86868B] transition-all duration-300 whitespace-nowrap ${activeMetric === '주관업무' ? 'w-[140px]' : 'w-[80px]'}`}>주관업무</th>
+                                            <th className={`py-[16px] px-[16px] text-center font-bold text-[#86868B] transition-all duration-300 whitespace-nowrap ${activeMetric === '실행주관 업무' ? 'w-[140px]' : 'w-[80px]'}`}>실행주관 업무</th>
                                             <th className={`py-[16px] px-[16px] text-center font-bold text-[#86868B] transition-all duration-300 whitespace-nowrap ${activeMetric === '협업업무' ? 'w-[140px]' : 'w-[80px]'}`}>협업업무</th>
                                             <th className="py-[16px] px-[16px] text-center font-bold text-[#86868B] whitespace-nowrap">PF필수</th>
                                             <th className="py-[16px] px-[16px] text-center font-bold text-[#86868B] whitespace-nowrap">준공필수</th>
@@ -890,7 +890,7 @@ export default function PmoMeetingMain() {
                                                      onClick={() => handleRowClick(row)}
                                                      className="hover:bg-[#2b2b2b]/40 transition-colors cursor-pointer"
                                                      onMouseEnter={(e) => setTooltipData({
-                                                         text: `${row.dept} 주관 업무 페이지 보기`,
+                                                         text: `${row.dept} 실행주관 업무 페이지 보기`,
                                                          x: e.clientX,
                                                          y: e.clientY
                                                      })}
@@ -913,9 +913,9 @@ export default function PmoMeetingMain() {
                                                         )}
                                                         <span className="relative z-10">{row.totalCount}</span>
                                                     </td>
-                                                    {/* 주관업무 */}
-                                                    <td className={`py-[16px] px-[16px] text-center transition-all duration-300 relative ${activeMetric === '주관업무' ? 'font-bold text-white w-[140px]' : 'text-[#E5E5E5] font-semibold w-[80px]'}`}>
-                                                        {activeMetric === '주관업무' && (
+                                                    {/* 실행주관 업무 */}
+                                                    <td className={`py-[16px] px-[16px] text-center transition-all duration-300 relative ${activeMetric === '실행주관 업무' ? 'font-bold text-white w-[140px]' : 'text-[#E5E5E5] font-semibold w-[80px]'}`}>
+                                                        {activeMetric === '실행주관 업무' && (
                                                             <div className="absolute inset-y-[6px] left-[6px] right-[6px] z-0">
                                                                 <div 
                                                                     className="h-full bg-gradient-to-r from-[#86868b]/15 to-[#86868b]/30 rounded-[4px]"
@@ -993,7 +993,7 @@ export default function PmoMeetingMain() {
                                         <th className="py-[9px] px-[16px] text-center font-bold text-[#86868B] w-[90px] border-l border-[#3c3c3c] whitespace-nowrap">의사결정필요</th>
                                         <th className="py-[9px] px-[16px] text-center font-bold text-[#86868B] w-[90px] border-l border-[#3c3c3c] whitespace-nowrap">지원필요</th>
                                         <th className="py-[9px] px-[16px] text-center font-bold text-[#86868B] w-[90px] border-l border-[#3c3c3c] whitespace-nowrap">지연</th>
-                                        <th className="py-[9px] px-[16px] text-center font-bold text-[#86868B] w-[105px] border-l border-[#3c3c3c] whitespace-nowrap">주관부서</th>
+                                        <th className="py-[9px] px-[16px] text-center font-bold text-[#86868B] w-[105px] border-l border-[#3c3c3c] whitespace-nowrap">실행주관</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-[#3c3c3c]/50 text-[13px]">
@@ -1071,7 +1071,7 @@ export default function PmoMeetingMain() {
                                                     </div>
                                                     <span className="relative z-10">{row.delayedCount}</span>
                                                 </td>
-                                                {/* 주관부서 */}
+                                                {/* 실행주관 */}
                                                 <td className="py-[9px] px-[16px] text-center text-[#E5E5E5] font-medium w-[105px] border-l border-[#3c3c3c]/50 whitespace-nowrap">
                                                     {row.shortDepts}
                                                 </td>                                            </tr>

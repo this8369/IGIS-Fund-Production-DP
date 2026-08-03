@@ -238,7 +238,7 @@ export default function MobilePmoTaskList({
         const isBlocker = parseTaskBoolean(task.is_blocker);
         const needsDecision = parseTaskBoolean(task.needs_decision);
         const priorityScore = getStoredPmoPriorityScore(task);
-        const leadDepartment = task.lead_dept?.dept_name || task.lead_dept || task.lead_dept_code || '주관 미정';
+        const leadDepartment = task.lead_dept?.dept_name || task.lead_dept || task.lead_dept_code || '실행주관 미정';
 
         return (
             <button

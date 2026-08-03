@@ -99,7 +99,7 @@ export default function MobilePmoTaskDetail({ task, onClose, backLabel = '업무
                 <section className="rounded-[16px] border border-white/[0.08] bg-[#1A1A1A] p-4">
                     <div className="grid grid-cols-2 gap-x-4 gap-y-4 text-[13px]">
                         <div>
-                            <span className="block text-[11px] text-[#86868B] mb-1">주관 부서</span>
+                            <span className="block text-[11px] text-[#86868B] mb-1">실행주관</span>
                             <span className="font-semibold text-[#E5E5E5]">{leadDepartment}</span>
                         </div>
                         <div>

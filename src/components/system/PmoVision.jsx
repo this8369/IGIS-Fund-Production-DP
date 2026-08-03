@@ -437,7 +437,7 @@ export default function PmoVision() {
         "category": "인증/보안",
         "subcategory": "부서별 쓰기 통제",
         "actor": "사용자",
-        "detail": "소속 부서(사업1, 사업2 등) 권한에 맞춰 본인 주관 업무 영역만 수정/쓰기 권한이 활성화되고 타 부서 영역은 읽기만 허용됨을 확인할 수 있다.",
+        "detail": "소속 부서(사업1, 사업2 등) 권한에 맞춰 본인 부서의 실행주관 업무 영역만 수정/쓰기 권한이 활성화되고 타 부서 영역은 읽기만 허용됨을 확인할 수 있다.",
         "main_dept": "IT/기획",
         "sub_dept": "ALL",
         "note": "Supabase RLS 규칙에 의한 차단"
@@ -481,7 +481,7 @@ export default function PmoVision() {
         "category": "부서별 업무",
         "subcategory": "실무 할일 관리",
         "actor": "실무자",
-        "detail": "본인 부서에 배정된 주관 업무의 상태(신규/진행/완료 등)를 클릭 한 번으로 빠르게 수정할 수 있다.",
+        "detail": "본인 부서에 배정된 실행주관 업무의 상태(신규/진행/완료 등)를 클릭 한 번으로 빠르게 수정할 수 있다.",
         "main_dept": "ALL",
         "sub_dept": "ALL",
         "note": "그리드 내 인라인 최신화"
@@ -569,7 +569,7 @@ export default function PmoVision() {
         "category": "의사결정 맥락",
         "subcategory": "회의록 태스크 배정",
         "actor": "회의 참석자",
-        "detail": "회의 진행 중 즉석에서 액션 아이템을 주관 부서와 담당자에게 등록 및 배정하여 실무 테이블로 보낼 수 있다.",
+        "detail": "회의 진행 중 즉석에서 액션 아이템을 실행주관과 담당자에게 등록 및 배정하여 실무 테이블로 보낼 수 있다.",
         "main_dept": "ALL",
         "sub_dept": "ALL",
         "note": "MeetingWriteBox 연동"
@@ -624,7 +624,7 @@ export default function PmoVision() {
         "category": "부서별 업무",
         "subcategory": "사업 PM 업무 관리",
         "actor": "사업 PM",
-        "detail": "iota_pm_tasks 테이블을 통해 주관 일정, 소싱 타겟, 계약 정보 등의 현황을 상세 등록하고 조회할 수 있음.",
+        "detail": "iota_pm_tasks 테이블을 통해 실행주관 일정, 소싱 타겟, 계약 정보 등의 현황을 상세 등록하고 조회할 수 있음.",
         "main_dept": "사업 PM",
         "sub_dept": "All",
         "note": "부서 전용 필드 제공"
@@ -712,7 +712,7 @@ export default function PmoVision() {
         "category": "협업 관리",
         "subcategory": "실시간 액션 아이템 배정",
         "actor": "실무자",
-        "detail": "회의 중 실시간으로 발생한 액션 아이템을 에디터 창을 통해 주관 부서 및 담당자에게 즉시 등록 및 배정함.",
+        "detail": "회의 중 실시간으로 발생한 액션 아이템을 에디터 창을 통해 실행주관 및 담당자에게 즉시 등록 및 배정함.",
         "main_dept": "ALL",
         "sub_dept": "All",
         "note": "MeetingWriteBox 에디터 활용"
@@ -1478,7 +1478,7 @@ FM/PM 관리: 주요 하자 보수 이력 플랫폼 연동.
                                                 <th className="px-4 py-3 w-[110px]" style={interFont}>세부분류</th>
                                                 <th className="px-4 py-3 w-[90px]" style={interFont}>엑터</th>
                                                 <th className="px-4 py-3" style={interFont}>기능상세</th>
-                                                <th className="px-4 py-3 w-[100px]" style={interFont}>주관부서</th>
+                                                <th className="px-4 py-3 w-[100px]" style={interFont}>실행주관</th>
                                                 <th className="px-4 py-3 w-[120px]" style={interFont}>비고</th>
                                             </tr>
                                         </thead>
@@ -1729,7 +1729,7 @@ FM/PM 관리: 주요 하자 보수 이력 플랫폼 연동.
    4) Phase 1의 핵심 목표
     a. 부서별로 흩어져 있던 업무 원장(할일 및 마일스톤)을 단일 수파베이스 데이터베이스 및 웹 플랫폼으로 통합하여 업무 협업툴의 기반 수립.
     b. 비히클 통합 관리, 이오타 원 427, 421 펀드 등 자산 데이터를 구축하여 이지스 사내 시스템에 없던 시계열 자금 스택 및 사업성 지표를 체계화.
-    c. 부서별 주관 업무와 산출물의 상태를 가독성 높은 인터페이스로 공유하여 실시간으로 진척도를 모니터링.
+    c. 부서별 실행주관 업무와 산출물의 상태를 가독성 높은 인터페이스로 공유하여 실시간으로 진척도를 모니터링.
     d. 실무진의 수작업 보고 체계를 전산화하고, 의결 사항 및 지연 요소의 기록 역사를 투명하게 아카이빙.
 
 
@@ -1776,7 +1776,7 @@ Phase 1은 전사 통합망(IFPDP)과 연동을 목표로, 이지스 임직원 �
 Phase 1은 업무 특성별로 고유 스키마를 구성하여 총 6대 테이블과 이력 관리 모듈을 신설 및 주입함.
 
    1) 부서별 업무 관리 테이블
-    * iota_pm_tasks: 사업1파트, 사업2파트의 주관 일정, 소싱 타겟, 계약 정보 관리.
+    * iota_pm_tasks: 사업1파트, 사업2파트의 실행주관 일정, 소싱 타겟, 계약 정보 관리.
     * iota_financing_tasks: LFC(금융) 부서의 PF 조달, 금리 구조, 금융비, 대주단 연동 상태 관리.
     * iota_development_tasks: 개발솔루션의 건축인허가, 시공사 도급 계약, 준공 일정 관리.
     * iota_fund_tasks 및 iota_marketing_tasks: 펀드 설정 및 임차 마케팅 원장 관리.
@@ -1786,7 +1786,7 @@ Phase 1은 업무 특성별로 고유 스키마를 구성하여 총 6대 테이�
     * 백업 정책: 수파베이스 네트워크 장애 대비를 위해 로컬 스토리지로 실시간 백업 기동.
 
    3) 로그 및 회의록 입력 창 (LogWriteBox, MeetingWriteBox)
-    * 회의 중 실시간으로 발생한 액션 아이템을 주관 부서원에게 바로 등록 및 배정하는 에디터 인터페이스를 구축하여 협업 툴의 기틀을 완성함.
+    * 회의 중 실시간으로 발생한 액션 아이템을 실행주관 부서원에게 바로 등록 및 배정하는 에디터 인터페이스를 구축하여 협업 툴의 기틀을 완성함.
 
    4) 의사결정 맥락 및 리스크 통제 (IFPDP 모듈 7 연동)
     의사결정 로그 (DecisionLog): 론 조건 변경, 수익률 조정, 매각 시기 연기 등 재단/투자위에서 중대한 결정이 내려질 당시의 배경 사유와 정성적 판단 근거를 투명하게 기록하여 내부 통제 및 의사결정 맥락을 보존함.
@@ -1845,7 +1845,7 @@ Phase 1은 업무 특성별로 고유 스키마를 구성하여 총 6대 테이�
    4) Phase 1의 핵심 목표
     a. 부서별로 흩어져 있던 업무 원장(할일 및 마일스톤)을 단일 수파베이스 데이터베이스 및 웹 플랫폼으로 통합하여 업무 협업툴의 기반 수립.
     b. 비히클 통합 관리, 이오타 원 427, 421 펀드 등 자산 데이터를 구축하여 이지스 사내 시스템에 없던 시계열 자금 스택 및 사업성 지표를 체계화.
-    c. 부서별 주관 업무와 산출물의 상태를 가독성 높은 인터페이스로 공유하여 실시간으로 진척도를 모니터링.
+    c. 부서별 실행주관 업무와 산출물의 상태를 가독성 높은 인터페이스로 공유하여 실시간으로 진척도를 모니터링.
     d. 실무진의 수작업 보고 체계를 전산화하고, 의결 사항 및 지연 요소의 기록 역사를 투명하게 아카이빙.
 
 
@@ -1892,7 +1892,7 @@ Phase 1은 전사 통합망(IFPDP)과 연동을 목표로, 이지스 임직원 �
 Phase 1은 업무 특성별로 고유 스키마를 구성하여 총 6대 테이블과 이력 관리 모듈을 신설 및 주입함.
 
    1) 부서별 업무 관리 테이블
-    * iota_pm_tasks: 사업1파트, 사업2파트의 주관 일정, 소싱 타겟, 계약 정보 관리.
+    * iota_pm_tasks: 사업1파트, 사업2파트의 실행주관 일정, 소싱 타겟, 계약 정보 관리.
     * iota_financing_tasks: LFC(금융) 부서의 PF 조달, 금리 구조, 금융비, 대주단 연동 상태 관리.
     * iota_development_tasks: 개발솔루션의 건축인허가, 시공사 도급 계약, 준공 일정 관리.
     * iota_fund_tasks 및 iota_marketing_tasks: 펀드 설정 및 임차 마케팅 원장 관리.
@@ -1902,7 +1902,7 @@ Phase 1은 업무 특성별로 고유 스키마를 구성하여 총 6대 테이�
     * 백업 정책: 수파베이스 네트워크 장애 대비를 위해 로컬 스토리지로 실시간 백업 기동.
 
    3) 로그 및 회의록 입력 창 (LogWriteBox, MeetingWriteBox)
-    * 회의 중 실시간으로 발생한 액션 아이템을 주관 부서원에게 바로 등록 및 배정하는 에디터 인터페이스를 구축하여 협업 툴의 기틀을 완성함.
+    * 회의 중 실시간으로 발생한 액션 아이템을 실행주관 부서원에게 바로 등록 및 배정하는 에디터 인터페이스를 구축하여 협업 툴의 기틀을 완성함.
 
    4) 의사결정 맥락 및 리스크 통제 (IFPDP 모듈 7 연동)
     의사결정 로그 (DecisionLog): 론 조건 변경, 수익률 조정, 매각 시기 연기 등 재단/투자위에서 중대한 결정이 내려질 당시의 배경 사유와 정성적 판단 근거를 투명하게 기록하여 내부 통제 및 의사결정 맥락을 보존함.
@@ -1982,7 +1982,7 @@ Phase 1은 업무 특성별로 고유 스키마를 구성하여 총 6대 테이�
                                                 <th className="px-4 py-3 w-[110px]" style={interFont}>세부분류</th>
                                                 <th className="px-4 py-3 w-[90px]" style={interFont}>엑터</th>
                                                 <th className="px-4 py-3" style={interFont}>기능상세</th>
-                                                <th className="px-4 py-3 w-[100px]" style={interFont}>주관부서</th>
+                                                <th className="px-4 py-3 w-[100px]" style={interFont}>실행주관</th>
                                                 <th className="px-4 py-3 w-[120px]" style={interFont}>비고</th>
                                             </tr>
                                         </thead>
@@ -2238,7 +2238,7 @@ CREATE TABLE public.iota_pmo_tasks (
     category_main VARCHAR,                  -- 대분류 (PMO, 호텔, 인허가 등)
     task_name VARCHAR NOT NULL,             -- 업무명
     task_purpose TEXT,                      -- 업무목적 및 영향도
-    lead_department VARCHAR,                -- 실무 주관부서
+    lead_department VARCHAR,                -- 실행주관
     assignee VARCHAR,                       -- 담당자
     is_blocker BOOLEAN DEFAULT false,       -- Blocker 여부
     needs_decision BOOLEAN DEFAULT false,    -- 의사결정 필요 여부
@@ -2281,7 +2281,7 @@ CREATE TABLE public.iota_pmo_tasks (
     category_main VARCHAR,                  -- 대분류 (PMO, 호텔, 인허가 등)
     task_name VARCHAR NOT NULL,             -- 업무명
     task_purpose TEXT,                      -- 업무목적 및 영향도
-    lead_department VARCHAR,                -- 실무 주관부서
+    lead_department VARCHAR,                -- 실행주관
     assignee VARCHAR,                       -- 담당자
     is_blocker BOOLEAN DEFAULT false,       -- Blocker 여부
     needs_decision BOOLEAN DEFAULT false,    -- 의사결정 필요 여부

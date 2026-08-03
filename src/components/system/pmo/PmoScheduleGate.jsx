@@ -454,7 +454,7 @@ export default function PmoScheduleGate() {
                                 <tr className="border-b border-[#3c3c3c] bg-transparent text-[#86868B] font-bold text-[13px] h-12">
                                     <th className="pl-[10px] pr-1 w-[94px] min-w-[94px] max-w-[94px] text-center bg-[#272726] rounded-tl-[31px]">구분</th>
                                     <th className="pl-3 w-[258px] min-w-[258px] max-w-[258px] bg-[#272726]">세부업무</th>
-                                    <th className="px-1 w-[94px] min-w-[94px] max-w-[94px] text-center bg-[#272726]">주관</th>
+                                    <th className="px-1 w-[94px] min-w-[94px] max-w-[94px] text-center bg-[#272726]">실행주관</th>
                                     <th className="px-1 w-[94px] min-w-[94px] max-w-[94px] text-center bg-[#272726] border-r border-[#3c3c3c]">협업</th>
                                     {COLUMNS.map((col, cIdx) => {
                                         const isLast = cIdx === COLUMNS.length - 1;
@@ -494,7 +494,7 @@ export default function PmoScheduleGate() {
                                                 {item.desc}
                                             </td>
                                             
-                                            {/* 주관 */}
+                                            {/* 실행주관 */}
                                             <td className="px-1 text-[#E5E5E5] font-semibold text-center bg-[#272726] group-hover:bg-[#333] transition-colors text-[12px] leading-tight tracking-tight whitespace-normal break-words w-[94px] min-w-[94px] max-w-[94px]">
                                                 {item.lead.includes(' ') ? (
                                                     item.lead.split(' ').map((part, pIdx) => (
@@ -626,7 +626,7 @@ export default function PmoScheduleGate() {
                                     <th className="w-[90px] min-w-[90px] max-w-[90px] text-center bg-[#272726]">
                                         <div className="relative inline-flex items-center justify-center bg-[#2c2c2b] border border-[#3c3c3c] rounded-[6px] px-2 py-1 transition-colors cursor-pointer hover:bg-[#323231] hover:border-[#4c4c4b] translate-x-[6px]">
                                             <span className={`font-bold text-[12px] whitespace-nowrap ${selectedRrLead === '전체보기' ? 'text-[#86868B]' : 'text-[#2997ff]'}`}>
-                                                {selectedRrLead === '전체보기' ? '주관 부서' : selectedRrLead}
+                                                {selectedRrLead === '전체보기' ? '실행주관' : selectedRrLead}
                                             </span>
                                             <span className="text-[8px] text-[#86868B]/70 pointer-events-none select-none translate-y-[0.5px] ml-1">▼</span>
                                             <select
@@ -634,7 +634,7 @@ export default function PmoScheduleGate() {
                                                 onChange={(e) => setSelectedRrLead(e.target.value)}
                                                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                                             >
-                                                <option disabled value="" className="bg-[#222] text-[#86868B] font-bold">[ 주관 부서 ]</option>
+                                                <option disabled value="" className="bg-[#222] text-[#86868B] font-bold">[ 실행주관 ]</option>
                                                 <option value="전체보기" className="bg-[#222] text-[#86868B]">전체보기</option>
                                                 {R_R_LEADS.slice(1).map(lead => (
                                                     <option key={lead} value={lead} className="bg-[#222] text-white">{lead}</option>
@@ -731,7 +731,7 @@ export default function PmoScheduleGate() {
                                                 )}
                                             </td>
  
-                                            {/* 주관 부서 */}
+                                            {/* 실행주관 */}
                                             <td className="text-center w-[90px] min-w-[90px] max-w-[90px] bg-[#272726] group-hover:bg-[#333] transition-colors">
                                                 <span className="px-2.5 py-0.5 rounded font-bold bg-[#2997ff]/10 text-white border border-[#2997ff]/20 text-[11px] whitespace-nowrap inline-block translate-x-[6px]">
                                                     {item.lead}
@@ -901,9 +901,9 @@ export default function PmoScheduleGate() {
                                 </div>
                             </div>
 
-                            {/* 주관 부서 */}
+                            {/* 실행주관 */}
                             <div className="flex flex-col">
-                                <label className="text-[11px] font-bold text-[#86868B] uppercase">주관 부서</label>
+                                <label className="text-[11px] font-bold text-[#86868B] uppercase">실행주관</label>
                                 <select 
                                     value={formLead} 
                                     onChange={(e) => setFormLead(e.target.value)}

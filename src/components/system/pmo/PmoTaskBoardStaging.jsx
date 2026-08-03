@@ -2768,11 +2768,11 @@ export default function PmoTaskBoardStaging({
                                             </div>
                                         </th>
 
-                                        {/* 주관부서 (실무주관부서->주관부서) */}
+                                        {/* 실행주관 */}
                                         <th className="w-[70px] min-w-[70px] max-w-[70px] text-center">
                                             <div className="relative inline-flex items-center justify-center bg-[#2c2c2b] border border-[#3c3c3c] rounded-[6px] px-1 h-[22px] py-0 align-middle transition-colors cursor-pointer hover:bg-[#323231] hover:border-[#4c4c4b] w-full max-w-[62px] overflow-hidden mx-auto">
                                                 <span className={`font-bold text-[11px] whitespace-nowrap ${selectedLeadDept === '전체보기' ? 'text-[#86868B]' : 'text-[#2997ff]'}`}>
-                                                    {selectedLeadDept === '전체보기' ? '주관부서' : selectedLeadDept}
+                                                    {selectedLeadDept === '전체보기' ? '실행주관' : selectedLeadDept}
                                                 </span>
                                                 <span className="text-[8px] text-[#86868B]/70 pointer-events-none select-none translate-y-[0.5px] ml-0.5 shrink-0">▼</span>
                                                 <select
@@ -2780,7 +2780,7 @@ export default function PmoTaskBoardStaging({
                                                     onChange={(e) => setSelectedLeadDept(e.target.value)}
                                                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                                                 >
-                                                    <option disabled value="" className="bg-[#222] text-[#86868B] font-bold">[ 주관부서 ]</option>
+                                                    <option disabled value="" className="bg-[#222] text-[#86868B] font-bold">[ 실행주관 ]</option>
                                                     <option value="전체보기" className="bg-[#222] text-[#86868B]">전체보기</option>
                                                     {uniqueLeadDeptFilter.map(dept => (
                                                         <option key={dept} value={dept} className="bg-[#222] text-white">{dept}</option>
@@ -3078,7 +3078,7 @@ export default function PmoTaskBoardStaging({
                                                         </span>
                                                     </td>
 
-                                                    {/* 11. 실무 주관부서 */}
+                                                    {/* 11. 실행주관 */}
                                                     <td className="text-center w-[70px] min-w-[70px] max-w-[70px] overflow-hidden">
                                                         {leadDeptName ? (
                                                             <span className="inline-flex items-center justify-center px-2 h-[22px] py-0 align-middle bg-[#27272a] text-[#d4d4d8] border border-[#3f3f46] rounded-[6px] text-[11px] font-medium max-w-full truncate">
@@ -3324,7 +3324,7 @@ export default function PmoTaskBoardStaging({
                                             {/* 11. 회의상정등급 */}
                                             <td className="w-[70px] min-w-[70px] max-w-[70px] bg-[#272726]"></td>
                                             
-                                            {/* 12. 실무 주관부서 */}
+                                            {/* 12. 실행주관 */}
                                             <td className="w-[70px] min-w-[70px] max-w-[70px] bg-[#272726]"></td>
                                             
                                             {/* 13. 협업부서 */}
@@ -3827,10 +3827,10 @@ export default function PmoTaskBoardStaging({
 
                                 {/* Metadata Card Box */}
                                 <div className="p-5 rounded-[16px] bg-white/[0.02] border border-[#2c2c2e] space-y-4 text-[13px]">
-                                    {/* Row 1: 주관부서, 담당자, 협조부서 */}
+                                    {/* Row 1: 실행주관, 담당자, 협조부서 */}
                                     <div className="grid grid-cols-4 gap-4 items-start">
                                         <div className="space-y-1">
-                                            <span className="text-[#86868B] text-[11px] block">주관 부서</span>
+                                            <span className="text-[#86868B] text-[11px] block">실행주관</span>
                                             <select 
                                                 value={formLeadDept} 
                                                 onChange={e => setFormLeadDept(e.target.value)} 
@@ -4234,10 +4234,10 @@ export default function PmoTaskBoardStaging({
                                     
                                     {/* Metadata Card Box */}
                                     <div className="p-5 rounded-[16px] bg-white/[0.02] border border-[#2c2c2e] space-y-[14px] text-[13px]">
-                                        {/* Row 1: 주관부서, 담당자, 협조부서 */}
+                                        {/* Row 1: 실행주관, 담당자, 협조부서 */}
                                         <div className="grid grid-cols-4 gap-4">
                                             <div className="space-y-[3px]">
-                                                <span className="text-[#86868B] text-[11px] block">주관 부서</span>
+                                                <span className="text-[#86868B] text-[11px] block">실행주관</span>
                                                 <span className="font-bold text-[#E5E5E5] block">
                                                     {t.lead_dept?.dept_name || t.lead_dept || t.lead_dept_code || fallbackItem.lead_dept || '사업2파트'}
                                                 </span>

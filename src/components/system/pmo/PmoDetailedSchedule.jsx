@@ -326,7 +326,7 @@ const ScheduleEditModal = ({
 
                     <div className="grid grid-cols-2 gap-3">
                         <label className="block">
-                            <span className="mb-2 block text-[12px] font-bold text-[#a1a1aa]">주관 조직</span>
+                            <span className="mb-2 block text-[12px] font-bold text-[#a1a1aa]">실행주관</span>
                             <select
                                 value={form.leadValue}
                                 onChange={(event) => updateForm('leadValue', event.target.value)}
@@ -1110,11 +1110,11 @@ export default function PmoDetailedSchedule() {
                             ]}
                         />
                         <SelectControl
-                            label="주관"
+                            label="실행주관"
                             value={selectedLead}
                             onChange={setSelectedLead}
                             options={[
-                                { value: '전체', label: '주관 전체' },
+                                { value: '전체', label: '실행주관 전체' },
                                 ...filterOptions.lead.map((value) => ({ value, label: value }))
                             ]}
                         />
@@ -1160,7 +1160,7 @@ export default function PmoDetailedSchedule() {
                         <input
                             value={searchTerm}
                             onChange={(event) => setSearchTerm(event.target.value)}
-                            placeholder="일정·업무·주관 검색"
+                            placeholder="일정·업무·실행주관 검색"
                             className="h-full w-full rounded-[8px] border border-[#3c3c3c] bg-[#2c2c2b] pl-10 pr-3 text-[13px] text-white outline-none placeholder:text-[#68686d] focus:border-[#2997ff]"
                         />
                     </div>
@@ -1197,7 +1197,7 @@ export default function PmoDetailedSchedule() {
                                 rowSpan={2}
                                 className="sticky left-0 z-30 w-[450px] min-w-[450px] bg-[#242423] px-4 text-[12px] font-bold text-[#86868B] shadow-[inset_-1px_0_0_#464646]"
                             >
-                                업무명 / 주관 조직 / 기간
+                                업무명 / 실행주관 / 기간
                             </th>
                             {[7, 8, 9, 10, 11, 12].map((month) => (
                                 <th
@@ -1353,7 +1353,7 @@ export default function PmoDetailedSchedule() {
                                                 <div className="mt-0 flex items-center gap-2 pl-7 text-[10px] text-[#86868B]">
                                                     {showLead && (
                                                         <span className={isLeadUnassigned ? 'font-bold text-[#ff5f57]' : ''}>
-                                                            {isLeadUnassigned ? '주관부서 미정' : item.leadLabel}
+                                                            {isLeadUnassigned ? '실행주관 미정' : item.leadLabel}
                                                         </span>
                                                     )}
                                                     <span>{item.categoryMain}</span>

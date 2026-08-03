@@ -159,7 +159,7 @@ const getRecommendation = (item, task) => {
     }
     if (item.leadDeptCode && item.leadDeptCode === task.leadDeptCode) {
         score += 32;
-        reasons.push('주관 조직 일치');
+        reasons.push('실행주관 일치');
     }
 
     const inferredProjectCode = inferProjectCode(item);
@@ -214,7 +214,7 @@ const TaskCard = ({
             <div className="mt-1 flex flex-wrap gap-x-2 gap-y-1 text-[13px] text-[#8e8e93]">
                 <span>{task.categoryMain || '업무분류 미정'}</span>
                 <span>·</span>
-                <span>{task.leadDeptName || '주관 미정'}</span>
+                <span>{task.leadDeptName || '실행주관 미정'}</span>
                 {task.assignee && (
                     <>
                         <span>·</span>
@@ -283,7 +283,7 @@ const LinkedTaskList = ({
                                 <span className="ml-auto shrink-0 text-[13px] font-bold text-[#60a5fa]">상세보기 →</span>
                             </div>
                             <div className="mt-1 text-[12px] text-[#86868B]">
-                                {task.categoryMain} · {task.leadDeptName || '주관 미정'}
+                                {task.categoryMain} · {task.leadDeptName || '실행주관 미정'}
                             </div>
                         </button>
                         {canManage && (
@@ -439,7 +439,7 @@ export default function PmoScheduleTaskLinkModal({
                         </h3>
                         <p className="mt-1.5 flex items-center gap-2 text-[13px] text-[#86868B]">
                             <span className={isLeadUnassigned ? 'font-bold text-[#ff5f57]' : ''}>
-                                {isLeadUnassigned ? '주관부서미정' : item.leadLabel}
+                                {isLeadUnassigned ? '실행주관 미정' : item.leadLabel}
                             </span>
                             <span>{item.categoryMain || '업무분류 미정'}</span>
                         </p>
@@ -523,7 +523,7 @@ export default function PmoScheduleTaskLinkModal({
                                     >
                                         <span className="block text-[13px] font-bold text-[#fbbf24]">마일스톤 및 일정 수정</span>
                                         <span className="mt-1.5 block text-[13px] leading-[1.5] text-[#8e8e93]">
-                                            마일스톤·업무명·주관·기간·진행상태를 수정합니다.
+                                            마일스톤·업무명·실행주관·기간·진행상태를 수정합니다.
                                         </span>
                                     </button>
                                 </div>
@@ -553,7 +553,7 @@ export default function PmoScheduleTaskLinkModal({
                                     <div className="mb-2">
                                         <h4 className="text-[12px] font-bold text-white">추천 업무</h4>
                                         <p className="mt-0.5 text-[13px] text-[#86868B]">
-                                            업무명·주관 조직·업무분류·프로젝트 문맥을 기준으로 제안합니다.
+                                            업무명·실행주관·업무분류·프로젝트 문맥을 기준으로 제안합니다.
                                         </p>
                                     </div>
                                     <div className="grid grid-cols-2 gap-2.5">
@@ -586,7 +586,7 @@ export default function PmoScheduleTaskLinkModal({
                                         <input
                                             value={searchTerm}
                                             onChange={(event) => setSearchTerm(event.target.value)}
-                                            placeholder="업무명·담당자·주관·분류 검색"
+                                            placeholder="업무명·담당자·실행주관·분류 검색"
                                             className="h-9 w-full rounded-[8px] border border-[#444] bg-[#292929] pl-9 pr-3 text-[14px] text-white outline-none placeholder:text-[#68686d] focus:border-[#2997ff]"
                                         />
                                     </label>
@@ -669,7 +669,7 @@ export default function PmoScheduleTaskLinkModal({
                                 />
                             </label>
                             <label className="block">
-                                <span className="mb-1.5 block text-[13px] font-bold text-[#a1a1aa]">주관 조직</span>
+                                <span className="mb-1.5 block text-[13px] font-bold text-[#a1a1aa]">실행주관</span>
                                 <select
                                     value={form.leadDeptCode}
                                     onChange={(event) => updateForm('leadDeptCode', event.target.value)}

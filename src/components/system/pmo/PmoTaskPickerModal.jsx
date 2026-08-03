@@ -74,7 +74,7 @@ const getRecommendation = (task, reference) => {
         && (workspaceName.includes(leadDepartmentName) || leadDepartmentName.includes(workspaceName))
     ) {
         score += 34;
-        reasons.push('주관 조직 일치');
+        reasons.push('실행주관 일치');
     }
 
     if (sharedTokens.length > 0) {
@@ -110,7 +110,7 @@ const PickerTaskCard = ({ task, selected, reasons, onToggle }) => (
         <div className="mt-1 flex flex-wrap gap-x-2 gap-y-1 text-[13px] text-[#8e8e93]">
             <span>{task.categoryMain || '업무분류 미정'}</span>
             <span>·</span>
-            <span>{task.leadDeptName || '주관 미정'}</span>
+            <span>{task.leadDeptName || '실행주관 미정'}</span>
             {task.assignee && (
                 <>
                     <span>·</span>
@@ -310,7 +310,7 @@ export default function PmoTaskPickerModal({
                                             type="search"
                                             value={searchTerm}
                                             onChange={(event) => setSearchTerm(event.target.value)}
-                                            placeholder="업무명·담당자·주관 조직 검색"
+                                            placeholder="업무명·담당자·실행주관 검색"
                                             className="h-11 w-full rounded-[10px] border border-[#454545] bg-[#282828] pl-10 pr-3 text-[14px] text-white outline-none focus:border-[#2997ff]"
                                         />
                                     </label>

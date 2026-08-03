@@ -116,7 +116,7 @@ const getTaskGuidance = (task, memberInfo) => {
         reasons.push('내 담당');
     }
     if (isMemberLeadDepartment) {
-        reasons.push('내 부서 주관');
+        reasons.push('내 부서 실행주관');
     }
     if (isMemberCooperationDepartment) {
         reasons.push('내 부서 협조');
@@ -509,7 +509,7 @@ export default function MobileHome({ memberInfo, onNavigateToTab }) {
                             <div className="flex flex-col gap-1.5">
                                 {selectedGradeTasks.map((task) => {
                                     const priorityScore = getStoredPmoPriorityScore(task);
-                                    const leadDepartment = task.lead_dept?.dept_name || task.lead_dept_code || '주관 미정';
+                                    const leadDepartment = task.lead_dept?.dept_name || task.lead_dept_code || '실행주관 미정';
                                     return (
                                         <button
                                             key={task.id}
@@ -584,7 +584,7 @@ export default function MobileHome({ memberInfo, onNavigateToTab }) {
                         </div>
                     ) : guidanceTasks.map((task) => {
                         const priorityScore = getStoredPmoPriorityScore(task);
-                        const leadDepartment = task.lead_dept?.dept_name || task.lead_dept_code || '주관 미정';
+                        const leadDepartment = task.lead_dept?.dept_name || task.lead_dept_code || '실행주관 미정';
                         const isBlocker = parseTaskBoolean(task.is_blocker);
                         const needsDecision = parseTaskBoolean(task.needs_decision);
                         const supplementalReasons = task.reasons.filter((reason) => (
@@ -694,7 +694,7 @@ export default function MobileHome({ memberInfo, onNavigateToTab }) {
                     <div className="min-w-0">
                         <h2 className="text-[16px] font-bold text-white">협업 확인사항</h2>
                         <p className="mt-0.5 truncate text-[10px] text-[#86868B]">
-                            협업 요청과 사업2파트 주관업무 5건
+                            협업 요청과 사업2파트 실행주관 업무 5건
                         </p>
                     </div>
                     <button
@@ -740,7 +740,7 @@ export default function MobileHome({ memberInfo, onNavigateToTab }) {
                                         {item.department}
                                     </span>
                                     <span className={`shrink-0 font-bold ${item.isPending ? 'text-[#fbbf24]' : 'text-[#86868B]'}`}>
-                                        {item.isPending ? '확인 필요' : '주관업무'}
+                                        {item.isPending ? '확인 필요' : '실행주관 업무'}
                                     </span>
                                 </div>
                                 <span className={`shrink-0 font-bold ${
