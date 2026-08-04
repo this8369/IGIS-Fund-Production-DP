@@ -591,43 +591,42 @@ export default function IotaLeftNav({ onMenuChange, currentPath = '' }) {
                     </>
                 )}
 
-                {!isContentVisible ? (
+                <div className={`relative transition-[height] duration-300 ease-out ${isContentVisible ? 'h-[74px]' : 'h-[64px]'}`}>
                     <button
                         type="button"
                         onClick={() => setShowProfileMenu(!showProfileMenu)}
-                        className="w-full border-t border-[#3A3A3C] py-3 flex items-center justify-center transition-colors duration-300 cursor-pointer hover:bg-white/5"
+                        className={`absolute inset-x-0 bottom-0 w-full border-t border-[#3A3A3C] py-3 flex items-center justify-center transition-[opacity,transform,background-color] duration-150 cursor-pointer hover:bg-white/5 ${isContentVisible ? 'opacity-0 translate-y-1 pointer-events-none' : 'opacity-100 translate-y-0 delay-75'}`}
                         aria-label="프로필 메뉴 열기"
                         title={getStaffTitle(memberInfo)}
                     >
                         <SidebarProfileAvatar memberInfo={memberInfo} />
                     </button>
-                ) : (
-                <div
-                    onClick={() => setShowProfileMenu(!showProfileMenu)}
-                    className="pl-[15px] pr-[17px] pt-[10px] pb-3 border-t border-[#3A3A3C] w-full flex items-center justify-between transition-colors duration-300 cursor-pointer hover:bg-white/5"
-                >
-                    <div className="flex items-center gap-3 p-1.5 -ml-1.5 rounded-lg transition-colors duration-300">
-                        <SidebarProfileAvatar memberInfo={memberInfo} className="-ml-[2px]" />
-                        <div className="flex flex-col max-w-[130px]">
-                            <span className="font-semibold text-[14px] leading-tight mb-0.5 text-white tracking-tight truncate">
-                                {getStaffTitle(memberInfo)}
-                            </span>
-                            <span className="text-[#86868B] text-[12px] leading-none font-normal truncate">
-                                {user?.email || '권한 없음'}
-                            </span>
+                    <div
+                        onClick={() => setShowProfileMenu(!showProfileMenu)}
+                        className={`absolute left-0 bottom-0 pl-[15px] pr-[17px] pt-[10px] pb-3 border-t border-[#3A3A3C] w-[275px] flex items-center justify-between cursor-pointer hover:bg-white/5 transition-[opacity,transform,background-color] duration-150 ${isContentVisible ? 'opacity-100 translate-y-0 delay-75' : 'opacity-0 translate-y-1 pointer-events-none'}`}
+                    >
+                        <div className="flex items-center gap-3 p-1.5 -ml-1.5 rounded-lg transition-colors duration-300">
+                            <SidebarProfileAvatar memberInfo={memberInfo} className="-ml-[2px]" />
+                            <div className="flex flex-col max-w-[130px]">
+                                <span className="font-semibold text-[14px] leading-tight mb-0.5 text-white tracking-tight truncate">
+                                    {getStaffTitle(memberInfo)}
+                                </span>
+                                <span className="text-[#86868B] text-[12px] leading-none font-normal truncate">
+                                    {user?.email || '권한 없음'}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center">
+                            <button
+                                type="button"
+                                className="text-[#86868B] transition-colors p-1 pointer-events-none"
+                            >
+                                <svg className="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 5l7 7-7 7" /></svg>
+                            </button>
                         </div>
                     </div>
-
-                    <div className="flex items-center">
-                        <button 
-                            type="button"
-                            className="text-[#86868B] transition-colors p-1 pointer-events-none"
-                        >
-                            <svg className="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 5l7 7-7 7" /></svg>
-                        </button>
-                    </div>
                 </div>
-                )}
             </div>
 
             {/* Modals */}

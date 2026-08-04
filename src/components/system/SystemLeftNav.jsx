@@ -237,54 +237,53 @@ export default function SystemLeftNav({ isCore, isPlatform = false }) {
                     </>
                 )}
 
-                {!isContentVisible ? (
+                <div className={`relative transition-[height] duration-300 ease-out ${isContentVisible ? 'h-[80px]' : 'h-[64px]'}`}>
                     <button
                         type="button"
                         onClick={() => setShowProfileMenu(!showProfileMenu)}
-                        className="w-full border-t border-black/10 dark:border-[#3A3A3C] py-3 flex items-center justify-center transition-colors duration-300 cursor-pointer hover:bg-black/5 dark:hover:bg-white/5"
+                        className={`absolute inset-x-0 bottom-0 w-full border-t border-black/10 dark:border-[#3A3A3C] py-3 flex items-center justify-center transition-[opacity,transform,background-color] duration-150 cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 ${isContentVisible ? 'opacity-0 translate-y-1 pointer-events-none' : 'opacity-100 translate-y-0 delay-75'}`}
                         aria-label="프로필 메뉴 열기"
                         title={getStaffTitle(memberInfo)}
                     >
                         <SidebarProfileAvatar memberInfo={memberInfo} />
                     </button>
-                ) : (
-                <div
-                    onClick={() => setShowProfileMenu(!showProfileMenu)}
-                    className="px-[15px] pt-4 pb-3 border-t border-black/10 dark:border-[#3A3A3C] w-full flex items-center justify-between transition-colors duration-300 relative cursor-pointer hover:bg-black/5 dark:hover:bg-white/5"
-                >
-                    <div className="flex items-center gap-3 p-1.5 -ml-1.5 rounded-lg transition-colors duration-300">
-                        <SidebarProfileAvatar memberInfo={memberInfo} className="-ml-[2px]" />
-                        <div className="flex flex-col max-w-[130px]">
-                            <span className="font-semibold text-[14px] leading-tight mb-0.5 text-[#1D1D1F] dark:text-white transition-colors duration-300 tracking-tight truncate">
-                                {getStaffTitle(memberInfo)}
-                            </span>
-                            <span className="text-[#86868B] dark:text-gray-400 text-[12px] leading-none font-normal transition-colors duration-300 truncate">
-                                {user?.email || '권한 없음'}
-                            </span>
-                        </div>
-                    </div>
-                    
-                    <div className="flex items-center gap-2">
-                        {/* Expand Icon */}
-                        <div className="text-[#86868B] transition-colors p-1 pointer-events-none">
-                            <svg className="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 5l7 7-7 7" /></svg>
+                    <div
+                        onClick={() => setShowProfileMenu(!showProfileMenu)}
+                        className={`absolute left-0 bottom-0 px-[15px] pt-4 pb-3 border-t border-black/10 dark:border-[#3A3A3C] w-[275px] flex items-center justify-between cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-[opacity,transform,background-color] duration-150 ${isContentVisible ? 'opacity-100 translate-y-0 delay-75' : 'opacity-0 translate-y-1 pointer-events-none'}`}
+                    >
+                        <div className="flex items-center gap-3 p-1.5 -ml-1.5 rounded-lg transition-colors duration-300">
+                            <SidebarProfileAvatar memberInfo={memberInfo} className="-ml-[2px]" />
+                            <div className="flex flex-col max-w-[130px]">
+                                <span className="font-semibold text-[14px] leading-tight mb-0.5 text-[#1D1D1F] dark:text-white transition-colors duration-300 tracking-tight truncate">
+                                    {getStaffTitle(memberInfo)}
+                                </span>
+                                <span className="text-[#86868B] dark:text-gray-400 text-[12px] leading-none font-normal transition-colors duration-300 truncate">
+                                    {user?.email || '권한 없음'}
+                                </span>
+                            </div>
                         </div>
 
-                        {/* Theme Toggle Switch */}
-                        <div 
-                            onClick={(e) => { e.stopPropagation(); handleToggle(); }}
-                            className="flex shrink-0 items-center justify-center cursor-pointer"
-                        >
-                            <div className={`w-[42px] h-[24px] rounded-full relative transition-colors duration-300 ${activeLight ? 'bg-[#c3c2b7]' : 'bg-[#3A3A3C]'} border border-black/10 dark:border-[#4A4A4C]`}>
-                                <div className={`w-[18px] h-[18px] bg-white rounded-full absolute top-[2px] transition-transform duration-300 shadow-sm ${activeLight ? 'translate-x-[20px]' : 'translate-x-[2px]'}`}></div>
-                                {/* Sun/Moon icons */}
-                                <svg className={`absolute left-[4px] top-[4px] w-4 h-4 text-[#111] transition-opacity duration-300 ${activeLight ? 'opacity-100' : 'opacity-0'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
-                                <svg className={`absolute right-[3px] top-[3.5px] w-[15px] h-[15px] text-[#A1A1AA] transition-opacity duration-300 ${activeLight ? 'opacity-0' : 'opacity-100'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
+                        <div className="flex items-center gap-2">
+                            {/* Expand Icon */}
+                            <div className="text-[#86868B] transition-colors p-1 pointer-events-none">
+                                <svg className="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 5l7 7-7 7" /></svg>
+                            </div>
+
+                            {/* Theme Toggle Switch */}
+                            <div
+                                onClick={(e) => { e.stopPropagation(); handleToggle(); }}
+                                className="flex shrink-0 items-center justify-center cursor-pointer"
+                            >
+                                <div className={`w-[42px] h-[24px] rounded-full relative transition-colors duration-300 ${activeLight ? 'bg-[#c3c2b7]' : 'bg-[#3A3A3C]'} border border-black/10 dark:border-[#4A4A4C]`}>
+                                    <div className={`w-[18px] h-[18px] bg-white rounded-full absolute top-[2px] transition-transform duration-300 shadow-sm ${activeLight ? 'translate-x-[20px]' : 'translate-x-[2px]'}`}></div>
+                                    {/* Sun/Moon icons */}
+                                    <svg className={`absolute left-[4px] top-[4px] w-4 h-4 text-[#111] transition-opacity duration-300 ${activeLight ? 'opacity-100' : 'opacity-0'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+                                    <svg className={`absolute right-[3px] top-[3.5px] w-[15px] h-[15px] text-[#A1A1AA] transition-opacity duration-300 ${activeLight ? 'opacity-0' : 'opacity-100'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
-                )}
             </div>
 
             {/* Modals */}
