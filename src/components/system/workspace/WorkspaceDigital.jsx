@@ -17,7 +17,7 @@ const sscScopes = [
 
 export default function WorkspaceDigital() {
     const { memberInfo } = useAuth();
-    const isAuthorized = ['김현수', '이가현', '정수명', '전기영'].includes(memberInfo?.staff_name);
+    const isAuthorized = ['김현수', '이가현', '정수명', '임수빈', '전기영'].includes(memberInfo?.staff_name);
     
     const [tasks, setTasks] = useState([]);
     const [uploadingFile, setUploadingFile] = useState(false);
@@ -623,7 +623,7 @@ export default function WorkspaceDigital() {
                         </div>
                     </div>
                     <div className="flex flex-wrap gap-x-1.5 gap-y-2 -ml-[6px]">
-                        {["이가현","정수명"].map(name => (
+                        {["이가현", "정수명", "임수빈"].map(name => (
                             <div key={name} className="flex items-center gap-[6px] bg-[#222] border border-[#333] rounded-full pl-[4px] pr-[10px] py-[4px] min-w-[76px]">
                                 <div className="w-[21px] h-[21px] shrink-0 rounded-full bg-[#3c3c3c] overflow-hidden">
                                     <img src={`${import.meta.env.BASE_URL}${name}.webp`} alt={name} className="w-full h-full object-cover" onError={(e) => { e.target.src = `${import.meta.env.BASE_URL}default_avatar.svg`; }} />

@@ -30,7 +30,7 @@ const CFT_MEMBERS = new Set(['이철승', '윤관식', '정조민', '우형석']
 const LFC_MEMBERS = new Set(['박준호', '강석민', '정리훈', '손유정', '김지우', '박현승', '이성민A', '한승환']);
 const DEVELOPMENT_MEMBERS = new Set(['홍장군', '채원', '김보성', '전승희', '김대익', '장성진', '이정훈', '박봉서', '김형주']);
 const MARKETING_MEMBERS = new Set(['김민지', '고아라']);
-const SPATIAL_MEMBERS = new Set(['김현수', '현철호', '신민호', '이가현', '정수명']);
+const SPATIAL_MEMBERS = new Set(['김현수', '현철호', '신민호', '이가현', '정수명', '임수빈']);
 const KAM_MEMBERS = new Set(['김행단']);
 const IPR_MEMBERS = new Set(['윤용택']);
 

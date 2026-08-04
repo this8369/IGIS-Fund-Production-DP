@@ -334,6 +334,13 @@ const stakeholderGroups = [
                                 email: '***@igisam.com',
                                 phone: '010-****-****',
                             },
+                            {
+                                name: '임수빈',
+                                photo: '임수빈',
+                                roles: ['공간솔루션/매니저', 'IOTA CFT'],
+                                email: 'subin.yim@igisam.com',
+                                phone: '010-4654-8799',
+                            },
                         ]
                     },
                     {
@@ -641,7 +648,7 @@ export default function StakeInternal() {
                             <td className="px-[14px] py-[16px] border-b border-[#333]">
                                 {renderLeader('김현수', '공간솔루션 책임자')}
                             </td>
-                            <td className="px-[14px] py-[16px] text-[13px] border-r border-b border-[#333] leading-[22px]"><div className="flex flex-wrap gap-x-3 gap-y-1">{renderMembers('이가현 정수명')}</div></td>
+                            <td className="px-[14px] py-[16px] text-[13px] border-r border-b border-[#333] leading-[22px]"><div className="flex flex-wrap gap-x-3 gap-y-1">{renderMembers('이가현 정수명 임수빈')}</div></td>
                             <td className="px-[14px] py-[16px] text-[13px] text-[#bbb9af] border-r border-[#333] border-b border-[#333] leading-[22px]">브랜드 포지셔닝, 상품 차별화<br/>테넌트 경험설계, 멤버십 서비스 등</td>
                             <td className="px-[14px] py-[16px] text-[13px] text-[#bbb9af] border-b border-[#333] leading-[22px]">SSC</td>
                         </tr>
