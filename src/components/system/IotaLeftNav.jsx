@@ -3,8 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../utils/supabaseClient';
 import SidebarProfileAvatar from './SidebarProfileAvatar';
 import SidebarToggleButton from './SidebarToggleButton';
-
-const LEFT_NAV_COLLAPSED_KEY = 'systemLeftNavCollapsed';
+import useSidebarCollapse from './useSidebarCollapse';
 
 const phase1MenuItems = [
     {
@@ -270,7 +269,7 @@ export default function IotaLeftNav({ onMenuChange, currentPath = '' }) {
     const [showPasswordModal, setShowPasswordModal] = useState(false);
     const [showLogoutModal, setShowLogoutModal] = useState(false);
     const [newPassword, setNewPassword] = useState('');
-    const [isCollapsed, setIsCollapsed] = useState(() => localStorage.getItem(LEFT_NAV_COLLAPSED_KEY) === 'true');
+    const { isCollapsed, isContentVisible, toggleSidebar } = useSidebarCollapse();
     const [isWorkspaceOpen, setIsWorkspaceOpen] = useState(() => {
         const saved = sessionStorage.getItem('isWorkspaceOpen');
         return saved !== null ? saved === 'true' : true;
@@ -309,7 +308,6 @@ export default function IotaLeftNav({ onMenuChange, currentPath = '' }) {
     useEffect(() => { sessionStorage.setItem('isStakeholderOpen', isStakeholderOpen); }, [isStakeholderOpen]);
     useEffect(() => { sessionStorage.setItem('isGovOpen', isGovOpen); }, [isGovOpen]);
     useEffect(() => { sessionStorage.setItem('isVehicleOpen', isVehicleOpen); }, [isVehicleOpen]);
-    useEffect(() => { localStorage.setItem(LEFT_NAV_COLLAPSED_KEY, String(isCollapsed)); }, [isCollapsed]);
 
     useEffect(() => {
         if (
@@ -326,17 +324,17 @@ export default function IotaLeftNav({ onMenuChange, currentPath = '' }) {
         <div className={`${isCollapsed ? 'w-[56px]' : 'w-[275px]'} h-full overflow-hidden bg-transparent border-r border-[#2C2C2E] flex flex-col flex-shrink-0 text-[14px] font-sans text-white transition-[width,border-color] duration-300 ease-out`}>
 
             {/* Header */}
-            <div className={`w-full flex items-center pt-[10px] pb-3 ${isCollapsed ? 'justify-center px-0' : 'justify-between px-[15px]'}`}>
-                {!isCollapsed && (
-                    <span className="font-bold text-[18px] tracking-tight font-inter ml-[5px] text-white">
-                        IOTA Seoul CFT
-                    </span>
-                )}
-                <SidebarToggleButton isCollapsed={isCollapsed} onToggle={() => setIsCollapsed((current) => !current)} />
+            <div className="relative w-full h-[58px] shrink-0">
+                <span className={`absolute left-[20px] top-[16px] whitespace-nowrap font-bold text-[18px] tracking-tight font-inter text-white transition-[opacity,transform] duration-150 ${isContentVisible ? 'opacity-100 translate-x-0 delay-100' : 'opacity-0 -translate-x-1 pointer-events-none'}`}>
+                    IOTA Seoul CFT
+                </span>
+                <div className={`absolute top-[10px] transition-[left] duration-300 ease-out ${isCollapsed ? 'left-[10px]' : 'left-[224px]'}`}>
+                    <SidebarToggleButton isCollapsed={isCollapsed} onToggle={toggleSidebar} />
+                </div>
             </div>
 
             {/* Main Menu */}
-            {!isCollapsed && <div className="flex-1 overflow-y-auto pb-5 hide-scrollbar flex flex-col px-[11px]">
+            <div className={`w-[275px] flex-1 overflow-y-auto pb-5 hide-scrollbar flex flex-col px-[11px] transition-[opacity,transform] duration-150 ${isContentVisible ? 'opacity-100 translate-x-0 delay-100' : 'opacity-0 -translate-x-1 pointer-events-none'}`}>
 
                 <div className="flex flex-col gap-0">
                     {menuItems.map((item) => {
@@ -528,10 +526,10 @@ export default function IotaLeftNav({ onMenuChange, currentPath = '' }) {
                         </div>
                     )}
                 </div>
-            </div>}
+            </div>
 
             {/* MY Workspace Button */}
-            {!isCollapsed && <div className="px-[15px] pb-3 w-full">
+            {isContentVisible && <div className="px-[15px] pb-3 w-full">
                 <div 
                     onClick={() => handleNavigation('platform/iotaseoul/my-page')}
                     className={`flex items-center justify-center py-2 hover:bg-[#3b82f6]/10 rounded-md cursor-pointer transition-colors duration-300 border border-[#3b82f6]/40 text-[#60a5fa] font-bold text-[13px] ${currentPath === 'platform/iotaseoul/my-page' ? 'bg-[#3b82f6]/20' : ''}`}
@@ -541,7 +539,7 @@ export default function IotaLeftNav({ onMenuChange, currentPath = '' }) {
                 </div>
             </div>}
 
-            {!isCollapsed && isAdmin && (
+            {isContentVisible && isAdmin && (
                 <div className="px-[15px] pb-3 w-full">
                     <div 
                         onClick={() => {
@@ -557,7 +555,7 @@ export default function IotaLeftNav({ onMenuChange, currentPath = '' }) {
                 </div>
             )}
 
-            {!isCollapsed && memberInfo?.staff_name === '전기영' && (
+            {isContentVisible && memberInfo?.staff_name === '전기영' && (
                 <div className="px-[15px] pb-3 w-full">
                     <div 
                         onClick={() => handleNavigation('platform/pmo-vision')}
@@ -575,7 +573,7 @@ export default function IotaLeftNav({ onMenuChange, currentPath = '' }) {
                 {showProfileMenu && (
                     <>
                         <div className="fixed inset-0 z-40" onClick={() => setShowProfileMenu(false)}></div>
-                        <div className={`absolute bottom-full mb-2 w-[258px] bg-[#2C2C2E] border border-[#3A3A3C] rounded-[16px] shadow-lg py-2 z-50 ${isCollapsed ? 'left-[8px]' : 'left-1/2 -translate-x-1/2'}`}>
+                        <div className={`absolute bottom-full mb-2 w-[258px] bg-[#2C2C2E] border border-[#3A3A3C] rounded-[16px] shadow-lg py-2 z-50 ${isContentVisible ? 'left-1/2 -translate-x-1/2' : 'left-[8px]'}`}>
                             <button onClick={() => { setShowProfileMenu(false); setShowPasswordModal(true); }} className="w-full text-left px-4 py-2.5 text-[14px] font-medium text-[#E5E5E5] hover:bg-[#3A3A3C] transition-colors flex items-center gap-3 cursor-pointer">
                                 <svg className="w-4 h-4 text-[#A1A1AA]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" /></svg>
                                 비밀번호 변경
@@ -593,7 +591,7 @@ export default function IotaLeftNav({ onMenuChange, currentPath = '' }) {
                     </>
                 )}
 
-                {isCollapsed ? (
+                {!isContentVisible ? (
                     <button
                         type="button"
                         onClick={() => setShowProfileMenu(!showProfileMenu)}

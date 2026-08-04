@@ -1,11 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../utils/supabaseClient';
 import SidebarProfileAvatar from './SidebarProfileAvatar';
 import SidebarToggleButton from './SidebarToggleButton';
-
-const LEFT_NAV_COLLAPSED_KEY = 'systemLeftNavCollapsed';
+import useSidebarCollapse from './useSidebarCollapse';
 
 const getStaffTitle = (memberInfo) => {
     if (!memberInfo?.staff_name) return '로그인 필요';
@@ -57,11 +56,7 @@ export default function SystemLeftNav({ isCore, isPlatform = false }) {
     const [showPasswordModal, setShowPasswordModal] = useState(false);
     const [showLogoutModal, setShowLogoutModal] = useState(false);
     const [newPassword, setNewPassword] = useState('');
-    const [isCollapsed, setIsCollapsed] = useState(() => localStorage.getItem(LEFT_NAV_COLLAPSED_KEY) === 'true');
-
-    useEffect(() => {
-        localStorage.setItem(LEFT_NAV_COLLAPSED_KEY, String(isCollapsed));
-    }, [isCollapsed]);
+    const { isCollapsed, isContentVisible, toggleSidebar } = useSidebarCollapse();
 
     const activeLight = isCore ? fakeLight : isLightMode;
 
@@ -92,20 +87,20 @@ export default function SystemLeftNav({ isCore, isPlatform = false }) {
         <div className={`${isCollapsed ? 'w-[56px]' : 'w-[275px]'} h-full overflow-hidden bg-[#FBFBFD] dark:bg-transparent border-r border-black/10 dark:border-[#2C2C2E] flex flex-col flex-shrink-0 text-[14px] font-sans text-[#1D1D1F] dark:text-white transition-[width,background-color,border-color,color] duration-300 ease-out`}>
             
             {/* Top IFPDP Header & Sidebar Collapse Icon */}
-            <div className={`w-full flex items-center pt-[14px] pb-3 ${isCollapsed ? 'justify-center px-0' : 'justify-between px-[15px]'}`}>
-                {!isCollapsed && (
-                    <span
-                        onClick={() => {
-                            navigate('/');
-                        }}
-                        className="font-bold text-[20px] tracking-wide font-inter ml-[5px] text-[#1D1D1F] dark:text-white transition-colors duration-300 cursor-pointer hover:text-gray-400 dark:hover:text-gray-400"
-                    >IFPDP</span>
-                )}
-                <SidebarToggleButton isCollapsed={isCollapsed} onToggle={() => setIsCollapsed((current) => !current)} />
+            <div className="relative w-full h-[62px] shrink-0">
+                <span
+                    onClick={() => {
+                        navigate('/');
+                    }}
+                    className={`absolute left-[20px] top-[18px] whitespace-nowrap font-bold text-[20px] tracking-wide font-inter text-[#1D1D1F] dark:text-white transition-[opacity,transform,color] duration-150 cursor-pointer hover:text-gray-400 dark:hover:text-gray-400 ${isContentVisible ? 'opacity-100 translate-x-0 delay-100' : 'opacity-0 -translate-x-1 pointer-events-none'}`}
+                >IFPDP</span>
+                <div className={`absolute top-[12px] transition-[left] duration-300 ease-out ${isCollapsed ? 'left-[10px]' : 'left-[224px]'}`}>
+                    <SidebarToggleButton isCollapsed={isCollapsed} onToggle={toggleSidebar} />
+                </div>
             </div>
 
             {/* Main Menu */}
-            {!isCollapsed && <div className="flex-1 overflow-y-auto pb-5 hide-scrollbar flex flex-col px-[9px]">
+            <div className={`w-[275px] flex-1 overflow-y-auto pb-5 hide-scrollbar flex flex-col px-[9px] transition-[opacity,transform] duration-150 ${isContentVisible ? 'opacity-100 translate-x-0 delay-100' : 'opacity-0 -translate-x-1 pointer-events-none'}`}>
                 
                 <div
                     onClick={() => {
@@ -216,7 +211,7 @@ export default function SystemLeftNav({ isCore, isPlatform = false }) {
                         ))}
                     </div>
                 </div>
-            </div>}
+            </div>
 
             {/* Bottom Profile */}
             <div className="relative mt-auto">
@@ -224,7 +219,7 @@ export default function SystemLeftNav({ isCore, isPlatform = false }) {
                 {showProfileMenu && (
                     <>
                         <div className="fixed inset-0 z-40" onClick={() => setShowProfileMenu(false)}></div>
-                        <div className={`absolute bottom-full mb-2 w-[258px] bg-white dark:bg-[#2C2C2E] border border-black/10 dark:border-[#3A3A3C] rounded-[16px] shadow-lg py-2 z-50 ${isCollapsed ? 'left-[8px]' : 'left-1/2 -translate-x-1/2'}`}>
+                        <div className={`absolute bottom-full mb-2 w-[258px] bg-white dark:bg-[#2C2C2E] border border-black/10 dark:border-[#3A3A3C] rounded-[16px] shadow-lg py-2 z-50 ${isContentVisible ? 'left-1/2 -translate-x-1/2' : 'left-[8px]'}`}>
                             <button onClick={() => { setShowProfileMenu(false); setShowPasswordModal(true); }} className="w-full text-left px-4 py-2.5 text-[14px] font-medium text-[#1D1D1F] dark:text-[#E5E5E5] hover:bg-[#F5F5F7] dark:hover:bg-[#3A3A3C] transition-colors flex items-center gap-3 cursor-pointer">
                                 <svg className="w-4 h-4 text-[#86868B] dark:text-[#A1A1AA]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" /></svg>
                                 비밀번호 변경
@@ -242,7 +237,7 @@ export default function SystemLeftNav({ isCore, isPlatform = false }) {
                     </>
                 )}
 
-                {isCollapsed ? (
+                {!isContentVisible ? (
                     <button
                         type="button"
                         onClick={() => setShowProfileMenu(!showProfileMenu)}
