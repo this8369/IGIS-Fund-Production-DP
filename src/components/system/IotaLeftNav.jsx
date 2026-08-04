@@ -570,7 +570,7 @@ export default function IotaLeftNav({ onMenuChange, currentPath = '' }) {
             )}
 
             {/* Bottom Profile */}
-            <div className="relative">
+            <div className="relative mt-auto">
                 {/* Popover Menu */}
                 {showProfileMenu && (
                     <>

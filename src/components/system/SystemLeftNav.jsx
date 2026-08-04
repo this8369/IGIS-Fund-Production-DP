@@ -219,7 +219,7 @@ export default function SystemLeftNav({ isCore, isPlatform = false }) {
             </div>}
 
             {/* Bottom Profile */}
-            <div className="relative">
+            <div className="relative mt-auto">
                 {/* Popover Menu */}
                 {showProfileMenu && (
                     <>
