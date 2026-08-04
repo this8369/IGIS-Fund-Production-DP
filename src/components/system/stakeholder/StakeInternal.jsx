@@ -115,13 +115,6 @@ const stakeholderGroups = [
                                 phone: '010-****-****',
                             },
                             {
-                                name: '박석제',
-                                photo: '박석제',
-                                roles: ['사업2파트', 'IOTA CFT'],
-                                email: '***@igisam.com',
-                                phone: '010-****-****',
-                            },
-                            {
                                 name: '박채현',
                                 photo: '박채현',
                                 roles: ['사업2파트', 'IOTA CFT'],
@@ -597,7 +590,7 @@ export default function StakeInternal() {
                             <td className="px-[14px] py-[16px] ">
                                 {renderLeader('강순용', '사업2파트장')}
                             </td>
-                            <td className="px-[14px] py-[16px] text-[13px] border-r border-[#333] leading-[22px]"><div className="flex flex-wrap gap-x-3 gap-y-1">{renderMembers('한찬호 박석제 박채현 소현준 이수정 조영비 한수정')}</div></td>
+                            <td className="px-[14px] py-[16px] text-[13px] border-r border-[#333] leading-[22px]"><div className="flex flex-wrap gap-x-3 gap-y-1">{renderMembers('한찬호 박채현 소현준 이수정 조영비 한수정')}</div></td>
                         </tr>
 
                         {/* 파이낸싱 */}

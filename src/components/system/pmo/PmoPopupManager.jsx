@@ -740,7 +740,7 @@ export default function PmoPopupManager() {
         if (!orgName) return '';
         const trimmedOrg = orgName.trim();
         if (trimmedOrg === '사업 PM' || trimmedOrg === '사업PM' || trimmedOrg === '사업 PM 1' || trimmedOrg === '사업 PM 2') {
-            const pm2Members = ['강순용', '한찬호', '박석제', '박채현', '소현준', '이수정', '조영비', '한수정'];
+            const pm2Members = ['강순용', '한찬호', '박채현', '소현준', '이수정', '조영비', '한수정'];
             return pm2Members.includes(staffName.trim()) ? '사업2파트' : '사업1파트';
         }
         return trimmedOrg;

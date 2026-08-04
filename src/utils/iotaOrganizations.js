@@ -24,7 +24,7 @@ export const IOTA_ORGANIZATION_ORDER = [
 ];
 
 const PM1_MEMBERS = new Set(['권순일', '윤주형', '김제익', '류홍', '박만진', '박일훈', '이정원', '전무경']);
-const PM2_MEMBERS = new Set(['강순용', '한찬호', '박석제', '박채현', '소현준', '이수정', '조영비', '한수정']);
+const PM2_MEMBERS = new Set(['강순용', '한찬호', '박채현', '소현준', '이수정', '조영비', '한수정']);
 const PLANNING_MEMBERS = new Set(['전기영', '이시정', '이관용']);
 const CFT_MEMBERS = new Set(['이철승', '윤관식', '정조민', '우형석']);
 const LFC_MEMBERS = new Set(['박준호', '강석민', '정리훈', '손유정', '김지우', '박현승', '이성민A', '한승환']);

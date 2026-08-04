@@ -67,6 +67,7 @@ export default function AuthSetup({ onLogin }) {
                 .from('iota_seoul_pilot_members')
                 .select('staff_name, auth_id')
                 .eq('email', email.trim().toLowerCase())
+                .eq('is_active', true)
                 .single());
 
             if (error && error.code !== 'PGRST116') {

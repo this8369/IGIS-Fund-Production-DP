@@ -253,10 +253,13 @@ export function AuthProvider({ children }) {
                 .from('iota_seoul_pilot_members')
                 .select('*')
                 .eq('email', email)
+                .eq('is_active', true)
                 .single();
                 
             if (data && !error) {
                 setMemberInfo(data);
+            } else if (error?.code === 'PGRST116') {
+                await handleSignOut();
             }
         } catch (err) {
             console.error("Failed to fetch member info", err);

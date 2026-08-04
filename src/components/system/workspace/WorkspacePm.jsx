@@ -11,7 +11,7 @@ export default function WorkspacePm({ part = 1 }) {
 
     const { memberInfo } = useAuth();
     const part1Members = ['권순일', '윤주형', '김제익', '류홍', '박만진', '박일훈', '이정원', '전무경'];
-    const part2Members = ['강순용', '한찬호', '박석제', '박채현', '소현준', '이수정', '조영비', '한수정'];
+    const part2Members = ['강순용', '한찬호', '박채현', '소현준', '이수정', '조영비', '한수정'];
     const admins = ['전기영', '이시정', '이관용', '이철승', '윤관식', '정조민', '우형석'];
     
     const currentPartMembers = part === 2 ? part2Members : part1Members;
@@ -441,7 +441,7 @@ export default function WorkspacePm({ part = 1 }) {
 
     const parseNames = (text) => {
         if (!text) return text;
-        const names = ['강순용', '권순일', '윤주형', '김제익', '류홍', '박만진', '박일훈', '이정원', '전무경', '한찬호', '박석제', '박채현', '소현준', '이수정', '조영비', '한수정'];
+        const names = ['강순용', '권순일', '윤주형', '김제익', '류홍', '박만진', '박일훈', '이정원', '전무경', '한찬호', '박채현', '소현준', '이수정', '조영비', '한수정'];
         let result = text;
         names.forEach(name => {
             const regex = new RegExp(name, 'g');

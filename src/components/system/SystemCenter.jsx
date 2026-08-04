@@ -133,7 +133,7 @@ export default function SystemCenter() {
                         
                         <span className="text-[#86868B] mr-[12px] text-[14px] font-medium font-['Inter']">Project Manager</span>
                         <div className="flex items-center gap-[14px]">
-                            {['한찬호', '소현준', '이수정', '박석제', '한수정', '박채현', '조영비'].map(name => (
+                            {['한찬호', '소현준', '이수정', '한수정', '박채현', '조영비'].map(name => (
                                 <span key={name} className="text-white font-bold cursor-pointer hover:text-[#fbf167] transition-colors">{name}</span>
                             ))}
                         </div>
