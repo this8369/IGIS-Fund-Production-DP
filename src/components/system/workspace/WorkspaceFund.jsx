@@ -428,6 +428,9 @@ export default function WorkspaceFund() {
         const timeA = a.created_at ? new Date(a.created_at).getTime() : 0;
         const timeB = b.created_at ? new Date(b.created_at).getTime() : 0;
 
+        return (isNaN(timeB) ? 0 : timeB) - (isNaN(timeA) ? 0 : timeA);
+    });
+
     const renderDynamicTableBody = () => {
         const activePhase = phase421 === 'new' ? 'new' : '2024.10.ver';
         const data421 = iotaData?.[421]?.[activePhase] || {};
@@ -438,7 +441,8 @@ export default function WorkspaceFund() {
         
         let grandTotal = 0;
         sortedTranches.forEach(tName => {
-            data421[tName].forEach(lp => {
+            const trancheLps = Array.isArray(data421[tName]) ? data421[tName] : [];
+            trancheLps.forEach(lp => {
                 grandTotal += (lp.rawAmount || 0);
             });
         });
@@ -446,7 +450,7 @@ export default function WorkspaceFund() {
         return (
             <tbody className="text-[13px] text-[#E5E5E5]">
                 {sortedTranches.map(tName => {
-                    const lps = data421[tName] || [];
+                    const lps = Array.isArray(data421[tName]) ? data421[tName] : [];
                     if (lps.length === 0) return null;
                     
                     const sortedLps = [...lps].sort((a,b) => (b.rawAmount || 0) - (a.rawAmount || 0));
@@ -455,8 +459,9 @@ export default function WorkspaceFund() {
                     return (
                         <React.Fragment key={tName}>
                             {sortedLps.map((lp, idx) => {
-                                const isIgis = lp.name.includes('이지스자산운용');
-                                const isSamsung = lp.name.includes('삼성물산') || lp.name.includes('디에스클러스터') || lp.name.includes('NH투자증권');
+                                const lpName = typeof lp.name === 'string' && lp.name.trim() ? lp.name : '수익자 미정';
+                                const isIgis = lpName.includes('이지스자산운용');
+                                const isSamsung = lpName.includes('삼성물산') || lpName.includes('디에스클러스터') || lpName.includes('NH투자증권');
                                 
                                 let nameClass = "py-2 px-4 border-r border-[#444]";
                                 let amountClass = "py-2 px-4 text-right font-[Inter] tracking-tight border-r border-[#444]";
@@ -485,7 +490,7 @@ export default function WorkspaceFund() {
                                                 {tName}
                                             </td>
                                         )}
-                                        <td className={nameClass}>{lp.name}</td>
+                                        <td className={nameClass}>{lpName}</td>
                                         <td className={amountClass}>{Number(lp.rawAmount).toLocaleString()}</td>
                                         <td className={pct1Class}>{tranchePct}</td>
                                         <td className={pct2Class}>{totalPct}</td>
@@ -510,9 +515,6 @@ export default function WorkspaceFund() {
             </tbody>
         );
     };
-
-        return (isNaN(timeB) ? 0 : timeB) - (isNaN(timeA) ? 0 : timeA);
-    });
 
     const parseNames = (text) => {
         if (!text) return text;
