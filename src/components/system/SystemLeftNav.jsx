@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../utils/supabaseClient';
+import SidebarProfileAvatar from './SidebarProfileAvatar';
 import SidebarToggleButton from './SidebarToggleButton';
 
 const LEFT_NAV_COLLAPSED_KEY = 'systemLeftNavCollapsed';
@@ -218,12 +219,12 @@ export default function SystemLeftNav({ isCore, isPlatform = false }) {
             </div>}
 
             {/* Bottom Profile */}
-            {!isCollapsed && <div className="relative">
+            <div className="relative">
                 {/* Popover Menu */}
                 {showProfileMenu && (
                     <>
                         <div className="fixed inset-0 z-40" onClick={() => setShowProfileMenu(false)}></div>
-                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-[258px] bg-white dark:bg-[#2C2C2E] border border-black/10 dark:border-[#3A3A3C] rounded-[16px] shadow-lg py-2 z-50">
+                        <div className={`absolute bottom-full mb-2 w-[258px] bg-white dark:bg-[#2C2C2E] border border-black/10 dark:border-[#3A3A3C] rounded-[16px] shadow-lg py-2 z-50 ${isCollapsed ? 'left-[8px]' : 'left-1/2 -translate-x-1/2'}`}>
                             <button onClick={() => { setShowProfileMenu(false); setShowPasswordModal(true); }} className="w-full text-left px-4 py-2.5 text-[14px] font-medium text-[#1D1D1F] dark:text-[#E5E5E5] hover:bg-[#F5F5F7] dark:hover:bg-[#3A3A3C] transition-colors flex items-center gap-3 cursor-pointer">
                                 <svg className="w-4 h-4 text-[#86868B] dark:text-[#A1A1AA]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" /></svg>
                                 비밀번호 변경
@@ -241,27 +242,23 @@ export default function SystemLeftNav({ isCore, isPlatform = false }) {
                     </>
                 )}
 
-                <div 
+                {isCollapsed ? (
+                    <button
+                        type="button"
+                        onClick={() => setShowProfileMenu(!showProfileMenu)}
+                        className="w-full border-t border-black/10 dark:border-[#3A3A3C] py-3 flex items-center justify-center transition-colors duration-300 cursor-pointer hover:bg-black/5 dark:hover:bg-white/5"
+                        aria-label="프로필 메뉴 열기"
+                        title={getStaffTitle(memberInfo)}
+                    >
+                        <SidebarProfileAvatar memberInfo={memberInfo} />
+                    </button>
+                ) : (
+                <div
                     onClick={() => setShowProfileMenu(!showProfileMenu)}
                     className="px-[15px] pt-4 pb-3 border-t border-black/10 dark:border-[#3A3A3C] w-full flex items-center justify-between transition-colors duration-300 relative cursor-pointer hover:bg-black/5 dark:hover:bg-white/5"
                 >
                     <div className="flex items-center gap-3 p-1.5 -ml-1.5 rounded-lg transition-colors duration-300">
-                        <div className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center bg-[#E5E5EA] dark:bg-[#2C2C2E] -ml-[2px] border border-black/5 dark:border-white/10 transition-colors duration-300">
-                            {memberInfo?.staff_name ? (
-                                <img 
-                                    src={`${import.meta.env.BASE_URL}${memberInfo.staff_name}.webp`} 
-                                    alt={`${memberInfo.staff_name} 프로필`} 
-                                    className="w-full h-full object-cover"
-                                    onError={(e) => { 
-                                        e.target.style.display = 'none'; 
-                                        e.target.parentNode.innerHTML = memberInfo.staff_name.substring(0,2); 
-                                        e.target.parentNode.className = 'w-10 h-10 rounded-full bg-[#E5E5EA] dark:bg-[#c3c2b7] text-[#111] dark:text-[#1F1F1E] flex items-center justify-center text-[15px] font-bold tracking-tighter -ml-[2px] transition-colors duration-300'; 
-                                    }}
-                                />
-                            ) : (
-                                <span className="text-[#111] dark:text-[#1F1F1E] font-bold">U</span>
-                            )}
-                        </div>
+                        <SidebarProfileAvatar memberInfo={memberInfo} className="-ml-[2px]" />
                         <div className="flex flex-col max-w-[130px]">
                             <span className="font-semibold text-[14px] leading-tight mb-0.5 text-[#1D1D1F] dark:text-white transition-colors duration-300 tracking-tight truncate">
                                 {getStaffTitle(memberInfo)}
@@ -292,7 +289,8 @@ export default function SystemLeftNav({ isCore, isPlatform = false }) {
                         </div>
                     </div>
                 </div>
-            </div>}
+                )}
+            </div>
 
             {/* Modals */}
             {showContactModal && (
