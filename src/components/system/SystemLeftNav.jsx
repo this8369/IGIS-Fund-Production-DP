@@ -57,6 +57,12 @@ export default function SystemLeftNav({ isCore, isPlatform = false }) {
     const [showLogoutModal, setShowLogoutModal] = useState(false);
     const [newPassword, setNewPassword] = useState('');
     const { isCollapsed, isContentVisible, toggleSidebar } = useSidebarCollapse();
+    const expandedContentTransition = isContentVisible
+        ? 'opacity-100 translate-x-0 delay-100'
+        : 'opacity-0 -translate-x-1 pointer-events-none';
+    const collapsedProfileTransition = isContentVisible
+        ? 'opacity-0 translate-x-1 pointer-events-none'
+        : 'opacity-100 translate-x-0 delay-100';
 
     const activeLight = isCore ? fakeLight : isLightMode;
 
@@ -92,7 +98,7 @@ export default function SystemLeftNav({ isCore, isPlatform = false }) {
                     onClick={() => {
                         navigate('/');
                     }}
-                    className={`absolute left-[20px] top-[18px] whitespace-nowrap font-bold text-[20px] tracking-wide font-inter text-[#1D1D1F] dark:text-white transition-[opacity,transform,color] duration-150 cursor-pointer hover:text-gray-400 dark:hover:text-gray-400 ${isContentVisible ? 'opacity-100 translate-x-0 delay-100' : 'opacity-0 -translate-x-1 pointer-events-none'}`}
+                    className={`absolute left-[20px] top-[18px] whitespace-nowrap font-bold text-[20px] tracking-wide font-inter text-[#1D1D1F] dark:text-white transition-[opacity,transform,color] duration-150 cursor-pointer hover:text-gray-400 dark:hover:text-gray-400 ${expandedContentTransition}`}
                 >IFPDP</span>
                 <div className={`absolute top-[12px] transition-[left] duration-300 ease-out ${isCollapsed ? 'left-[10px]' : 'left-[224px]'}`}>
                     <SidebarToggleButton isCollapsed={isCollapsed} onToggle={toggleSidebar} />
@@ -100,7 +106,7 @@ export default function SystemLeftNav({ isCore, isPlatform = false }) {
             </div>
 
             {/* Main Menu */}
-            <div className={`w-[275px] flex-1 overflow-y-auto pb-5 hide-scrollbar flex flex-col px-[9px] transition-[opacity,transform] duration-150 ${isContentVisible ? 'opacity-100 translate-x-0 delay-100' : 'opacity-0 -translate-x-1 pointer-events-none'}`}>
+            <div className={`w-[275px] flex-1 overflow-y-auto pb-5 hide-scrollbar flex flex-col px-[9px] transition-[opacity,transform] duration-150 ${expandedContentTransition}`}>
                 
                 <div
                     onClick={() => {
@@ -241,7 +247,7 @@ export default function SystemLeftNav({ isCore, isPlatform = false }) {
                     <button
                         type="button"
                         onClick={() => setShowProfileMenu(!showProfileMenu)}
-                        className={`absolute inset-x-0 bottom-0 w-full border-t border-black/10 dark:border-[#3A3A3C] py-3 flex items-center justify-center transition-[opacity,transform,background-color] duration-150 cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 ${isContentVisible ? 'opacity-0 translate-y-1 pointer-events-none' : 'opacity-100 translate-y-0 delay-75'}`}
+                        className={`absolute inset-x-0 bottom-0 w-full border-t border-black/10 dark:border-[#3A3A3C] py-3 flex items-center justify-center transition-[opacity,transform,background-color] duration-150 cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 ${collapsedProfileTransition}`}
                         aria-label="프로필 메뉴 열기"
                         title={getStaffTitle(memberInfo)}
                     >
@@ -249,7 +255,7 @@ export default function SystemLeftNav({ isCore, isPlatform = false }) {
                     </button>
                     <div
                         onClick={() => setShowProfileMenu(!showProfileMenu)}
-                        className={`absolute left-0 bottom-0 px-[15px] pt-4 pb-3 border-t border-black/10 dark:border-[#3A3A3C] w-[275px] flex items-center justify-between cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-[opacity,transform,background-color] duration-150 ${isContentVisible ? 'opacity-100 translate-y-0 delay-75' : 'opacity-0 translate-y-1 pointer-events-none'}`}
+                        className={`absolute left-0 bottom-0 px-[15px] pt-4 pb-3 border-t border-black/10 dark:border-[#3A3A3C] w-[275px] flex items-center justify-between cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-[opacity,transform,background-color] duration-150 ${expandedContentTransition}`}
                     >
                         <div className="flex items-center gap-3 p-1.5 -ml-1.5 rounded-lg transition-colors duration-300">
                             <SidebarProfileAvatar memberInfo={memberInfo} className="-ml-[2px]" />
