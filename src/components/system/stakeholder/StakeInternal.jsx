@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { getProfileImageSrc } from '../../../utils/profileImage';
 
 
 const stakeholderGroups = [
@@ -280,6 +281,20 @@ const stakeholderGroups = [
                                 email: 'hj.kim@igisam.com',
                                 phone: '010-7157-4325',
                             },
+                            {
+                                name: '김현진',
+                                photo: '김현진',
+                                roles: ['개발솔루션/매니저', 'IOTA CFT'],
+                                email: 'patioblue@igisam.com',
+                                phone: '010-9048-9406',
+                            },
+                            {
+                                name: '남민호',
+                                photo: '남민호',
+                                roles: ['개발솔루션/매니저', 'IOTA CFT'],
+                                email: 'minho@igisam.com',
+                                phone: '010-4717-5772',
+                            },
                         ]
                     },
                     {
@@ -465,7 +480,7 @@ export default function StakeInternal() {
                      }}
                 >
                     <div className="w-[21px] h-[21px] shrink-0 rounded-full bg-[#3c3c3c] overflow-hidden">
-                        <img src={`${import.meta.env.BASE_URL}${cleanName}.webp`} alt={name} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" onError={(e) => { e.target.src = `${import.meta.env.BASE_URL}default_avatar.svg`; handleImageError(cleanName); }} />
+                        <img src={getProfileImageSrc(cleanName)} alt={name} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" onError={(e) => { e.target.src = `${import.meta.env.BASE_URL}default_avatar.svg`; handleImageError(cleanName); }} />
                     </div>
                     <span className="text-[#E5E5E5] text-[12px] font-medium group-hover:text-white transition-colors leading-none">{name}</span>
                 </div>
@@ -488,7 +503,7 @@ export default function StakeInternal() {
              }}
         >
             <div className="relative w-[38px] h-[38px] shrink-0 rounded-full bg-[#3c3c3c] flex items-center justify-center overflow-hidden">
-                <img src={`${import.meta.env.BASE_URL}${cleanName}.webp`} alt={name} className="w-full h-full object-cover" onError={(e) => { e.target.src = `${import.meta.env.BASE_URL}default_avatar.svg`; handleImageError(cleanName); }} />
+                <img src={getProfileImageSrc(cleanName)} alt={name} className="w-full h-full object-cover" onError={(e) => { e.target.src = `${import.meta.env.BASE_URL}default_avatar.svg`; handleImageError(cleanName); }} />
                 <div className="absolute inset-0 rounded-full border border-white/10 pointer-events-none"></div>
             </div>
             <div className="flex flex-col text-left">
@@ -615,6 +630,7 @@ export default function StakeInternal() {
                                 <div className="flex gap-4"><span className="w-[60px] text-[#86868B] shrink-0 pt-[3px]">설계담당</span><div className="flex flex-wrap gap-x-3 gap-y-1">{renderMembers('김대익 장성진')}</div></div>
                                 <div className="flex gap-4"><span className="w-[60px] text-[#86868B] shrink-0 pt-[3px]">인허가</span><div className="flex flex-wrap gap-x-3 gap-y-1">{renderMembers('이정훈 김형주')}</div></div>
                                 <div className="flex gap-4"><span className="w-[60px] text-[#86868B] shrink-0 pt-[3px]">전문위원</span><div className="flex flex-wrap gap-x-3 gap-y-1">{renderMembers('박봉서')}</div></div>
+                                <div className="flex gap-4"><span className="w-[60px] text-[#86868B] shrink-0 pt-[3px]">구성원</span><div className="flex flex-wrap gap-x-3 gap-y-1">{renderMembers('김현진 남민호')}</div></div>
                             </td>
                             <td className="px-[14px] py-[16px] text-[13px] text-[#bbb9af] border-r border-[#333] leading-[22px]">설계·시공·CM·감리 통제<br/>인허가/명도 대응<br/>공정·품질·안전 KPI</td>
                             <td className="px-[14px] py-[16px] text-[13px] text-[#bbb9af]">개발솔루션</td>
@@ -727,7 +743,7 @@ export default function StakeInternal() {
                                 <div key={mIdx} id={`member-${member.name.split('(')[0]}`} className="w-full flex items-start gap-[30px] scroll-mt-[100px]">
                                     {/* 1. Photo */}
                                     <div className="w-[120px] h-[120px] shrink-0 rounded-full bg-[#3c3c3c] overflow-hidden relative shadow-lg mt-[4px]">
-                                        <img src={`${import.meta.env.BASE_URL}${member.photo}.webp`} alt={member.name} className="w-full h-full object-cover" onError={(e) => { e.target.src = `${import.meta.env.BASE_URL}default_avatar.svg`; }} />
+                                        <img src={getProfileImageSrc(member.photo)} alt={member.name} className="w-full h-full object-cover" onError={(e) => { e.target.src = `${import.meta.env.BASE_URL}default_avatar.svg`; }} />
                                         <div className="absolute inset-0 rounded-full border border-white/10 pointer-events-none"></div>
                                     </div>
                                     
@@ -820,7 +836,7 @@ export default function StakeInternal() {
                         height: '128px'
                     }}
                 >
-                    <img src={`${import.meta.env.BASE_URL}${hoveredImage}.webp`} alt="preview" className="w-full h-full object-cover" onError={(e) => { e.target.src = `${import.meta.env.BASE_URL}default_avatar.svg`; }} />
+                    <img src={getProfileImageSrc(hoveredImage)} alt="preview" className="w-full h-full object-cover" onError={(e) => { e.target.src = `${import.meta.env.BASE_URL}default_avatar.svg`; }} />
                 </div>
             )}
 

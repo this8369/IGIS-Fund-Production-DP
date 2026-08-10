@@ -5,13 +5,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../../../utils/supabaseClient';
 import { fetchCachedStakeholderMaster } from '../../../utils/workspaceDirectoryCache';
 import { fetchCachedWorkspaceTasks, updateCachedWorkspaceTasks } from '../../../utils/workspaceTaskCache';
+import { getProfileImageSrc } from '../../../utils/profileImage';
 import WorkspaceActivityLog from './WorkspaceActivityLog';
 import { PROJECTS, COSTS, RR, COUNTERPARTIES } from '../../../data/iotaDevelopmentData';
 
 export default function WorkspaceDevelopment() {
 
     const { memberInfo } = useAuth();
-    const isAuthorized = ['전기영', '홍장군', '채원', '김보성', '전승희', '김대익', '장성진', '이정훈', '박봉서', '김형주'].includes(memberInfo?.staff_name);
+    const isAuthorized = ['전기영', '홍장군', '채원', '김보성', '전승희', '김대익', '장성진', '이정훈', '박봉서', '김형주', '김현진', '남민호'].includes(memberInfo?.staff_name);
 
     // Task Management States
     const [tasks, setTasks] = useState([]);
@@ -431,7 +432,7 @@ export default function WorkspaceDevelopment() {
 
     const parseNames = (text) => {
         if (!text) return text;
-        const names = ['전기영', '홍장군', '채원', '김보성', '전승희', '김대익', '장성진', '이정훈', '박봉서', '김형주'];
+        const names = ['전기영', '홍장군', '채원', '김보성', '전승희', '김대익', '장성진', '이정훈', '박봉서', '김형주', '김현진', '남민호'];
         let result = text;
         names.forEach(name => {
             const regex = new RegExp(name, 'g');
@@ -621,7 +622,7 @@ export default function WorkspaceDevelopment() {
                         </div>
                         <div className="flex items-center gap-[12px] w-[112px] shrink-0">
                             <div className="relative w-[30px] h-[30px] shrink-0 rounded-full bg-[#3c3c3c] flex items-center justify-center overflow-hidden ml-[2px]">
-                                <img src={`${import.meta.env.BASE_URL}홍장군.webp`} alt="홍장군" className="w-full h-full object-cover" onError={(e) => { e.target.src = `${import.meta.env.BASE_URL}default_avatar.svg`; }} />
+                                <img src={getProfileImageSrc('홍장군')} alt="홍장군" className="w-full h-full object-cover" onError={(e) => { e.target.src = `${import.meta.env.BASE_URL}default_avatar.svg`; }} />
                                 <div className="absolute inset-0 rounded-full border border-white/10 pointer-events-none"></div>
                             </div>
                             <div className="flex flex-col text-left">
@@ -630,10 +631,10 @@ export default function WorkspaceDevelopment() {
                             </div>
                         </div>
                         <div className="flex flex-wrap gap-x-1.5 gap-y-2 -ml-[6px]">
-                            {["채원","김보성","전승희","김대익","장성진","이정훈","박봉서"].map(name => (
+                            {["채원", "김보성", "전승희", "김대익", "장성진", "이정훈", "박봉서", "김현진", "남민호"].map(name => (
                                 <div key={name} className="flex items-center gap-[6px] bg-[#222] border border-[#3c3c3c] rounded-full pl-[4px] pr-[10px] py-[4px] min-w-[76px]">
                                     <div className="w-[21px] h-[21px] shrink-0 rounded-full bg-[#3c3c3c] overflow-hidden">
-                                        <img src={`${import.meta.env.BASE_URL}${name}.webp`} alt={name} className="w-full h-full object-cover" onError={(e) => { e.target.src = `${import.meta.env.BASE_URL}default_avatar.svg`; }} />
+                                        <img src={getProfileImageSrc(name)} alt={name} className="w-full h-full object-cover" onError={(e) => { e.target.src = `${import.meta.env.BASE_URL}default_avatar.svg`; }} />
                                     </div>
                                     <span className="text-[#E5E5E5] text-[12px] font-medium leading-none">{name}</span>
                                 </div>
