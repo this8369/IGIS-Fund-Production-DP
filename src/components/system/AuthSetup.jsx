@@ -343,10 +343,16 @@ export default function AuthSetup({ onLogin }) {
                                 </span>
                             </div>
 
-                            <form onSubmit={handleEmailSubmit} className="w-full">
+                            <form onSubmit={handleEmailSubmit} autoComplete="on" className="w-full">
                                 <div className="w-full mb-2">
                                     <input 
-                                        type="email" 
+                                        id="iota-login-email"
+                                        name="username"
+                                        type="email"
+                                        inputMode="email"
+                                        autoComplete="username"
+                                        autoCapitalize="none"
+                                        spellCheck="false"
                                         placeholder="이메일을 입력하세요."
                                         value={email}
                                         disabled={isCheckingEmail}
@@ -395,10 +401,23 @@ export default function AuthSetup({ onLogin }) {
                                 </button>
                             </div>
 
-                            <form onSubmit={handlePasswordSubmit} className="w-full">
+                            <form onSubmit={handlePasswordSubmit} autoComplete="on" className="w-full">
+                                <input
+                                    type="email"
+                                    name="username"
+                                    autoComplete="username"
+                                    value={email}
+                                    readOnly
+                                    tabIndex={-1}
+                                    aria-hidden="true"
+                                    className="absolute h-px w-px overflow-hidden opacity-0 pointer-events-none"
+                                />
                                 <div className="w-full mb-2">
                                     <input 
-                                        type="password" 
+                                        id="iota-login-password"
+                                        name="password"
+                                        type="password"
+                                        autoComplete={isFirstTime ? 'new-password' : 'current-password'}
                                         ref={passwordInputRef}
                                         placeholder={isFirstTime ? "패스워드를 설정하세요." : "패스워드를 입력하세요."}
                                         value={password}
@@ -411,7 +430,10 @@ export default function AuthSetup({ onLogin }) {
                                     <>
                                         <div className="w-full mb-2">
                                             <input 
-                                                type="password" 
+                                                id="iota-login-password-confirmation"
+                                                name="password-confirmation"
+                                                type="password"
+                                                autoComplete="new-password"
                                                 placeholder="패스워드를 재확인하세요."
                                                 value={confirmPassword}
                                                 onChange={(e) => {
@@ -423,7 +445,11 @@ export default function AuthSetup({ onLogin }) {
                                         </div>
                                         <div className="w-full mb-2">
                                             <input 
-                                                type="text" 
+                                                id="iota-access-code"
+                                                name="access-code"
+                                                type="text"
+                                                autoComplete="off"
+                                                autoCapitalize="characters"
                                                 placeholder="최초 접속 코드"
                                                 value={accessCode}
                                                 onChange={(e) => {
@@ -492,10 +518,22 @@ export default function AuthSetup({ onLogin }) {
                                 </button>
                             </div>
 
-                            <form onSubmit={handleChangePasswordSubmit} className="w-full">
+                            <form onSubmit={handleChangePasswordSubmit} autoComplete="on" className="w-full">
+                                <input
+                                    type="email"
+                                    name="username"
+                                    autoComplete="username"
+                                    value={email}
+                                    readOnly
+                                    tabIndex={-1}
+                                    aria-hidden="true"
+                                    className="absolute h-px w-px overflow-hidden opacity-0 pointer-events-none"
+                                />
                                 <div className="w-full mb-2">
                                     <input 
-                                        type="password" 
+                                        name="current-password"
+                                        type="password"
+                                        autoComplete="current-password"
                                         placeholder="기존 패스워드"
                                         value={oldPassword}
                                         onChange={(e) => { setOldPassword(e.target.value); if(errorMessage) setErrorMessage(''); }}
@@ -504,7 +542,9 @@ export default function AuthSetup({ onLogin }) {
                                 </div>
                                 <div className="w-full mb-2">
                                     <input 
-                                        type="password" 
+                                        name="new-password"
+                                        type="password"
+                                        autoComplete="new-password"
                                         placeholder="새 패스워드"
                                         value={newPassword}
                                         onChange={(e) => { setNewPassword(e.target.value); if(errorMessage) setErrorMessage(''); }}
@@ -513,7 +553,9 @@ export default function AuthSetup({ onLogin }) {
                                 </div>
                                 <div className="w-full mb-2">
                                     <input 
-                                        type="password" 
+                                        name="new-password-confirmation"
+                                        type="password"
+                                        autoComplete="new-password"
                                         placeholder="새 패스워드 확인"
                                         value={confirmNewPassword}
                                         onChange={(e) => { setConfirmNewPassword(e.target.value); if(errorMessage) setErrorMessage(''); }}
@@ -553,10 +595,15 @@ export default function AuthSetup({ onLogin }) {
                                 가입하신 이메일 주소로 비밀번호를 재설정할 수 있는 링크를 보내드립니다.
                             </p>
 
-                            <form onSubmit={handleResetEmailSubmit} className="w-full">
+                            <form onSubmit={handleResetEmailSubmit} autoComplete="on" className="w-full">
                                 <div className="w-full mb-2">
                                     <input 
-                                        type="email" 
+                                        name="username"
+                                        type="email"
+                                        inputMode="email"
+                                        autoComplete="username"
+                                        autoCapitalize="none"
+                                        spellCheck="false"
                                         placeholder="이메일을 입력하세요."
                                         value={email}
                                         onChange={(e) => { setEmail(e.target.value); if(errorMessage) setErrorMessage(''); }}
@@ -588,10 +635,12 @@ export default function AuthSetup({ onLogin }) {
                                 </span>
                             </div>
 
-                            <form onSubmit={handleRecoveryPasswordSubmit} className="w-full">
+                            <form onSubmit={handleRecoveryPasswordSubmit} autoComplete="on" className="w-full">
                                 <div className="w-full mb-2">
                                     <input 
-                                        type="password" 
+                                        name="new-password"
+                                        type="password"
+                                        autoComplete="new-password"
                                         placeholder="새 패스워드"
                                         value={newPassword}
                                         onChange={(e) => { setNewPassword(e.target.value); if(errorMessage) setErrorMessage(''); }}
@@ -600,7 +649,9 @@ export default function AuthSetup({ onLogin }) {
                                 </div>
                                 <div className="w-full mb-2">
                                     <input 
-                                        type="password" 
+                                        name="new-password-confirmation"
+                                        type="password"
+                                        autoComplete="new-password"
                                         placeholder="새 패스워드 확인"
                                         value={confirmNewPassword}
                                         onChange={(e) => { setConfirmNewPassword(e.target.value); if(errorMessage) setErrorMessage(''); }}
