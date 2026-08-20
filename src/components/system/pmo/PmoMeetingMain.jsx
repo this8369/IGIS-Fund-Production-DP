@@ -481,31 +481,31 @@ export default function PmoMeetingMain() {
                                         <div 
                                             key={task.id} 
                                             onClick={() => handleTaskClick(task)}
-                                            className="bg-[#252525] hover:bg-[#2c2c2e] border border-white/[0.06] hover:border-[#2997ff] hover:ring-[2px] hover:ring-[#2997ff] hover:ring-inset hover:shadow-[0_4px_20px_rgba(41,151,255,0.06)] transition-all rounded-[12px] px-[16px] py-[6px] cursor-pointer flex flex-row items-center justify-between group gap-[16px]"
+                                            className="bg-[#252525] hover:bg-[#2c2c2e] border border-white/[0.06] hover:border-[#2997ff] hover:ring-[2px] hover:ring-[#2997ff] hover:ring-inset hover:shadow-[0_4px_20px_rgba(41,151,255,0.06)] transition-all rounded-[14px] px-[20px] py-[12px] cursor-pointer flex flex-row items-center justify-between group gap-[20px]"
                                         >
                                             {/* Task Name */}
                                             <div className="flex-[0_0_30%] min-w-[200px] flex items-center gap-[12px]">
-                                                <span className="text-[13px] font-bold text-white shrink-0 min-w-[16px] text-right font-['Inter'] -ml-[4px]">
+                                                <span className="text-[13.5px] font-bold text-white shrink-0 min-w-[16px] text-right font-['Inter'] -ml-[4px]">
                                                     {index + 1}
                                                 </span>
-                                                <h3 className="text-[14.5px] font-bold text-[#cccaba] leading-snug group-hover:text-white transition-colors truncate" title={task.task_name}>
+                                                <h3 className="text-[16px] font-bold text-[#cccaba] leading-snug group-hover:text-white transition-colors truncate" title={task.task_name}>
                                                     {task.task_name}
                                                 </h3>
                                             </div>
 
                                             {/* Snippet (Preview) */}
                                             <div className="flex-1 min-w-0 px-[10px] ml-[5px]">
-                                                <p className="text-[13px] text-white/40 truncate font-light group-hover:text-white/60 transition-colors" title={fallbackItem.task_purpose || fallbackItem.deliverables || ''}>
+                                                <p className="text-[13.5px] text-white/40 truncate font-light group-hover:text-white/60 transition-colors" title={fallbackItem.task_purpose || fallbackItem.deliverables || ''}>
                                                     {fallbackItem.task_purpose || fallbackItem.deliverables || '상세 내용 없음'}
                                                 </p>
                                             </div>
 
                                             {/* Metadata & Badges Container */}
-                                            <div className="flex items-center gap-[16px] shrink-0">
-                                                <span className={`text-[12.5px] font-bold tabular-nums whitespace-nowrap ${priorityScoreClass}`}>
+                                            <div className="flex items-center gap-[20px] shrink-0">
+                                                <span className={`text-[13px] font-bold tabular-nums whitespace-nowrap ${priorityScoreClass}`}>
                                                     우선 {priorityScore}
                                                 </span>
-                                                <div className="flex items-center gap-[8px] text-[12.5px] text-white/50">
+                                                <div className="flex items-center gap-[10px] text-[13px] text-white/50">
                                                     <div className="flex items-center gap-[4px]">
                                                         <span className="text-white/40 font-normal">실행주관</span>
                                                         <span className="text-white/80 font-normal">{deptName}</span>
@@ -517,14 +517,14 @@ export default function PmoMeetingMain() {
                                                     </div>
                                                 </div>
                                                 {(hasBlocker || hasDecision) && (
-                                                    <div className="flex gap-[4px] shrink-0 min-w-[45px] justify-end">
+                                                    <div className="flex gap-[6px] shrink-0 min-w-[50px] justify-end">
                                                         {hasBlocker && (
-                                                            <span className="flex items-center text-[10px] font-bold bg-[#ff3b30]/10 text-[#ff453a] border border-[#ff3b30]/15 px-1.5 py-0.5 rounded-[4px]">
+                                                            <span className="flex items-center text-[10.5px] font-bold bg-[#ff3b30]/10 text-[#ff453a] border border-[#ff3b30]/15 px-2 py-0.5 rounded-[4px]">
                                                                 병목
                                                             </span>
                                                         )}
                                                         {hasDecision && (
-                                                            <span className="flex items-center text-[10px] font-bold bg-[#ff3b30]/10 text-[#ff453a] border border-[#ff3b30]/15 px-1.5 py-0.5 rounded-[4px]">
+                                                            <span className="flex items-center text-[10.5px] font-bold bg-[#ff3b30]/10 text-[#ff453a] border border-[#ff3b30]/15 px-2 py-0.5 rounded-[4px]">
                                                                 의사결정필요
                                                             </span>
                                                         )}
@@ -548,20 +548,20 @@ export default function PmoMeetingMain() {
                                 // 실행부서별 선택 시 부서별 섹션 분리
                                 if (listSortOption === 'dept') {
                                     return (
-                                        <div className="flex flex-col gap-[8px]">
+                                        <div className="flex flex-col gap-[12px]">
                                             {DEPARTMENTS_LIST.map(dept => {
                                                 const deptTasks = allActiveTasks.filter(t => getTaskDeptName(t) === dept);
                                                 if (deptTasks.length === 0) return null;
                                                 return (
-                                                    <div key={dept} className="flex flex-col mb-[2px]">
-                                                        <div className="flex items-center justify-between px-[14px] py-[5px] bg-[#222222] border border-[#3a3a3c] rounded-[8px] text-[12.5px] font-bold text-white mb-[4px]">
-                                                            <div className="flex items-center gap-[6px]">
+                                                    <div key={dept} className="flex flex-col mb-[6px]">
+                                                        <div className="flex items-center justify-between px-[16px] py-[8px] bg-[#222222] border border-[#3a3a3c] rounded-[12px] text-[13.5px] font-bold text-white mb-[6px]">
+                                                            <div className="flex items-center gap-[8px]">
                                                                 <span className="w-2 h-2 rounded-full bg-[#30b0c7]" />
                                                                 <span>🏢 {dept}</span>
                                                             </div>
-                                                            <span className="text-[11.5px] text-[#8e8e93] font-normal">{deptTasks.length}건</span>
+                                                            <span className="text-[12px] text-[#8e8e93] font-normal">{deptTasks.length}건</span>
                                                         </div>
-                                                        <div className="flex flex-col gap-[4px]">
+                                                        <div className="flex flex-col gap-[6px]">
                                                             {deptTasks.map((task, idx) => renderTaskCard(task, idx))}
                                                         </div>
                                                     </div>
@@ -573,7 +573,7 @@ export default function PmoMeetingMain() {
 
                                 // 일반 단일 리스트 뷰 (우선순위순 / 가나다순)
                                 return (
-                                    <div className="grid grid-cols-1 gap-[4px] px-0">
+                                    <div className="grid grid-cols-1 gap-[6px] px-0">
                                         {allActiveTasks.map((task, index) => renderTaskCard(task, index))}
                                     </div>
                                 );
