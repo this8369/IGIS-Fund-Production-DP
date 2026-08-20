@@ -26,6 +26,7 @@ export default function PmoMeetingMain() {
         const [loading, setLoading] = React.useState(true);
     const [tasks, setTasks] = React.useState([]);
     const [selectedFilter, setSelectedFilter] = React.useState('전체 업무');
+    const [listGroupMode, setListGroupMode] = React.useState('flat');
     const [dbError, setDbError] = React.useState(null);
     const [activeMetric, setActiveMetric] = React.useState('총관여');
     const [hoveredDept, setHoveredDept] = React.useState(null);
@@ -39,11 +40,13 @@ export default function PmoMeetingMain() {
         const activePmoTasks = pmoTasks.filter(t => matchesPmoStatusFilter(t, '전체보기'));
 
         const total = activePmoTasks.length;
+        const meetings = activePmoTasks.filter(t => t.meeting_grade === 'A' || t.meeting_grade === 'A_즉시상정').length;
+        const riskCount = activePmoTasks.filter(t => t.status === '지연' || parseBool(t.is_blocker) || parseBool(t.needs_decision)).length;
+        const essentialCount = activePmoTasks.filter(t => t.importance_level === 'PF필수' || t.importance_level === '준공필수').length;
+        const inProgress = pmoTasks.filter(t => t.status === '진행중').length;
         const delayed = pmoTasks.filter(t => t.status === '지연').length;
         const blockers = activePmoTasks.filter(t => parseBool(t.is_blocker)).length;
         const decisions = activePmoTasks.filter(t => parseBool(t.needs_decision)).length;
-        const meetings = activePmoTasks.filter(t => t.meeting_grade === 'A' || t.meeting_grade === 'A_즉시상정').length;
-        const inProgress = pmoTasks.filter(t => t.status === '진행중').length;
         const pfRequired = activePmoTasks.filter(t => t.importance_level === 'PF필수').length;
         const constRequired = activePmoTasks.filter(t => t.importance_level === '준공필수').length;
         const notStarted = pmoTasks.filter(t => t.status === '미착수').length;
@@ -57,24 +60,18 @@ export default function PmoMeetingMain() {
             const invalidKeywords = ['', '없음', 'n/a', 'na', '해당사항 없음', '해당사항없음', '-', 'none'];
             return s && !invalidKeywords.includes(s);
         }).length;
- 
-        const riskCount = activePmoTasks.filter(t => (
-            t.status === '지연' ||
-            t.meeting_grade === 'A' ||
-            t.meeting_grade === 'A_즉시상정' ||
-            parseBool(t.is_blocker)
-        )).length;
 
         const popupCount = popupTasks.filter(t => t.status === '진행중').length;
  
         setCounts({
             total,
+            meetings,
+            riskCount,
+            essentialCount,
+            inProgress,
             delayed,
             blockers,
             decisions,
-            meetings,
-            riskCount,
-            inProgress,
             pfRequired,
             constRequired,
             notStarted,
@@ -122,11 +119,11 @@ export default function PmoMeetingMain() {
 
     const upperFilters = [
         { label: '전체 업무', path: 'platform/iotaseoul/workflow', count: counts.total, highlightClass: 'text-[#1F1F1E]', hoverClass: 'group-hover:text-[#000000]' },
-        { label: '즉시상정/지연리스크', path: 'platform/iotaseoul/workflow?filterStatus=지연', count: counts.riskCount, highlightClass: 'text-[#E35D5D]', hoverClass: 'group-hover:text-[#FF3B30]' },
-        { label: '프로젝트별', path: 'platform/iotaseoul/workflow?groupBy=project', count: counts.total, highlightClass: 'text-[#1F1F1E]', hoverClass: 'group-hover:text-[#000000]' },
-        { label: '실행부서별', path: 'platform/iotaseoul/workflow?groupBy=dept', count: counts.total, highlightClass: 'text-[#1F1F1E]', hoverClass: 'group-hover:text-[#000000]' },
-        { label: '카테고리별', path: 'platform/iotaseoul/workflow?groupBy=category', count: counts.total, highlightClass: 'text-[#1F1F1E]', hoverClass: 'group-hover:text-[#000000]' },
-        { label: '단발/팝업', path: 'platform/iotaseoul/popup-requests', count: counts.popupCount, highlightClass: 'text-[#E67E22]', hoverClass: 'group-hover:text-[#FF9500]' }
+        { label: '즉시 상정안건', path: 'platform/iotaseoul/workflow?filterMeetingGrade=A_즉시상정', count: counts.meetings, highlightClass: 'text-[#E35D5D]', hoverClass: 'group-hover:text-[#FF3B30]' },
+        { label: '지연리스크 · 병목', path: 'platform/iotaseoul/workflow?filterStatus=지연', count: counts.riskCount, highlightClass: 'text-[#E35D5D]', hoverClass: 'group-hover:text-[#FF3B30]' },
+        { label: 'PF · 준공 필수', path: 'platform/iotaseoul/workflow?filterImportance=PF필수', count: counts.essentialCount, highlightClass: 'text-[#E67E22]', hoverClass: 'group-hover:text-[#FF9500]' },
+        { label: '정상 진행중', path: 'platform/iotaseoul/workflow?filterStatus=진행중', count: counts.inProgress, highlightClass: 'text-[#1F1F1E]', hoverClass: 'group-hover:text-[#000000]' },
+        { label: '단발 / 팝업', path: 'platform/iotaseoul/popup-requests', count: counts.popupCount, highlightClass: 'text-[#E67E22]', hoverClass: 'group-hover:text-[#FF9500]' }
     ];
 
     const getFilteredTasks = () => {
@@ -138,24 +135,26 @@ export default function PmoMeetingMain() {
         let filteredTasks;
         
         switch (selectedFilter) {
-            case '즉시상정/지연리스크':
             case '즉시 상정안건':
-            case '지연 리스크':
-                filteredTasks = activePmoTasks.filter(t => (
-                    t.status === '지연' ||
-                    t.meeting_grade === 'A' ||
-                    t.meeting_grade === 'A_즉시상정' ||
-                    parseBool(t.is_blocker)
-                ));
+                filteredTasks = activePmoTasks.filter(t => t.meeting_grade === 'A' || t.meeting_grade === 'A_즉시상정');
                 break;
+            case '지연리스크 · 병목':
+            case '지연리스크':
+            case '즉시상정/지연리스크':
+                filteredTasks = activePmoTasks.filter(t => t.status === '지연' || parseBool(t.is_blocker) || parseBool(t.needs_decision));
+                break;
+            case 'PF · 준공 필수':
+            case 'PF필수':
+                filteredTasks = activePmoTasks.filter(t => t.importance_level === 'PF필수' || t.importance_level === '준공필수');
+                break;
+            case '정상 진행중':
+                filteredTasks = pmoTasks.filter(t => t.status === '진행중');
+                break;
+            case '단발 / 팝업':
             case '단발/팝업':
             case '단발업무':
                 return popupTasks.filter(t => t.status === '진행중');
             case '전체 업무':
-            case '전체업무':
-            case '프로젝트별':
-            case '실행부서별':
-            case '카테고리별':
             default:
                 filteredTasks = activePmoTasks;
         }
@@ -441,16 +440,34 @@ export default function PmoMeetingMain() {
                     <div className="w-[calc(100%+14px)] ml-[-7px] border border-[#3c3c3c] rounded-[24px] p-[6px] mb-[30px] flex flex-col">
                         {/* Header Row */}
                         <div className="flex justify-between items-center pl-[20px] pr-[6px] pt-[6px] pb-[8px]">
-                            <div className="flex items-center gap-[10px]">
+                            <div className="flex items-center gap-[14px]">
                                 <h2 className="text-[16px] font-bold text-white tracking-tight flex items-center gap-[8px]">
                                     <span>{selectedFilter} 현황 목록</span>
                                 </h2>
+                                {/* Segmented Control View Toggle */}
+                                <div className="flex items-center gap-[2px] bg-[#1c1c1e] p-[3px] rounded-[10px] border border-white/10 ml-[4px]">
+                                    {[
+                                        { id: 'flat', label: '☰ 평면 목록' },
+                                        { id: 'project', label: '📁 프로젝트별' },
+                                        { id: 'dept', label: '🏢 실행부서별' },
+                                        { id: 'category', label: '🏷️ 카테고리별' }
+                                    ].map(mode => (
+                                        <button
+                                            key={mode.id}
+                                            type="button"
+                                            onClick={() => setListGroupMode(mode.id)}
+                                            className={`px-[10px] py-[3.5px] text-[11.5px] font-bold rounded-[7px] transition-all cursor-pointer ${listGroupMode === mode.id ? 'bg-[#2997ff] text-white shadow-sm' : 'text-[#8e8e93] hover:text-white hover:bg-white/5'}`}
+                                        >
+                                            {mode.label}
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
                             <button
                                 onClick={handleGoToFullPage}
                                 className="flex items-center gap-[6px] text-[12px] text-[#E5E5E5] hover:text-white font-bold transition-all px-[12px] py-[6px] bg-white/5 hover:bg-white/10 rounded-[8px] border border-white/10 hover:border-white/20 cursor-pointer -translate-y-[2px]"
                             >
-                                <span>{selectedFilter === '단발/팝업' || selectedFilter === '단발업무' ? '단발업무 요건판 전체 보기' : '통합업무보드에서 전체 보기'}</span>
+                                <span>{selectedFilter.includes('팝업') ? '단발업무 요건판 전체 보기' : '통합업무보드에서 전체 보기'}</span>
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
                             </button>
                         </div>
@@ -540,7 +557,7 @@ export default function PmoMeetingMain() {
                                 }
 
                                 // 1. 프로젝트별 그룹 뷰
-                                if (selectedFilter === '프로젝트별') {
+                                if (listGroupMode === 'project') {
                                     const projectsList = ['427 PFV', '816 PFV', '421 Fund', '공통'];
                                     return (
                                         <div className="flex flex-col gap-[12px]">
@@ -565,7 +582,7 @@ export default function PmoMeetingMain() {
                                 }
 
                                 // 2. 실행부서별 그룹 뷰
-                                if (selectedFilter === '실행부서별') {
+                                if (listGroupMode === 'dept') {
                                     return (
                                         <div className="flex flex-col gap-[12px]">
                                             {DEPARTMENTS_LIST.map(dept => {
@@ -589,7 +606,7 @@ export default function PmoMeetingMain() {
                                 }
 
                                 // 3. 카테고리별 그룹 뷰
-                                if (selectedFilter === '카테고리별') {
+                                if (listGroupMode === 'category') {
                                     return (
                                         <div className="flex flex-col gap-[12px]">
                                             {CATEGORIES_LIST.map(cat => {
@@ -612,7 +629,7 @@ export default function PmoMeetingMain() {
                                     );
                                 }
 
-                                // 4. 기본 단일 리스트 뷰 (전체 업무, 즉시상정/지연리스크, 단발/팝업)
+                                // 4. 평면 목록 뷰 (기본)
                                 return (
                                     <div className="grid grid-cols-1 gap-[6px] px-0">
                                         {allActiveTasks.map((task, index) => renderTaskCard(task, index))}
