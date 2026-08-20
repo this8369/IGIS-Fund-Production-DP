@@ -22,7 +22,7 @@ export default function PmoMeetingMain() {
     });
         const [loading, setLoading] = React.useState(true);
     const [tasks, setTasks] = React.useState([]);
-    const [selectedFilter, setSelectedFilter] = React.useState('의사결정 필요');
+    const [selectedFilter, setSelectedFilter] = React.useState('전체업무');
     const [dbError, setDbError] = React.useState(null);
     const [activeMetric, setActiveMetric] = React.useState('총관여');
     const [hoveredDept, setHoveredDept] = React.useState(null);
@@ -111,50 +111,47 @@ export default function PmoMeetingMain() {
 
     const upperFilters = [
         { label: '전체업무', path: 'platform/iotaseoul/workflow', count: counts.total, highlightClass: 'text-[#1F1F1E]', hoverClass: 'group-hover:text-[#000000]' },
-        { label: '진행중', path: 'platform/iotaseoul/workflow?filterStatus=진행중', count: counts.inProgress, highlightClass: 'text-[#1F1F1E]', hoverClass: 'group-hover:text-[#000000]' },
-        { label: '지연', path: 'platform/iotaseoul/workflow?filterStatus=지연', count: counts.delayed, highlightClass: 'text-[#E35D5D]', hoverClass: 'group-hover:text-[#FF3B30]' },
-        { label: 'Blocker(병목)', path: 'platform/iotaseoul/workflow?filterIsBlocker=Y (예)', count: counts.blockers, highlightClass: 'text-[#E35D5D]', hoverClass: 'group-hover:text-[#FF3B30]' },
-        { label: '의사결정 필요', path: 'platform/iotaseoul/workflow?filterNeedsDecision=Y (예)', count: counts.decisions, highlightClass: 'text-[#E35D5D]', hoverClass: 'group-hover:text-[#FF3B30]' },
-        { label: '즉시 회의 필요', path: 'platform/iotaseoul/workflow?filterMeetingGrade=A_즉시상정', count: counts.meetings, highlightClass: 'text-[#E35D5D]', hoverClass: 'group-hover:text-[#FF3B30]' },
-        { label: '지원필요', path: 'platform/iotaseoul/workflow?filterSupportNeeded=Y', count: counts.supportNeeded, highlightClass: 'text-[#E67E22]', hoverClass: 'group-hover:text-[#FF9500]' }
+        { label: '즉시 상정안건', path: 'platform/iotaseoul/workflow?filterMeetingGrade=A_즉시상정', count: counts.meetings, highlightClass: 'text-[#E35D5D]', hoverClass: 'group-hover:text-[#FF3B30]' },
+        { label: '지연 리스크', path: 'platform/iotaseoul/workflow?filterStatus=지연', count: counts.delayed, highlightClass: 'text-[#E35D5D]', hoverClass: 'group-hover:text-[#FF3B30]' },
+        { label: '정상 진행중', path: 'platform/iotaseoul/workflow?filterStatus=진행중', count: counts.inProgress, highlightClass: 'text-[#1F1F1E]', hoverClass: 'group-hover:text-[#000000]' },
+        { label: '미착수 과제', path: 'platform/iotaseoul/workflow?filterStatus=미착수', count: counts.notStarted, highlightClass: 'text-[#8E8E93]', hoverClass: 'group-hover:text-[#A1A1AA]' },
+        { label: '단발/팝업', path: 'platform/iotaseoul/popup-requests', count: counts.popupCount, highlightClass: 'text-[#E67E22]', hoverClass: 'group-hover:text-[#FF9500]' }
     ];
-
-    const lowerFilters = [
-        { label: '미착수', path: 'platform/iotaseoul/workflow?filterStatus=미착수', count: counts.notStarted },
-        { label: 'PF필수', path: 'platform/iotaseoul/workflow?filterImportance=PF필수', count: counts.pfRequired },
-        { label: '준공필수', path: 'platform/iotaseoul/workflow?filterImportance=준공필수', count: counts.constRequired },
-        { label: '완료', path: 'platform/iotaseoul/workflow?filterStatus=완료', count: counts.completed },
-        { label: '보류', path: 'platform/iotaseoul/workflow?filterStatus=보류', count: counts.onHold },
-        { label: '중단', path: 'platform/iotaseoul/workflow?filterStatus=중단', count: counts.stopped },
-        { label: '단발업무', path: 'platform/iotaseoul/popup-requests', count: counts.popupCount }
-    ];
-    const group3Upper = upperFilters.slice(2);
-    const group3Lower = [lowerFilters[1], lowerFilters[2], lowerFilters[4], lowerFilters[5], lowerFilters[6]];
 
     const getFilteredTasks = () => {
         const parseBool = (v) => v === true || String(v).toLowerCase() === 'true' || String(v).toUpperCase() === 'Y';
         
-        // Filter out popup tasks from standard listings except when selecting '단발업무'
+        // Filter out popup tasks from standard listings except when selecting '단발/팝업'
         const pmoTasks = tasks.filter(t => t.task_type !== '팝업');
         const popupTasks = tasks.filter(t => t.task_type === '팝업');
         const activePmoTasks = pmoTasks.filter(t => matchesPmoStatusFilter(t, '전체보기'));
         let filteredTasks;
         
         switch (selectedFilter) {
-            case '진행중':
-                filteredTasks = pmoTasks.filter(t => t.status === '진행중');
+            case '즉시 상정안건':
+            case '즉시 회의 필요':
+                filteredTasks = activePmoTasks.filter(t => t.meeting_grade === 'A' || t.meeting_grade === 'A_즉시상정');
                 break;
+            case '지연 리스크':
             case '지연':
                 filteredTasks = pmoTasks.filter(t => t.status === '지연');
                 break;
+            case '정상 진행중':
+            case '진행중':
+                filteredTasks = pmoTasks.filter(t => t.status === '진행중');
+                break;
+            case '미착수 과제':
+            case '미착수':
+                filteredTasks = pmoTasks.filter(t => t.status === '미착수');
+                break;
+            case '단발/팝업':
+            case '단발업무':
+                return popupTasks.filter(t => t.status === '진행중');
             case 'Blocker(병목)':
                 filteredTasks = activePmoTasks.filter(t => parseBool(t.is_blocker));
                 break;
             case '의사결정 필요':
                 filteredTasks = activePmoTasks.filter(t => parseBool(t.needs_decision));
-                break;
-            case '즉시 회의 필요':
-                filteredTasks = activePmoTasks.filter(t => t.meeting_grade === 'A' || t.meeting_grade === 'A_즉시상정');
                 break;
             case '지원필요':
                 filteredTasks = activePmoTasks.filter(t => {
@@ -164,9 +161,6 @@ export default function PmoMeetingMain() {
                     const invalidKeywords = ['', '없음', 'n/a', 'na', '해당사항 없음', '해당사항없음', '-', 'none'];
                     return s && !invalidKeywords.includes(s);
                 });
-                break;
-            case '미착수':
-                filteredTasks = pmoTasks.filter(t => t.status === '미착수');
                 break;
             case 'PF필수':
                 filteredTasks = activePmoTasks.filter(t => t.importance_level === 'PF필수');
@@ -183,8 +177,6 @@ export default function PmoMeetingMain() {
             case '중단':
                 filteredTasks = pmoTasks.filter(t => t.status === '중단');
                 break;
-            case '단발업무':
-                return popupTasks.filter(t => t.status === '진행중');
             case '전체업무':
             default:
                 filteredTasks = activePmoTasks;
@@ -196,8 +188,7 @@ export default function PmoMeetingMain() {
     };
 
     const getFilterPath = () => {
-        const allFilters = [...upperFilters, ...lowerFilters];
-        const matched = allFilters.find(f => f.label === selectedFilter);
+        const matched = upperFilters.find(f => f.label === selectedFilter);
         return matched ? matched.path : 'platform/iotaseoul/workflow';
     };
 
@@ -441,16 +432,14 @@ export default function PmoMeetingMain() {
                 </div>
             )}
 
-            {/* Filter Navigation Buttons Grouped Containers - Preserved Original UI Styling */}
-            <div className="w-[calc(100%+14px)] ml-[-7px] grid grid-cols-7 gap-[4px] mb-[6px] select-none text-center bg-transparent">
-                {/* Box 1: 전체업무 + 완료 (col-span-1) */}
-                <div className="col-span-1 border border-[#4b4b4b]/70 rounded-[30px] p-[6px] flex flex-col gap-[6px]">
-                    {/* 전체업무 */}
-                    {(() => {
-                        const btn = upperFilters[0];
+            {/* Single Row 6-Column KPI Filter Buttons */}
+            <div className="w-[calc(100%+14px)] ml-[-7px] border border-[#4b4b4b]/70 rounded-[30px] p-[6px] mb-[16px] select-none text-center bg-[#1c1c1e]/40">
+                <div className="grid grid-cols-6 gap-[6px]">
+                    {upperFilters.map((btn, idx) => {
                         const isActive = selectedFilter === btn.label;
                         return (
                             <div
+                                key={idx}
                                 onClick={() => setSelectedFilter(btn.label)}
                                 className={`w-full bg-[#b4b6b5] h-[94px] rounded-[24px] flex items-center justify-center cursor-pointer group transition-all duration-200 ${isActive ? 'relative z-20' : 'hover:relative hover:z-20'}`}
                             >
@@ -464,119 +453,7 @@ export default function PmoMeetingMain() {
                                 </div>
                             </div>
                         );
-                    })()}
-                    {/* 완료 */}
-                    {(() => {
-                        const btn = lowerFilters[3];
-                        const isActive = selectedFilter === btn.label;
-                        return (
-                            <div
-                                onClick={() => setSelectedFilter(btn.label)}
-                                className={`w-full bg-[#2b2b2b] h-[98px] border rounded-[24px] flex items-center justify-center cursor-pointer group transition-all duration-200 ${isActive ? 'relative z-20 border-[#2997ff]' : 'border-[#4b4b4b] hover:relative hover:z-20 hover:border-[#2997ff]'}`}
-                            >
-                                <div className={`w-full h-full rounded-[24px] transition-all duration-200 flex flex-col items-center justify-center relative ${isActive ? 'bg-[#3e3e3e] ring-[5px] ring-[#2997ff] ring-inset' : 'bg-transparent group-hover:bg-[#3e3e3e] group-hover:ring-[5px] group-hover:ring-[#2997ff] group-hover:ring-inset'}`}>
-                                    <span className="text-[13px] font-bold text-[#8E8E93] group-hover:text-[#509FEB] transition-colors duration-200 mb-1 flex items-center gap-[4px]">
-                                        {btn.label}
-                                    </span>
-                                    <span className="text-[32px] font-black text-white group-hover:text-[#509FEB] transition-colors duration-200 leading-none">
-                                        {btn.count}
-                                    </span>
-                                </div>
-                            </div>
-                        );
-                    })()}
-                </div>
-
-                {/* Box 2: 진행중 + 미착수 (col-span-1) */}
-                <div className="col-span-1 border border-[#4b4b4b]/70 rounded-[30px] p-[6px] flex flex-col gap-[6px]">
-                    {/* 진행중 */}
-                    {(() => {
-                        const btn = upperFilters[1];
-                        const isActive = selectedFilter === btn.label;
-                        return (
-                            <div
-                                onClick={() => setSelectedFilter(btn.label)}
-                                className={`w-full bg-[#b4b6b5] h-[94px] rounded-[24px] flex items-center justify-center cursor-pointer group transition-all duration-200 ${isActive ? 'relative z-20' : 'hover:relative hover:z-20'}`}
-                            >
-                                <div className={`w-full h-full rounded-[24px] transition-all duration-200 flex flex-col items-center justify-center relative ${isActive ? 'bg-[#d4d7d5] ring-[5px] ring-[#2997ff] ring-inset' : 'bg-transparent group-hover:bg-[#d4d7d5] group-hover:ring-[5px] group-hover:ring-[#2997ff] group-hover:ring-inset'}`}>
-                                    <span className="text-[13px] font-bold text-[#3C3C3C] group-hover:text-[#000000] transition-colors duration-200 mb-0.5 flex items-center gap-[4px]">
-                                        {btn.label}
-                                    </span>
-                                    <span className={`text-[32px] font-black leading-none transition-colors duration-200 ${btn.highlightClass} ${btn.hoverClass}`}>
-                                        {btn.count}
-                                    </span>
-                                </div>
-                            </div>
-                        );
-                    })()}
-                    {/* 미착수 */}
-                    {(() => {
-                        const btn = lowerFilters[0];
-                        const isActive = selectedFilter === btn.label;
-                        return (
-                            <div
-                                onClick={() => setSelectedFilter(btn.label)}
-                                className={`w-full bg-[#2b2b2b] h-[98px] border rounded-[24px] flex items-center justify-center cursor-pointer group transition-all duration-200 ${isActive ? 'relative z-20 border-[#2997ff]' : 'border-[#4b4b4b] hover:relative hover:z-20 hover:border-[#2997ff]'}`}
-                            >
-                                <div className={`w-full h-full rounded-[24px] transition-all duration-200 flex flex-col items-center justify-center relative ${isActive ? 'bg-[#3e3e3e] ring-[5px] ring-[#2997ff] ring-inset' : 'bg-transparent group-hover:bg-[#3e3e3e] group-hover:ring-[5px] group-hover:ring-[#2997ff] group-hover:ring-inset'}`}>
-                                    <span className="text-[13px] font-bold text-[#8E8E93] group-hover:text-[#509FEB] transition-colors duration-200 mb-1 flex items-center gap-[4px]">
-                                        {btn.label}
-                                    </span>
-                                    <span className="text-[32px] font-black text-white group-hover:text-[#509FEB] transition-colors duration-200 leading-none">
-                                        {btn.count}
-                                    </span>
-                                </div>
-                            </div>
-                        );
-                    })()}
-                </div>
-
-                {/* Box 3: 나머지 상하단 박스 5개씩 (col-span-5) */}
-                <div className="col-span-5 border border-[#4b4b4b]/70 rounded-[30px] p-[6px] flex flex-col gap-[6px]">
-                    {/* Upper Row Box */}
-                    <div className="grid grid-cols-5 bg-[#b4b6b5] h-[94px] rounded-[24px] divide-x divide-[#8b8b8b]/80 relative">
-                        {group3Upper.map((btn, idx) => {
-                            const isActive = selectedFilter === btn.label;
-                            return (
-                                <div
-                                    key={idx}
-                                    onClick={() => setSelectedFilter(btn.label)}
-                                    className={`p-[6px] h-full flex items-center justify-center cursor-pointer group transition-all duration-200 ${isActive ? 'relative z-20' : 'hover:relative hover:z-20'}`}
-                                >
-                                    <div className={`w-full h-full rounded-[20px] transition-all duration-200 flex flex-col items-center justify-center relative ${isActive ? 'bg-[#d4d7d5] ring-[5px] ring-[#2997ff] ring-inset' : 'bg-transparent group-hover:bg-[#d4d7d5] group-hover:ring-[5px] group-hover:ring-[#2997ff] group-hover:ring-inset'}`}>
-                                        <span className="text-[13px] font-bold text-[#3C3C3C] group-hover:text-[#000000] transition-colors duration-200 mb-0.5 flex items-center gap-[4px]">
-                                            {btn.label}
-                                        </span>
-                                        <span className={`text-[32px] font-black leading-none transition-colors duration-200 ${btn.highlightClass} ${btn.hoverClass}`}>
-                                            {btn.count}
-                                        </span>
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-                    {/* Lower Row Box */}
-                    <div className="grid grid-cols-5 bg-[#2b2b2b] h-[98px] border border-[#4b4b4b] rounded-[24px] divide-x divide-[#4b4b4b]/70 relative">
-                        {group3Lower.map((btn, idx) => {
-                            const isActive = selectedFilter === btn.label;
-                            return (
-                                <div
-                                    key={idx}
-                                    onClick={() => setSelectedFilter(btn.label)}
-                                    className={`p-[6px] h-full flex items-center justify-center cursor-pointer group transition-all duration-200 ${isActive ? 'relative z-20' : 'hover:relative hover:z-20'}`}
-                                >
-                                    <div className={`w-full h-full rounded-[20px] transition-all duration-200 flex flex-col items-center justify-center relative ${isActive ? 'bg-[#3e3e3e] ring-[5px] ring-[#2997ff] ring-inset' : 'bg-transparent group-hover:bg-[#3e3e3e] group-hover:ring-[5px] group-hover:ring-[#2997ff] group-hover:ring-inset'}`}>
-                                        <span className="text-[13px] font-bold text-[#8E8E93] group-hover:text-[#509FEB] transition-colors duration-200 mb-1 flex items-center gap-[4px]">
-                                            {btn.label}
-                                        </span>
-                                        <span className="text-[32px] font-black text-white group-hover:text-[#509FEB] transition-colors duration-200 leading-none">
-                                            {btn.count}
-                                        </span>
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
+                    })}
                 </div>
             </div>
 
