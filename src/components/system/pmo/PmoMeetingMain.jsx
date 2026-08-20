@@ -25,8 +25,8 @@ export default function PmoMeetingMain() {
     });
         const [loading, setLoading] = React.useState(true);
     const [tasks, setTasks] = React.useState([]);
-    const [selectedFilter, setSelectedFilter] = React.useState('전체 업무');
-    const [listGroupMode, setListGroupMode] = React.useState('flat');
+    const [selectedFilter, setSelectedFilter] = React.useState('전체업무');
+    const [listSortOption, setListSortOption] = React.useState('alphabetical');
     const [dbError, setDbError] = React.useState(null);
     const [activeMetric, setActiveMetric] = React.useState('총관여');
     const [hoveredDept, setHoveredDept] = React.useState(null);
@@ -40,46 +40,28 @@ export default function PmoMeetingMain() {
         const activePmoTasks = pmoTasks.filter(t => matchesPmoStatusFilter(t, '전체보기'));
 
         const total = activePmoTasks.length;
-        const meetings = activePmoTasks.filter(t => t.meeting_grade === 'A' || t.meeting_grade === 'A_즉시상정').length;
-        const riskCount = activePmoTasks.filter(t => t.status === '지연' || parseBool(t.is_blocker) || parseBool(t.needs_decision)).length;
-        const essentialCount = activePmoTasks.filter(t => t.importance_level === 'PF필수' || t.importance_level === '준공필수').length;
         const inProgress = pmoTasks.filter(t => t.status === '진행중').length;
-        const delayed = pmoTasks.filter(t => t.status === '지연').length;
-        const blockers = activePmoTasks.filter(t => parseBool(t.is_blocker)).length;
-        const decisions = activePmoTasks.filter(t => parseBool(t.needs_decision)).length;
-        const pfRequired = activePmoTasks.filter(t => t.importance_level === 'PF필수').length;
-        const constRequired = activePmoTasks.filter(t => t.importance_level === '준공필수').length;
         const notStarted = pmoTasks.filter(t => t.status === '미착수').length;
-        const completed = pmoTasks.filter(t => t.status === '완료').length;
-        const onHold = pmoTasks.filter(t => t.status === '보류').length;
-        const stopped = pmoTasks.filter(t => t.status === '중단').length;
-        const supportNeeded = activePmoTasks.filter(t => {
-            const fallbackItem = FALLBACK_BOARD_TASKS.find(fb => fb.task_name === t.task_name) || {};
-            const val = t.support_needed || fallbackItem.support_needed || '';
-            const s = val.trim().toLowerCase();
-            const invalidKeywords = ['', '없음', 'n/a', 'na', '해당사항 없음', '해당사항없음', '-', 'none'];
-            return s && !invalidKeywords.includes(s);
-        }).length;
-
+        // Unique risk tasks count (지연 OR 병목) without double counting
+        const riskCount = activePmoTasks.filter(t => t.status === '지연' || parseBool(t.is_blocker)).length;
+        const decisions = activePmoTasks.filter(t => parseBool(t.needs_decision)).length;
         const popupCount = popupTasks.filter(t => t.status === '진행중').length;
  
         setCounts({
             total,
-            meetings,
-            riskCount,
-            essentialCount,
             inProgress,
-            delayed,
-            blockers,
-            decisions,
-            pfRequired,
-            constRequired,
             notStarted,
-            completed,
-            onHold,
-            stopped,
+            riskCount,
+            decisions,
             popupCount,
-            supportNeeded
+            delayed: pmoTasks.filter(t => t.status === '지연').length,
+            blockers: activePmoTasks.filter(t => parseBool(t.is_blocker)).length,
+            meetings: activePmoTasks.filter(t => t.meeting_grade === 'A' || t.meeting_grade === 'A_즉시상정').length,
+            pfRequired: activePmoTasks.filter(t => t.importance_level === 'PF필수').length,
+            constRequired: activePmoTasks.filter(t => t.importance_level === '준공필수').length,
+            completed: pmoTasks.filter(t => t.status === '완료').length,
+            onHold: pmoTasks.filter(t => t.status === '보류').length,
+            stopped: pmoTasks.filter(t => t.status === '중단').length
         });
     };
  
@@ -87,7 +69,6 @@ export default function PmoMeetingMain() {
         async function fetchDashboardData() {
             try {
                 setDbError(null);
-                // Fetch stats and tasks from staging iota_v2 schema with correct fields and join relationships
                 const { data: allTasks, error } = await supabase
                     .schema('iota_v2')
                     .from('iota_pmo_tasks')
@@ -110,19 +91,21 @@ export default function PmoMeetingMain() {
         fetchDashboardData();
     }, []);
 
-    const handleFilterClick = (btn) => {
-        const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL.slice(0, -1) : import.meta.env.BASE_URL;
-        const targetPath = btn.path.startsWith('/') ? btn.path : '/' + btn.path;
-        window.history.pushState(null, '', base + targetPath);
-        window.dispatchEvent(new Event('popstate'));
+    const handleSelectFilterCard = (label) => {
+        setSelectedFilter(label);
+        if (label === '지연 / 병목') {
+            setListSortOption('priority');
+        } else {
+            setListSortOption('alphabetical');
+        }
     };
 
     const upperFilters = [
-        { label: '전체 업무', path: 'platform/iotaseoul/workflow', count: counts.total, highlightClass: 'text-[#1F1F1E]', hoverClass: 'group-hover:text-[#000000]' },
-        { label: '즉시 상정안건', path: 'platform/iotaseoul/workflow?filterMeetingGrade=A_즉시상정', count: counts.meetings, highlightClass: 'text-[#E35D5D]', hoverClass: 'group-hover:text-[#FF3B30]' },
-        { label: '지연리스크 · 병목', path: 'platform/iotaseoul/workflow?filterStatus=지연', count: counts.riskCount, highlightClass: 'text-[#E35D5D]', hoverClass: 'group-hover:text-[#FF3B30]' },
-        { label: 'PF · 준공 필수', path: 'platform/iotaseoul/workflow?filterImportance=PF필수', count: counts.essentialCount, highlightClass: 'text-[#E67E22]', hoverClass: 'group-hover:text-[#FF9500]' },
-        { label: '정상 진행중', path: 'platform/iotaseoul/workflow?filterStatus=진행중', count: counts.inProgress, highlightClass: 'text-[#1F1F1E]', hoverClass: 'group-hover:text-[#000000]' },
+        { label: '전체업무', path: 'platform/iotaseoul/workflow', count: counts.total, highlightClass: 'text-[#1F1F1E]', hoverClass: 'group-hover:text-[#000000]' },
+        { label: '진행중', path: 'platform/iotaseoul/workflow?filterStatus=진행중', count: counts.inProgress, highlightClass: 'text-[#1F1F1E]', hoverClass: 'group-hover:text-[#000000]' },
+        { label: '미착수', path: 'platform/iotaseoul/workflow?filterStatus=미착수', count: counts.notStarted, highlightClass: 'text-[#8E8E93]', hoverClass: 'group-hover:text-[#A1A1AA]' },
+        { label: '지연 / 병목', path: 'platform/iotaseoul/workflow?filterStatus=지연', count: counts.riskCount, highlightClass: 'text-[#E35D5D]', hoverClass: 'group-hover:text-[#FF3B30]' },
+        { label: '의사결정 필요', path: 'platform/iotaseoul/workflow?filterNeedsDecision=true', count: counts.decisions, highlightClass: 'text-[#E35D5D]', hoverClass: 'group-hover:text-[#FF3B30]' },
         { label: '단발 / 팝업', path: 'platform/iotaseoul/popup-requests', count: counts.popupCount, highlightClass: 'text-[#E67E22]', hoverClass: 'group-hover:text-[#FF9500]' }
     ];
 
@@ -135,55 +118,44 @@ export default function PmoMeetingMain() {
         let filteredTasks;
         
         switch (selectedFilter) {
-            case '즉시 상정안건':
-                filteredTasks = activePmoTasks.filter(t => t.meeting_grade === 'A' || t.meeting_grade === 'A_즉시상정');
-                filteredTasks.sort((a, b) => {
-                    const gradeA = a.meeting_grade === 'A_즉시상정' ? 2 : 1;
-                    const gradeB = b.meeting_grade === 'A_즉시상정' ? 2 : 1;
-                    if (gradeA !== gradeB) return gradeB - gradeA;
-                    return comparePmoTasksByPriority(a, b, 'desc');
-                });
+            case '진행중':
+                filteredTasks = pmoTasks.filter(t => t.status === '진행중');
                 break;
-
+            case '미착수':
+                filteredTasks = pmoTasks.filter(t => t.status === '미착수');
+                break;
+            case '지연 / 병목':
             case '지연리스크 · 병목':
             case '지연리스크':
             case '즉시상정/지연리스크':
-                filteredTasks = activePmoTasks.filter(t => t.status === '지연' || parseBool(t.is_blocker) || parseBool(t.needs_decision));
-                filteredTasks.sort((a, b) => {
-                    const rankA = a.status === '지연' ? 3 : (parseBool(a.is_blocker) ? 2 : 1);
-                    const rankB = b.status === '지연' ? 3 : (parseBool(b.is_blocker) ? 2 : 1);
-                    if (rankA !== rankB) return rankB - rankA;
-                    return comparePmoTasksByPriority(a, b, 'desc');
-                });
+                filteredTasks = activePmoTasks.filter(t => t.status === '지연' || parseBool(t.is_blocker));
                 break;
-
-            case 'PF · 준공 필수':
-            case 'PF필수':
-                filteredTasks = activePmoTasks.filter(t => t.importance_level === 'PF필수' || t.importance_level === '준공필수');
-                filteredTasks.sort((a, b) => {
-                    const rankA = a.importance_level === '준공필수' ? 2 : 1;
-                    const rankB = b.importance_level === '준공필수' ? 2 : 1;
-                    if (rankA !== rankB) return rankB - rankA;
-                    return comparePmoTasksByPriority(a, b, 'desc');
-                });
+            case '의사결정 필요':
+                filteredTasks = activePmoTasks.filter(t => parseBool(t.needs_decision));
                 break;
-
-            case '정상 진행중':
-                filteredTasks = pmoTasks.filter(t => t.status === '진행중' && t.status !== '지연');
-                filteredTasks.sort((a, b) => comparePmoTasksByPriority(a, b, 'desc'));
-                break;
-
             case '단발 / 팝업':
             case '단발/팝업':
             case '단발업무':
-                return popupTasks.filter(t => t.status === '진행중');
-
+                return popupTasks.filter(t => t.status === '진행중').sort((a, b) => String(a.task_name || '').localeCompare(String(b.task_name || ''), 'ko'));
+            case '전체업무':
             case '전체 업무':
             default:
-                filteredTasks = [...activePmoTasks].sort((a, b) => comparePmoTasksByPriority(a, b, 'desc'));
+                filteredTasks = activePmoTasks;
         }
 
-        return filteredTasks;
+        if (listSortOption === 'priority') {
+            return [...filteredTasks].sort((a, b) => comparePmoTasksByPriority(a, b, 'desc'));
+        } else if (listSortOption === 'alphabetical') {
+            return [...filteredTasks].sort((a, b) => String(a.task_name || '').localeCompare(String(b.task_name || ''), 'ko'));
+        } else {
+            return [...filteredTasks].sort((a, b) => {
+                const deptA = getTaskDeptName(a);
+                const deptB = getTaskDeptName(b);
+                const deptDiff = deptA.localeCompare(deptB, 'ko');
+                if (deptDiff !== 0) return deptDiff;
+                return comparePmoTasksByPriority(a, b, 'desc');
+            });
+        }
     };
 
     const getFilterPath = () => {
@@ -435,7 +407,7 @@ export default function PmoMeetingMain() {
                         return (
                             <div
                                 key={idx}
-                                onClick={() => setSelectedFilter(btn.label)}
+                                onClick={() => handleSelectFilterCard(btn.label)}
                                 className={`w-full bg-[#b4b6b5] h-[94px] rounded-[24px] flex items-center justify-center cursor-pointer group transition-all duration-200 ${isActive ? 'relative z-20' : 'hover:relative hover:z-20'}`}
                             >
                                 <div className={`w-full h-full rounded-[24px] transition-all duration-200 flex flex-col items-center justify-center relative ${isActive ? 'bg-[#d4d7d5] ring-[5px] ring-[#2997ff] ring-inset' : 'bg-transparent group-hover:bg-[#d4d7d5] group-hover:ring-[5px] group-hover:ring-[#2997ff] group-hover:ring-inset'}`}>
@@ -466,23 +438,18 @@ export default function PmoMeetingMain() {
                                 <h2 className="text-[16px] font-bold text-white tracking-tight flex items-center gap-[8px]">
                                     <span>{selectedFilter} 현황 목록</span>
                                 </h2>
-                                {/* Segmented Control View Toggle */}
-                                <div className="flex items-center gap-[2px] bg-[#1c1c1e] p-[3px] rounded-[10px] border border-white/10 ml-[4px]">
-                                    {[
-                                        { id: 'flat', label: '☰ 평면 목록' },
-                                        { id: 'project', label: '📁 프로젝트별' },
-                                        { id: 'dept', label: '🏢 실행부서별' },
-                                        { id: 'category', label: '🏷️ 카테고리별' }
-                                    ].map(mode => (
-                                        <button
-                                            key={mode.id}
-                                            type="button"
-                                            onClick={() => setListGroupMode(mode.id)}
-                                            className={`px-[10px] py-[3.5px] text-[11.5px] font-bold rounded-[7px] transition-all cursor-pointer ${listGroupMode === mode.id ? 'bg-[#2997ff] text-white shadow-sm' : 'text-[#8e8e93] hover:text-white hover:bg-white/5'}`}
-                                        >
-                                            {mode.label}
-                                        </button>
-                                    ))}
+                                {/* Select Box Control */}
+                                <div className="flex items-center gap-[6px] ml-[8px]">
+                                    <span className="text-[12px] text-[#8e8e93] font-semibold">정렬/분류:</span>
+                                    <select
+                                        value={listSortOption}
+                                        onChange={(e) => setListSortOption(e.target.value)}
+                                        className="bg-[#242426] text-white border border-[#444] rounded-[8px] px-[10px] py-[4px] text-[12px] font-bold outline-none cursor-pointer hover:border-[#2997ff] transition-all"
+                                    >
+                                        <option value="priority">우선순위순</option>
+                                        <option value="alphabetical">가나다순</option>
+                                        <option value="dept">실행부서별</option>
+                                    </select>
                                 </div>
                             </div>
                             <button
@@ -578,33 +545,8 @@ export default function PmoMeetingMain() {
                                     );
                                 }
 
-                                // 1. 프로젝트별 그룹 뷰
-                                if (listGroupMode === 'project') {
-                                    const projectsList = ['427 PFV', '816 PFV', '421 Fund', '공통'];
-                                    return (
-                                        <div className="flex flex-col gap-[12px]">
-                                            {projectsList.map(proj => {
-                                                const projTasks = allActiveTasks.filter(t => normalizeProjectName(t.project_code || t.project) === proj);
-                                                if (projTasks.length === 0) return null;
-                                                return (
-                                                    <div key={proj} className="flex flex-col">
-                                                        <div className="flex items-center justify-between px-[16px] py-[8px] bg-[#222222] border border-[#3a3a3c] rounded-[12px] text-[13.5px] font-bold text-white mb-[8px]">
-                                                            <div className="flex items-center gap-[8px]">
-                                                                <span className="w-2 h-2 rounded-full bg-[#2997ff]" />
-                                                                <span>📁 {proj}</span>
-                                                            </div>
-                                                            <span className="text-[12px] text-[#8e8e93] font-normal">{projTasks.length}건</span>
-                                                        </div>
-                                                        {projTasks.map((task, idx) => renderTaskCard(task, idx))}
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                    );
-                                }
-
-                                // 2. 실행부서별 그룹 뷰
-                                if (listGroupMode === 'dept') {
+                                // 실행부서별 선택 시 부서별 섹션 분리
+                                if (listSortOption === 'dept') {
                                     return (
                                         <div className="flex flex-col gap-[12px]">
                                             {DEPARTMENTS_LIST.map(dept => {
@@ -627,31 +569,7 @@ export default function PmoMeetingMain() {
                                     );
                                 }
 
-                                // 3. 카테고리별 그룹 뷰
-                                if (listGroupMode === 'category') {
-                                    return (
-                                        <div className="flex flex-col gap-[12px]">
-                                            {CATEGORIES_LIST.map(cat => {
-                                                const catTasks = allActiveTasks.filter(t => t.category_main === cat || (cat === '공통 PMO' && !t.category_main));
-                                                if (catTasks.length === 0) return null;
-                                                return (
-                                                    <div key={cat} className="flex flex-col">
-                                                        <div className="flex items-center justify-between px-[16px] py-[8px] bg-[#222222] border border-[#3a3a3c] rounded-[12px] text-[13.5px] font-bold text-white mb-[8px]">
-                                                            <div className="flex items-center gap-[8px]">
-                                                                <span className="w-2 h-2 rounded-full bg-[#bf5af2]" />
-                                                                <span>🏷️ {cat}</span>
-                                                            </div>
-                                                            <span className="text-[12px] text-[#8e8e93] font-normal">{catTasks.length}건</span>
-                                                        </div>
-                                                        {catTasks.map((task, idx) => renderTaskCard(task, idx))}
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                    );
-                                }
-
-                                // 4. 평면 목록 뷰 (기본)
+                                // 일반 단일 리스트 뷰 (우선순위순 / 가나다순)
                                 return (
                                     <div className="grid grid-cols-1 gap-[6px] px-0">
                                         {allActiveTasks.map((task, index) => renderTaskCard(task, index))}
