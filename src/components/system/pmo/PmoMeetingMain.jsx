@@ -58,6 +58,13 @@ export default function PmoMeetingMain() {
             return s && !invalidKeywords.includes(s);
         }).length;
  
+        const riskCount = activePmoTasks.filter(t => (
+            t.status === '지연' ||
+            t.meeting_grade === 'A' ||
+            t.meeting_grade === 'A_즉시상정' ||
+            parseBool(t.is_blocker)
+        )).length;
+
         const popupCount = popupTasks.filter(t => t.status === '진행중').length;
  
         setCounts({
@@ -66,6 +73,7 @@ export default function PmoMeetingMain() {
             blockers,
             decisions,
             meetings,
+            riskCount,
             inProgress,
             pfRequired,
             constRequired,
@@ -114,10 +122,10 @@ export default function PmoMeetingMain() {
 
     const upperFilters = [
         { label: '전체 업무', path: 'platform/iotaseoul/workflow', count: counts.total, highlightClass: 'text-[#1F1F1E]', hoverClass: 'group-hover:text-[#000000]' },
-        { label: '즉시상정/지연리스크', path: 'platform/iotaseoul/workflow?filterStatus=지연', count: counts.meetings + counts.delayed, highlightClass: 'text-[#E35D5D]', hoverClass: 'group-hover:text-[#FF3B30]' },
-        { label: '프로젝트별', path: 'platform/iotaseoul/workflow?groupBy=project', count: 4, highlightClass: 'text-[#1F1F1E]', hoverClass: 'group-hover:text-[#000000]' },
-        { label: '실행부서별', path: 'platform/iotaseoul/workflow?groupBy=dept', count: DEPARTMENTS_LIST.length, highlightClass: 'text-[#1F1F1E]', hoverClass: 'group-hover:text-[#000000]' },
-        { label: '카테고리별', path: 'platform/iotaseoul/workflow?groupBy=category', count: CATEGORIES_LIST.length, highlightClass: 'text-[#1F1F1E]', hoverClass: 'group-hover:text-[#000000]' },
+        { label: '즉시상정/지연리스크', path: 'platform/iotaseoul/workflow?filterStatus=지연', count: counts.riskCount, highlightClass: 'text-[#E35D5D]', hoverClass: 'group-hover:text-[#FF3B30]' },
+        { label: '프로젝트별', path: 'platform/iotaseoul/workflow?groupBy=project', count: counts.total, highlightClass: 'text-[#1F1F1E]', hoverClass: 'group-hover:text-[#000000]' },
+        { label: '실행부서별', path: 'platform/iotaseoul/workflow?groupBy=dept', count: counts.total, highlightClass: 'text-[#1F1F1E]', hoverClass: 'group-hover:text-[#000000]' },
+        { label: '카테고리별', path: 'platform/iotaseoul/workflow?groupBy=category', count: counts.total, highlightClass: 'text-[#1F1F1E]', hoverClass: 'group-hover:text-[#000000]' },
         { label: '단발/팝업', path: 'platform/iotaseoul/popup-requests', count: counts.popupCount, highlightClass: 'text-[#E67E22]', hoverClass: 'group-hover:text-[#FF9500]' }
     ];
 
