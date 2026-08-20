@@ -137,31 +137,53 @@ export default function PmoMeetingMain() {
         switch (selectedFilter) {
             case '즉시 상정안건':
                 filteredTasks = activePmoTasks.filter(t => t.meeting_grade === 'A' || t.meeting_grade === 'A_즉시상정');
+                filteredTasks.sort((a, b) => {
+                    const gradeA = a.meeting_grade === 'A_즉시상정' ? 2 : 1;
+                    const gradeB = b.meeting_grade === 'A_즉시상정' ? 2 : 1;
+                    if (gradeA !== gradeB) return gradeB - gradeA;
+                    return comparePmoTasksByPriority(a, b, 'desc');
+                });
                 break;
+
             case '지연리스크 · 병목':
             case '지연리스크':
             case '즉시상정/지연리스크':
                 filteredTasks = activePmoTasks.filter(t => t.status === '지연' || parseBool(t.is_blocker) || parseBool(t.needs_decision));
+                filteredTasks.sort((a, b) => {
+                    const rankA = a.status === '지연' ? 3 : (parseBool(a.is_blocker) ? 2 : 1);
+                    const rankB = b.status === '지연' ? 3 : (parseBool(b.is_blocker) ? 2 : 1);
+                    if (rankA !== rankB) return rankB - rankA;
+                    return comparePmoTasksByPriority(a, b, 'desc');
+                });
                 break;
+
             case 'PF · 준공 필수':
             case 'PF필수':
                 filteredTasks = activePmoTasks.filter(t => t.importance_level === 'PF필수' || t.importance_level === '준공필수');
+                filteredTasks.sort((a, b) => {
+                    const rankA = a.importance_level === '준공필수' ? 2 : 1;
+                    const rankB = b.importance_level === '준공필수' ? 2 : 1;
+                    if (rankA !== rankB) return rankB - rankA;
+                    return comparePmoTasksByPriority(a, b, 'desc');
+                });
                 break;
+
             case '정상 진행중':
-                filteredTasks = pmoTasks.filter(t => t.status === '진행중');
+                filteredTasks = pmoTasks.filter(t => t.status === '진행중' && t.status !== '지연');
+                filteredTasks.sort((a, b) => comparePmoTasksByPriority(a, b, 'desc'));
                 break;
+
             case '단발 / 팝업':
             case '단발/팝업':
             case '단발업무':
                 return popupTasks.filter(t => t.status === '진행중');
+
             case '전체 업무':
             default:
-                filteredTasks = activePmoTasks;
+                filteredTasks = [...activePmoTasks].sort((a, b) => comparePmoTasksByPriority(a, b, 'desc'));
         }
 
-        return [...filteredTasks].sort((firstTask, secondTask) => (
-            comparePmoTasksByPriority(firstTask, secondTask, 'desc')
-        ));
+        return filteredTasks;
     };
 
     const getFilterPath = () => {
