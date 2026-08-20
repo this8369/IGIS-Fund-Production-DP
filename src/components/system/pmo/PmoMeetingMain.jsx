@@ -110,122 +110,48 @@ export default function PmoMeetingMain() {
     };
 
     const upperFilters = [
-        { label: '전체업무', path: 'platform/iotaseoul/workflow', count: counts.total, highlightClass: 'text-[#1F1F1E]', hoverClass: 'group-hover:text-[#000000]' },
-        { label: '즉시 상정안건', path: 'platform/iotaseoul/workflow?filterMeetingGrade=A_즉시상정', count: counts.meetings, highlightClass: 'text-[#E35D5D]', hoverClass: 'group-hover:text-[#FF3B30]' },
-        { label: '지연 리스크', path: 'platform/iotaseoul/workflow?filterStatus=지연', count: counts.delayed, highlightClass: 'text-[#E35D5D]', hoverClass: 'group-hover:text-[#FF3B30]' },
-        { label: '정상 진행중', path: 'platform/iotaseoul/workflow?filterStatus=진행중', count: counts.inProgress, highlightClass: 'text-[#1F1F1E]', hoverClass: 'group-hover:text-[#000000]' },
-        { label: '미착수 과제', path: 'platform/iotaseoul/workflow?filterStatus=미착수', count: counts.notStarted, highlightClass: 'text-[#8E8E93]', hoverClass: 'group-hover:text-[#A1A1AA]' },
+        { label: '전체 업무', path: 'platform/iotaseoul/workflow', count: counts.total, highlightClass: 'text-[#1F1F1E]', hoverClass: 'group-hover:text-[#000000]' },
+        { label: '즉시상정/지연리스크', path: 'platform/iotaseoul/workflow?filterStatus=지연', count: counts.meetings + counts.delayed, highlightClass: 'text-[#E35D5D]', hoverClass: 'group-hover:text-[#FF3B30]' },
+        { label: '프로젝트별', path: 'platform/iotaseoul/workflow?groupBy=project', count: 4, highlightClass: 'text-[#1F1F1E]', hoverClass: 'group-hover:text-[#000000]' },
+        { label: '실행부서별', path: 'platform/iotaseoul/workflow?groupBy=dept', count: departmentsList.length, highlightClass: 'text-[#1F1F1E]', hoverClass: 'group-hover:text-[#000000]' },
+        { label: '카테고리별', path: 'platform/iotaseoul/workflow?groupBy=category', count: categoriesList.length, highlightClass: 'text-[#1F1F1E]', hoverClass: 'group-hover:text-[#000000]' },
         { label: '단발/팝업', path: 'platform/iotaseoul/popup-requests', count: counts.popupCount, highlightClass: 'text-[#E67E22]', hoverClass: 'group-hover:text-[#FF9500]' }
     ];
 
     const getFilteredTasks = () => {
         const parseBool = (v) => v === true || String(v).toLowerCase() === 'true' || String(v).toUpperCase() === 'Y';
         
-        // Filter out popup tasks from standard listings except when selecting '단발/팝업'
         const pmoTasks = tasks.filter(t => t.task_type !== '팝업');
         const popupTasks = tasks.filter(t => t.task_type === '팝업');
         const activePmoTasks = pmoTasks.filter(t => matchesPmoStatusFilter(t, '전체보기'));
         let filteredTasks;
         
         switch (selectedFilter) {
+            case '즉시상정/지연리스크':
             case '즉시 상정안건':
-            case '즉시 회의 필요':
-                filteredTasks = activePmoTasks.filter(t => t.meeting_grade === 'A' || t.meeting_grade === 'A_즉시상정');
-                break;
             case '지연 리스크':
-            case '지연':
-                filteredTasks = pmoTasks.filter(t => t.status === '지연');
-                break;
-            case '정상 진행중':
-            case '진행중':
-                filteredTasks = pmoTasks.filter(t => t.status === '진행중');
-                break;
-            case '미착수 과제':
-            case '미착수':
-                filteredTasks = pmoTasks.filter(t => t.status === '미착수');
+                filteredTasks = activePmoTasks.filter(t => (
+                    t.status === '지연' ||
+                    t.meeting_grade === 'A' ||
+                    t.meeting_grade === 'A_즉시상정' ||
+                    parseBool(t.is_blocker)
+                ));
                 break;
             case '단발/팝업':
             case '단발업무':
                 return popupTasks.filter(t => t.status === '진행중');
-            case 'Blocker(병목)':
-                filteredTasks = activePmoTasks.filter(t => parseBool(t.is_blocker));
-                break;
-            case '의사결정 필요':
-                filteredTasks = activePmoTasks.filter(t => parseBool(t.needs_decision));
-                break;
-            case '지원필요':
-                filteredTasks = activePmoTasks.filter(t => {
-                    const fallbackItem = FALLBACK_BOARD_TASKS.find(fb => fb.task_name === t.task_name) || {};
-                    const val = t.support_needed || fallbackItem.support_needed || '';
-                    const s = val.trim().toLowerCase();
-                    const invalidKeywords = ['', '없음', 'n/a', 'na', '해당사항 없음', '해당사항없음', '-', 'none'];
-                    return s && !invalidKeywords.includes(s);
-                });
-                break;
-            case 'PF필수':
-                filteredTasks = activePmoTasks.filter(t => t.importance_level === 'PF필수');
-                break;
-            case '준공필수':
-                filteredTasks = activePmoTasks.filter(t => t.importance_level === '준공필수');
-                break;
-            case '완료':
-                filteredTasks = pmoTasks.filter(t => t.status === '완료');
-                break;
-            case '보류':
-                filteredTasks = pmoTasks.filter(t => t.status === '보류');
-                break;
-            case '중단':
-                filteredTasks = pmoTasks.filter(t => t.status === '중단');
-                break;
+            case '전체 업무':
             case '전체업무':
+            case '프로젝트별':
+            case '실행부서별':
+            case '카테고리별':
             default:
                 filteredTasks = activePmoTasks;
         }
-        const getImportanceRank = (t) => {
-            const imp = t.importance_level || '';
-            if (imp === '준공필수') return 1;
-            if (imp === 'PF필수') return 2;
-            return 3;
-        };
 
-        return [...filteredTasks].sort((a, b) => {
-            switch (selectedFilter) {
-                case '즉시 상정안건':
-                case '즉시 회의 필요': {
-                    // 회의 안건 가나다순(task_name) 정렬로 전체업무와 확실히 다른 목록 순서 제공
-                    const nameDiff = String(a.task_name || '').localeCompare(String(b.task_name || ''), 'ko');
-                    if (nameDiff !== 0) return nameDiff;
-                    return comparePmoTasksByPriority(a, b, 'desc');
-                }
-                case '지연 리스크':
-                case '지연': {
-                    // 실행주관 부서별(lead_dept)로 그룹 정렬하여 공간솔루션 -> 개발솔루션 -> 사업2파트 순으로 상단 노출 과제가 확 바뀜
-                    const deptA = getTaskDeptName(a);
-                    const deptB = getTaskDeptName(b);
-                    const deptDiff = deptA.localeCompare(deptB, 'ko');
-                    if (deptDiff !== 0) return deptDiff;
-                    return comparePmoTasksByPriority(a, b, 'desc');
-                }
-                case '정상 진행중':
-                case '진행중': {
-                    // 생성일/ID 오름차순
-                    const idDiff = String(a.id || '').localeCompare(String(b.id || ''));
-                    if (idDiff !== 0) return idDiff;
-                    return comparePmoTasksByPriority(a, b, 'desc');
-                }
-                case '미착수 과제':
-                case '미착수': {
-                    // 1순위: 중요도 (준공필수 > PF필수 > 일반)
-                    const impDiff = getImportanceRank(a) - getImportanceRank(b);
-                    if (impDiff !== 0) return impDiff;
-                    return comparePmoTasksByPriority(a, b, 'desc');
-                }
-                case '전체업무':
-                default:
-                    // 종합 점수순 (Priority Score 내림차순)
-                    return comparePmoTasksByPriority(a, b, 'desc');
-            }
-        });
+        return [...filteredTasks].sort((firstTask, secondTask) => (
+            comparePmoTasksByPriority(firstTask, secondTask, 'desc')
+        ));
     };
 
     const getFilterPath = () => {
@@ -517,92 +443,175 @@ export default function PmoMeetingMain() {
                                 onClick={handleGoToFullPage}
                                 className="flex items-center gap-[6px] text-[12px] text-[#E5E5E5] hover:text-white font-bold transition-all px-[12px] py-[6px] bg-white/5 hover:bg-white/10 rounded-[8px] border border-white/10 hover:border-white/20 cursor-pointer -translate-y-[2px]"
                             >
-                                <span>{selectedFilter === '단발업무' ? '단발업무 요건판 전체 보기' : '통합업무보드에서 전체 보기'}</span>
+                                <span>{selectedFilter === '단발/팝업' || selectedFilter === '단발업무' ? '단발업무 요건판 전체 보기' : '통합업무보드에서 전체 보기'}</span>
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
                             </button>
                         </div>
- 
+
                         {/* Card-based grid row container */}
                         <div className="h-[340px] min-h-[200px] max-h-[800px] resize-y overflow-y-auto px-0 hide-scrollbar">
-                            {getFilteredTasks().length === 0 ? (
-                                <div className="py-[60px] text-center text-[#86868B] text-[14px]">
-                                    조건에 일치하는 업무 항목이 없습니다.
-                                </div>
-                            ) : (
-                                <div className="grid grid-cols-1 gap-[6px] px-0">
-                                    {getFilteredTasks().map((task, index) => {
-                                        const hasDecision = task.needs_decision === true || String(task.needs_decision).toLowerCase() === 'true' || String(task.needs_decision).toUpperCase() === 'Y';
-                                        const hasBlocker = task.is_blocker === true || String(task.is_blocker).toLowerCase() === 'true' || String(task.is_blocker).toUpperCase() === 'Y';
-                                        const projName = normalizeProjectName(task.project_code || task.project);
-                                        const deptName = task.lead_dept?.dept_name || task.lead_dept || resolveDeptName(task.lead_dept_code) || '미정';
-                                        const fallbackItem = FALLBACK_BOARD_TASKS.find(fb => fb.task_name === task.task_name) || {};
-                                        const priorityScore = Number(task.priority_score) || 0;
-                                        const priorityScoreClass = priorityScore >= 60
-                                            ? 'text-[#FF453A]'
-                                            : priorityScore >= 40
-                                                ? 'text-[#bdbba7]'
-                                                : 'text-[#86868B]';
- 
-                                        return (
-                                            <div 
-                                                key={task.id} 
-                                                onClick={() => handleTaskClick(task)}
-                                                className="bg-[#252525] hover:bg-[#2c2c2e] border border-white/[0.06] hover:border-[#2997ff] hover:ring-[2px] hover:ring-[#2997ff] hover:ring-inset hover:shadow-[0_4px_20px_rgba(41,151,255,0.06)] transition-all rounded-[14px] px-[20px] py-[12px] cursor-pointer flex flex-row items-center justify-between group gap-[20px]"
-                                            >
-                                                {/* Task Name */}
-                                                <div className="flex-[0_0_30%] min-w-[200px] flex items-center gap-[12px]">
-                                                    <span className="text-[13.5px] font-bold text-white shrink-0 min-w-[16px] text-right font-['Inter'] -ml-[4px]">
-                                                        {index + 1}
-                                                    </span>
-                                                    <h3 className="text-[16px] font-bold text-[#cccaba] leading-snug group-hover:text-white transition-colors truncate" title={task.task_name}>
-                                                        {task.task_name}
-                                                    </h3>
-                                                </div>
+                            {(() => {
+                                const renderTaskCard = (task, index) => {
+                                    const parseBool = (v) => v === true || String(v).toLowerCase() === 'true' || String(v).toUpperCase() === 'Y';
+                                    const hasDecision = parseBool(task.needs_decision);
+                                    const hasBlocker = parseBool(task.is_blocker);
+                                    const deptName = task.lead_dept?.dept_name || task.lead_dept || resolveDeptName(task.lead_dept_code) || '미정';
+                                    const fallbackItem = FALLBACK_BOARD_TASKS.find(fb => fb.task_name === task.task_name) || {};
+                                    const priorityScore = Number(task.priority_score) || 0;
+                                    const priorityScoreClass = priorityScore >= 60
+                                        ? 'text-[#FF453A]'
+                                        : priorityScore >= 40
+                                            ? 'text-[#bdbba7]'
+                                            : 'text-[#86868B]';
 
-                                                {/* Snippet (Preview) */}
-                                                <div className="flex-1 min-w-0 px-[10px] ml-[5px]">
-                                                    <p className="text-[13.5px] text-white/40 truncate font-light group-hover:text-white/60 transition-colors" title={fallbackItem.task_purpose || fallbackItem.deliverables || ''}>
-                                                        {fallbackItem.task_purpose || fallbackItem.deliverables || '상세 내용 없음'}
-                                                    </p>
-                                                </div>
- 
-                                                {/* Metadata & Badges Container */}
-                                                <div className="flex items-center gap-[20px] shrink-0">
-                                                    <span className={`text-[13px] font-bold tabular-nums whitespace-nowrap ${priorityScoreClass}`}>
-                                                        우선 {priorityScore}
-                                                    </span>
-                                                    <div className="flex items-center gap-[10px] text-[13px] text-white/50">
-                                                        <div className="flex items-center gap-[4px]">
-                                                            <span className="text-white/40 font-normal">실행주관</span>
-                                                            <span className="text-white/80 font-normal">{deptName}</span>
-                                                        </div>
-                                                        <span className="text-white/20">|</span>
-                                                        <div className="flex items-center gap-[4px]">
-                                                            <span className="text-white/40 font-normal">섹터</span>
-                                                            <span className="text-white/80 font-normal">{task.sector_detail || fallbackItem.sector_detail || '공통'}</span>
-                                                        </div>
-                                                    </div>
-                                                    {/* If it's a blocker or decision needed, show a tiny elegant badge */}
-                                                    {(hasBlocker || hasDecision) && (
-                                                        <div className="flex gap-[6px] shrink-0 min-w-[50px] justify-end">
-                                                            {hasBlocker && (
-                                                                <span className="flex items-center text-[10.5px] font-bold bg-[#ff3b30]/10 text-[#ff453a] border border-[#ff3b30]/15 px-2 py-0.5 rounded-[4px]">
-                                                                    병목
-                                                                </span>
-                                                            )}
-                                                            {hasDecision && (
-                                                                <span className="flex items-center text-[10.5px] font-bold bg-[#ff3b30]/10 text-[#ff453a] border border-[#ff3b30]/15 px-2 py-0.5 rounded-[4px]">
-                                                                    의사결정필요
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                    )}
-                                                </div>
+                                    return (
+                                        <div 
+                                            key={task.id} 
+                                            onClick={() => handleTaskClick(task)}
+                                            className="bg-[#252525] hover:bg-[#2c2c2e] border border-white/[0.06] hover:border-[#2997ff] hover:ring-[2px] hover:ring-[#2997ff] hover:ring-inset hover:shadow-[0_4px_20px_rgba(41,151,255,0.06)] transition-all rounded-[14px] px-[20px] py-[12px] cursor-pointer flex flex-row items-center justify-between group gap-[20px] mb-[6px]"
+                                        >
+                                            {/* Task Name */}
+                                            <div className="flex-[0_0_30%] min-w-[200px] flex items-center gap-[12px]">
+                                                <span className="text-[13.5px] font-bold text-white shrink-0 min-w-[16px] text-right font-['Inter'] -ml-[4px]">
+                                                    {index + 1}
+                                                </span>
+                                                <h3 className="text-[16px] font-bold text-[#cccaba] leading-snug group-hover:text-white transition-colors truncate" title={task.task_name}>
+                                                    {task.task_name}
+                                                </h3>
                                             </div>
-                                        );
-                                    })}
-                                </div>
-                            )}
+
+                                            {/* Snippet (Preview) */}
+                                            <div className="flex-1 min-w-0 px-[10px] ml-[5px]">
+                                                <p className="text-[13.5px] text-white/40 truncate font-light group-hover:text-white/60 transition-colors" title={fallbackItem.task_purpose || fallbackItem.deliverables || ''}>
+                                                    {fallbackItem.task_purpose || fallbackItem.deliverables || '상세 내용 없음'}
+                                                </p>
+                                            </div>
+
+                                            {/* Metadata & Badges Container */}
+                                            <div className="flex items-center gap-[20px] shrink-0">
+                                                <span className={`text-[13px] font-bold tabular-nums whitespace-nowrap ${priorityScoreClass}`}>
+                                                    우선 {priorityScore}
+                                                </span>
+                                                <div className="flex items-center gap-[10px] text-[13px] text-white/50">
+                                                    <div className="flex items-center gap-[4px]">
+                                                        <span className="text-white/40 font-normal">실행주관</span>
+                                                        <span className="text-white/80 font-normal">{deptName}</span>
+                                                    </div>
+                                                    <span className="text-white/20">|</span>
+                                                    <div className="flex items-center gap-[4px]">
+                                                        <span className="text-white/40 font-normal">섹터</span>
+                                                        <span className="text-white/80 font-normal">{task.sector_detail || fallbackItem.sector_detail || '공통'}</span>
+                                                    </div>
+                                                </div>
+                                                {(hasBlocker || hasDecision) && (
+                                                    <div className="flex gap-[6px] shrink-0 min-w-[50px] justify-end">
+                                                        {hasBlocker && (
+                                                            <span className="flex items-center text-[10.5px] font-bold bg-[#ff3b30]/10 text-[#ff453a] border border-[#ff3b30]/15 px-2 py-0.5 rounded-[4px]">
+                                                                병목
+                                                            </span>
+                                                        )}
+                                                        {hasDecision && (
+                                                            <span className="flex items-center text-[10.5px] font-bold bg-[#ff3b30]/10 text-[#ff453a] border border-[#ff3b30]/15 px-2 py-0.5 rounded-[4px]">
+                                                                의사결정필요
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    );
+                                };
+
+                                const allActiveTasks = getFilteredTasks();
+
+                                if (allActiveTasks.length === 0) {
+                                    return (
+                                        <div className="py-[60px] text-center text-[#86868B] text-[14px]">
+                                            조건에 일치하는 업무 항목이 없습니다.
+                                        </div>
+                                    );
+                                }
+
+                                // 1. 프로젝트별 그룹 뷰
+                                if (selectedFilter === '프로젝트별') {
+                                    const projectsList = ['427 PFV', '816 PFV', '421 Fund', '공통'];
+                                    return (
+                                        <div className="flex flex-col gap-[12px]">
+                                            {projectsList.map(proj => {
+                                                const projTasks = allActiveTasks.filter(t => normalizeProjectName(t.project_code || t.project) === proj);
+                                                if (projTasks.length === 0) return null;
+                                                return (
+                                                    <div key={proj} className="flex flex-col">
+                                                        <div className="flex items-center justify-between px-[16px] py-[8px] bg-[#222222] border border-[#3a3a3c] rounded-[12px] text-[13.5px] font-bold text-white mb-[8px]">
+                                                            <div className="flex items-center gap-[8px]">
+                                                                <span className="w-2 h-2 rounded-full bg-[#2997ff]" />
+                                                                <span>📁 {proj}</span>
+                                                            </div>
+                                                            <span className="text-[12px] text-[#8e8e93] font-normal">{projTasks.length}건</span>
+                                                        </div>
+                                                        {projTasks.map((task, idx) => renderTaskCard(task, idx))}
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    );
+                                }
+
+                                // 2. 실행부서별 그룹 뷰
+                                if (selectedFilter === '실행부서별') {
+                                    return (
+                                        <div className="flex flex-col gap-[12px]">
+                                            {departmentsList.map(dept => {
+                                                const deptTasks = allActiveTasks.filter(t => getTaskDeptName(t) === dept);
+                                                if (deptTasks.length === 0) return null;
+                                                return (
+                                                    <div key={dept} className="flex flex-col">
+                                                        <div className="flex items-center justify-between px-[16px] py-[8px] bg-[#222222] border border-[#3a3a3c] rounded-[12px] text-[13.5px] font-bold text-white mb-[8px]">
+                                                            <div className="flex items-center gap-[8px]">
+                                                                <span className="w-2 h-2 rounded-full bg-[#30b0c7]" />
+                                                                <span>🏢 {dept}</span>
+                                                            </div>
+                                                            <span className="text-[12px] text-[#8e8e93] font-normal">{deptTasks.length}건</span>
+                                                        </div>
+                                                        {deptTasks.map((task, idx) => renderTaskCard(task, idx))}
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    );
+                                }
+
+                                // 3. 카테고리별 그룹 뷰
+                                if (selectedFilter === '카테고리별') {
+                                    return (
+                                        <div className="flex flex-col gap-[12px]">
+                                            {categoriesList.map(cat => {
+                                                const catTasks = allActiveTasks.filter(t => t.category_main === cat || (cat === '공통 PMO' && !t.category_main));
+                                                if (catTasks.length === 0) return null;
+                                                return (
+                                                    <div key={cat} className="flex flex-col">
+                                                        <div className="flex items-center justify-between px-[16px] py-[8px] bg-[#222222] border border-[#3a3a3c] rounded-[12px] text-[13.5px] font-bold text-white mb-[8px]">
+                                                            <div className="flex items-center gap-[8px]">
+                                                                <span className="w-2 h-2 rounded-full bg-[#bf5af2]" />
+                                                                <span>🏷️ {cat}</span>
+                                                            </div>
+                                                            <span className="text-[12px] text-[#8e8e93] font-normal">{catTasks.length}건</span>
+                                                        </div>
+                                                        {catTasks.map((task, idx) => renderTaskCard(task, idx))}
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    );
+                                }
+
+                                // 4. 기본 단일 리스트 뷰 (전체 업무, 즉시상정/지연리스크, 단발/팝업)
+                                return (
+                                    <div className="grid grid-cols-1 gap-[6px] px-0">
+                                        {allActiveTasks.map((task, index) => renderTaskCard(task, index))}
+                                    </div>
+                                );
+                            })()}
                         </div>
                     </div>
 
