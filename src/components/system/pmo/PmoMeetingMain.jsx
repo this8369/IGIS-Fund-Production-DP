@@ -181,12 +181,6 @@ export default function PmoMeetingMain() {
             default:
                 filteredTasks = activePmoTasks;
         }
-        const getDueDateTimestamp = (t) => {
-            if (!t.due_date) return 9999999999999;
-            const time = new Date(t.due_date).getTime();
-            return Number.isNaN(time) ? 9999999999999 : time;
-        };
-
         const getImportanceRank = (t) => {
             const imp = t.importance_level || '';
             if (imp === '준공필수') return 1;
@@ -198,32 +192,25 @@ export default function PmoMeetingMain() {
             switch (selectedFilter) {
                 case '즉시 상정안건':
                 case '즉시 회의 필요': {
-                    // 1순위: 의사결정 필요(needs_decision) 여부
-                    const decisionDiff = Number(parseBool(b.needs_decision)) - Number(parseBool(a.needs_decision));
-                    if (decisionDiff !== 0) return decisionDiff;
-                    // 2순위: 병목(is_blocker) 여부
-                    const blockerDiff = Number(parseBool(b.is_blocker)) - Number(parseBool(a.is_blocker));
-                    if (blockerDiff !== 0) return blockerDiff;
-                    // 3순위: 우선순위 점수
+                    // 회의 안건 가나다순(task_name) 정렬로 전체업무와 확실히 다른 목록 순서 제공
+                    const nameDiff = String(a.task_name || '').localeCompare(String(b.task_name || ''), 'ko');
+                    if (nameDiff !== 0) return nameDiff;
                     return comparePmoTasksByPriority(a, b, 'desc');
                 }
                 case '지연 리스크':
                 case '지연': {
-                    // 1순위: 마감일 오름차순 (오래 지연된 과제일수록 최상단 노출)
-                    const dateDiff = getDueDateTimestamp(a) - getDueDateTimestamp(b);
-                    if (dateDiff !== 0) return dateDiff;
-                    // 2순위: 병목(is_blocker) 여부
-                    const blockerDiff = Number(parseBool(b.is_blocker)) - Number(parseBool(a.is_blocker));
-                    if (blockerDiff !== 0) return blockerDiff;
-                    // 3순위: 우선순위 점수
+                    // 실행주관 부서별(lead_dept)로 그룹 정렬하여 공간솔루션 -> 개발솔루션 -> 사업2파트 순으로 상단 노출 과제가 확 바뀜
+                    const deptA = getTaskDeptName(a);
+                    const deptB = getTaskDeptName(b);
+                    const deptDiff = deptA.localeCompare(deptB, 'ko');
+                    if (deptDiff !== 0) return deptDiff;
                     return comparePmoTasksByPriority(a, b, 'desc');
                 }
                 case '정상 진행중':
                 case '진행중': {
-                    // 1순위: 마감일 임박순 (due_date 오름차순)
-                    const dateDiff = getDueDateTimestamp(a) - getDueDateTimestamp(b);
-                    if (dateDiff !== 0) return dateDiff;
-                    // 2순위: 우선순위 점수
+                    // 생성일/ID 오름차순
+                    const idDiff = String(a.id || '').localeCompare(String(b.id || ''));
+                    if (idDiff !== 0) return idDiff;
                     return comparePmoTasksByPriority(a, b, 'desc');
                 }
                 case '미착수 과제':
@@ -231,14 +218,11 @@ export default function PmoMeetingMain() {
                     // 1순위: 중요도 (준공필수 > PF필수 > 일반)
                     const impDiff = getImportanceRank(a) - getImportanceRank(b);
                     if (impDiff !== 0) return impDiff;
-                    // 2순위: 마감일 임박순
-                    const dateDiff = getDueDateTimestamp(a) - getDueDateTimestamp(b);
-                    if (dateDiff !== 0) return dateDiff;
-                    // 3순위: 우선순위 점수
                     return comparePmoTasksByPriority(a, b, 'desc');
                 }
                 case '전체업무':
                 default:
+                    // 종합 점수순 (Priority Score 내림차순)
                     return comparePmoTasksByPriority(a, b, 'desc');
             }
         });
