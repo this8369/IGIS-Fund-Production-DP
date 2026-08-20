@@ -481,7 +481,7 @@ export default function PmoMeetingMain() {
                                         <div 
                                             key={task.id} 
                                             onClick={() => handleTaskClick(task)}
-                                            className="bg-[#252525] hover:bg-[#2c2c2e] border border-white/[0.06] hover:border-[#2997ff] hover:ring-[2px] hover:ring-[#2997ff] hover:ring-inset hover:shadow-[0_4px_20px_rgba(41,151,255,0.06)] transition-all rounded-[14px] px-[20px] py-[12px] cursor-pointer flex flex-row items-center justify-between group gap-[20px] mb-[6px]"
+                                            className="bg-[#252525] hover:bg-[#2c2c2e] border border-white/[0.06] hover:border-[#2997ff] hover:ring-[2px] hover:ring-[#2997ff] hover:ring-inset hover:shadow-[0_4px_20px_rgba(41,151,255,0.06)] transition-all rounded-[14px] px-[20px] py-[10px] cursor-pointer flex flex-row items-center justify-between group gap-[20px]"
                                         >
                                             {/* Task Name */}
                                             <div className="flex-[0_0_30%] min-w-[200px] flex items-center gap-[12px]">
@@ -548,20 +548,22 @@ export default function PmoMeetingMain() {
                                 // 실행부서별 선택 시 부서별 섹션 분리
                                 if (listSortOption === 'dept') {
                                     return (
-                                        <div className="flex flex-col gap-[12px]">
+                                        <div className="flex flex-col gap-[10px]">
                                             {DEPARTMENTS_LIST.map(dept => {
                                                 const deptTasks = allActiveTasks.filter(t => getTaskDeptName(t) === dept);
                                                 if (deptTasks.length === 0) return null;
                                                 return (
-                                                    <div key={dept} className="flex flex-col">
-                                                        <div className="flex items-center justify-between px-[16px] py-[8px] bg-[#222222] border border-[#3a3a3c] rounded-[12px] text-[13.5px] font-bold text-white mb-[8px]">
+                                                    <div key={dept} className="flex flex-col mb-[4px]">
+                                                        <div className="flex items-center justify-between px-[16px] py-[6px] bg-[#222222] border border-[#3a3a3c] rounded-[10px] text-[13px] font-bold text-white mb-[5px]">
                                                             <div className="flex items-center gap-[8px]">
                                                                 <span className="w-2 h-2 rounded-full bg-[#30b0c7]" />
                                                                 <span>🏢 {dept}</span>
                                                             </div>
                                                             <span className="text-[12px] text-[#8e8e93] font-normal">{deptTasks.length}건</span>
                                                         </div>
-                                                        {deptTasks.map((task, idx) => renderTaskCard(task, idx))}
+                                                        <div className="flex flex-col gap-[5px]">
+                                                            {deptTasks.map((task, idx) => renderTaskCard(task, idx))}
+                                                        </div>
                                                     </div>
                                                 );
                                             })}
@@ -571,7 +573,7 @@ export default function PmoMeetingMain() {
 
                                 // 일반 단일 리스트 뷰 (우선순위순 / 가나다순)
                                 return (
-                                    <div className="grid grid-cols-1 gap-[6px] px-0">
+                                    <div className="grid grid-cols-1 gap-[5px] px-0">
                                         {allActiveTasks.map((task, index) => renderTaskCard(task, index))}
                                     </div>
                                 );
