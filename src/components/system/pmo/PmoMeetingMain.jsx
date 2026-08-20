@@ -3,6 +3,9 @@ import { supabase } from '../../../utils/supabaseClient';
 import { comparePmoTasksByPriority, matchesPmoStatusFilter } from '../../../utils/pmoTaskPriority';
 import { FALLBACK_BOARD_TASKS } from './PmoTaskBoardStaging';
 
+const DEPARTMENTS_LIST = ['사업2파트', '사업1파트', '개발솔루션', '공간솔루션', '기업마케팅', 'LFC'];
+const CATEGORIES_LIST = ['공통 PMO', '호텔/운영', '인허가', '시공/원가', '도면/설계', '인테리어/TI', '임차/마케팅', 'PF/금융', '구조/법무/세무', '주주/보고', '준공/담보대출'];
+
 export default function PmoMeetingMain() {
     const [counts, setCounts] = React.useState({
         total: 0,
@@ -22,7 +25,7 @@ export default function PmoMeetingMain() {
     });
         const [loading, setLoading] = React.useState(true);
     const [tasks, setTasks] = React.useState([]);
-    const [selectedFilter, setSelectedFilter] = React.useState('전체업무');
+    const [selectedFilter, setSelectedFilter] = React.useState('전체 업무');
     const [dbError, setDbError] = React.useState(null);
     const [activeMetric, setActiveMetric] = React.useState('총관여');
     const [hoveredDept, setHoveredDept] = React.useState(null);
@@ -113,8 +116,8 @@ export default function PmoMeetingMain() {
         { label: '전체 업무', path: 'platform/iotaseoul/workflow', count: counts.total, highlightClass: 'text-[#1F1F1E]', hoverClass: 'group-hover:text-[#000000]' },
         { label: '즉시상정/지연리스크', path: 'platform/iotaseoul/workflow?filterStatus=지연', count: counts.meetings + counts.delayed, highlightClass: 'text-[#E35D5D]', hoverClass: 'group-hover:text-[#FF3B30]' },
         { label: '프로젝트별', path: 'platform/iotaseoul/workflow?groupBy=project', count: 4, highlightClass: 'text-[#1F1F1E]', hoverClass: 'group-hover:text-[#000000]' },
-        { label: '실행부서별', path: 'platform/iotaseoul/workflow?groupBy=dept', count: departmentsList.length, highlightClass: 'text-[#1F1F1E]', hoverClass: 'group-hover:text-[#000000]' },
-        { label: '카테고리별', path: 'platform/iotaseoul/workflow?groupBy=category', count: categoriesList.length, highlightClass: 'text-[#1F1F1E]', hoverClass: 'group-hover:text-[#000000]' },
+        { label: '실행부서별', path: 'platform/iotaseoul/workflow?groupBy=dept', count: DEPARTMENTS_LIST.length, highlightClass: 'text-[#1F1F1E]', hoverClass: 'group-hover:text-[#000000]' },
+        { label: '카테고리별', path: 'platform/iotaseoul/workflow?groupBy=category', count: CATEGORIES_LIST.length, highlightClass: 'text-[#1F1F1E]', hoverClass: 'group-hover:text-[#000000]' },
         { label: '단발/팝업', path: 'platform/iotaseoul/popup-requests', count: counts.popupCount, highlightClass: 'text-[#E67E22]', hoverClass: 'group-hover:text-[#FF9500]' }
     ];
 
@@ -285,11 +288,9 @@ export default function PmoMeetingMain() {
         }
     };
 
-    const departmentsList = ['사업2파트', '사업1파트', '개발솔루션', '공간솔루션', '기업마케팅', 'LFC'];
-
     const parseBool = (v) => v === true || String(v).toLowerCase() === 'true' || String(v).toUpperCase() === 'Y';
 
-    const deptRowsData = departmentsList.map(dept => {
+    const deptRowsData = DEPARTMENTS_LIST.map(dept => {
         const leadTasks = tasks.filter(t => t.task_type !== '팝업' && getTaskDeptName(t) === dept);
         const coopTasks = tasks.filter(t => t.task_type !== '팝업' && isCoopDept(t, dept));
         
@@ -327,9 +328,7 @@ export default function PmoMeetingMain() {
     // ==========================================
     // 카테고리별 진행현황 추가 데이터 모델
     // ==========================================
-    const categoriesList = ['공통 PMO', '호텔/운영', '인허가', '시공/원가', '도면/설계', '인테리어/TI', '임차/마케팅', 'PF/금융', '구조/법무/세무', '주주/보고', '준공/담보대출'];
-
-    const categoryRowsData = categoriesList.map(cat => {
+    const categoryRowsData = CATEGORIES_LIST.map(cat => {
         const catTasks = tasks.filter(t => t.task_type !== '팝업' && (t.category_main === cat || (cat === '공통 PMO' && !t.category_main)));
         
         const totalCount = catTasks.length;
@@ -561,7 +560,7 @@ export default function PmoMeetingMain() {
                                 if (selectedFilter === '실행부서별') {
                                     return (
                                         <div className="flex flex-col gap-[12px]">
-                                            {departmentsList.map(dept => {
+                                            {DEPARTMENTS_LIST.map(dept => {
                                                 const deptTasks = allActiveTasks.filter(t => getTaskDeptName(t) === dept);
                                                 if (deptTasks.length === 0) return null;
                                                 return (
@@ -585,7 +584,7 @@ export default function PmoMeetingMain() {
                                 if (selectedFilter === '카테고리별') {
                                     return (
                                         <div className="flex flex-col gap-[12px]">
-                                            {categoriesList.map(cat => {
+                                            {CATEGORIES_LIST.map(cat => {
                                                 const catTasks = allActiveTasks.filter(t => t.category_main === cat || (cat === '공통 PMO' && !t.category_main));
                                                 if (catTasks.length === 0) return null;
                                                 return (
