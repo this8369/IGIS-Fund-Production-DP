@@ -71,8 +71,10 @@ export default function PlatformCenter({ currentPath = '' }) {
         }
     }, [currentPath]);
 
+    const cleanPath = (currentPath || '').split('?')[0].replace(/\/$/, '');
+
     const renderGovernance = () => {
-        switch(currentPath) {
+        switch(cleanPath) {
             case 'platform/iotaseoul/governance/system': return <GovSystem />;
             case 'platform/iotaseoul/governance/principles': return <GovPrinciples />;
             case 'platform/iotaseoul/governance/raci': return <GovRaci />;
@@ -88,20 +90,20 @@ export default function PlatformCenter({ currentPath = '' }) {
     };
 
     const renderStakeholder = () => {
-        if (currentPath === 'platform/iotaseoul/stakeholder/internal') return <StakeInternal />;
-        if (currentPath === 'platform/iotaseoul/stakeholder/lp') return <StakeLp />;
-        if (currentPath === 'platform/iotaseoul/stakeholder/tenant' || currentPath.startsWith('platform/iotaseoul/stakeholder/tenant/')) {
+        if (cleanPath === 'platform/iotaseoul/stakeholder/internal') return <StakeInternal />;
+        if (cleanPath === 'platform/iotaseoul/stakeholder/lp') return <StakeLp />;
+        if (cleanPath === 'platform/iotaseoul/stakeholder/tenant' || cleanPath.startsWith('platform/iotaseoul/stakeholder/tenant/')) {
             let tab = 'list';
-            if (currentPath.endsWith('/si')) tab = 'si';
-            if (currentPath.endsWith('/register')) tab = 'register';
+            if (cleanPath.endsWith('/si')) tab = 'si';
+            if (cleanPath.endsWith('/register')) tab = 'register';
             return <StakeTenant defaultTab={tab} />;
         }
-        if (currentPath === 'platform/iotaseoul/stakeholder/partner') return <StakePartner />;
+        if (cleanPath === 'platform/iotaseoul/stakeholder/partner') return <StakePartner />;
         return null;
     };
 
     const renderWorkspace = () => {
-        switch(currentPath) {
+        switch(cleanPath) {
             case 'platform/iotaseoul/workspace/marketing': return <WorkspaceMarketing />;
             case 'platform/iotaseoul/workspace/pm1': return <WorkspacePm part={1} />;
             case 'platform/iotaseoul/workspace/pm2': return <WorkspacePm part={2} />;
@@ -130,9 +132,9 @@ export default function PlatformCenter({ currentPath = '' }) {
     
     const isStaging = import.meta.env.MODE === 'staging';
     let activeContent = govContent || stakeContent || workspaceContent;
-    if (!currentPath || currentPath === '' || currentPath === 'platform/iotaseoul') {
+    if (!cleanPath || cleanPath === '' || cleanPath === 'platform/iotaseoul') {
         activeContent = <PmoMeetingMain />;
-    } else if (currentPath === 'platform/iotaseoul/dashboard') {
+    } else if (cleanPath === 'platform/iotaseoul/dashboard') {
         activeContent = <IotaDashboard />;
     }
 
