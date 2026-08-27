@@ -1,4 +1,4 @@
-import{u as L,r as b,j as e}from"./index-lE8HnsjS.js";function O(){const{lang:a}=L(),[i,m]=b.useState(()=>{const t=new URLSearchParams(window.location.search).get("tab");return t==="data-collection"?1:t==="considerations"?2:t==="ai-plan"?3:t==="qa"?4:t==="architecture"?5:t==="schema"?6:0});b.useEffect(()=>{window.scrollTo(0,0)},[i]);const h=`1. 플랫폼 기획 의도 및 목적
+import{u as L,r as b,j as e}from"./index-g_nXez_r.js";function O(){const{lang:a}=L(),[i,m]=b.useState(()=>{const t=new URLSearchParams(window.location.search).get("tab");return t==="data-collection"?1:t==="considerations"?2:t==="ai-plan"?3:t==="qa"?4:t==="architecture"?5:t==="schema"?6:0});b.useEffect(()=>{window.scrollTo(0,0)},[i]);const h=`1. 플랫폼 기획 의도 및 목적
 부서 간 데이터 통합 및 의사결정 지원
 현재 자산운용 과정에서 부서별(소싱, 투자, 개발, 운영 등)로 분산된 데이터와 문서를 중앙화한다.
 IFPDP는 각 부서의 정량적 데이터와 정성적인 의사결정 이력을 통합하여 정보 취합 지연 시간을 없애고 정확한 전사 단위 의사결정을 지원하는 통합 시스템을 지향한다.

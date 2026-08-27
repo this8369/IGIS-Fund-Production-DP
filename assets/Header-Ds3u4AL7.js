@@ -1,4 +1,4 @@
-import{u as H,r as u,R as N,j as e}from"./index-lE8HnsjS.js";const K=`[IFPDP] 플랫폼 이용약관
+import{u as H,r as u,R as N,j as e}from"./index-g_nXez_r.js";const K=`[IFPDP] 플랫폼 이용약관
 
 1. 목적
 본 약관은 이지스자산운용 주식회사(이하 "회사")가 내부 임직원 및 관계사를 대상으로 제공하는 IFPDP (IGIS Fund Production Data Platform, 이하 "플랫폼")의 이용 규칙과 당사자의 권리, 의무 및 책임사항을 규정함을 목적으로 합니다.
