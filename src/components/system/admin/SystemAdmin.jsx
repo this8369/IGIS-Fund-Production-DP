@@ -4,7 +4,7 @@ import { useAuth } from '../../../context/AuthContext';
 import { tasksData } from './tasksData';
 
 export default function SystemAdmin({ currentPage, navigateTo }) {
-    const { user, memberInfo } = useAuth();
+    const { user, memberInfo, loading: authLoading } = useAuth();
     const [logs, setLogs] = useState([]);
     const [supportRequests, setSupportRequests] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -39,12 +39,17 @@ export default function SystemAdmin({ currentPage, navigateTo }) {
 
     useEffect(() => {
         const checkAccessAndFetch = async () => {
+            // Wait for AuthContext initialization
+            if (authLoading) return;
+
             // Check Authorization
             if (!memberInfo || !AUTHORIZED_USERS.includes(memberInfo.staff_name)) {
                 setAccessDenied(true);
                 setLoading(false);
                 return;
             }
+
+            setAccessDenied(false);
 
             try {
                 // Fetch Logs
@@ -78,7 +83,7 @@ export default function SystemAdmin({ currentPage, navigateTo }) {
         };
 
         checkAccessAndFetch();
-    }, [memberInfo]);
+    }, [memberInfo, authLoading]);
 
     const formatDate = (dateString) => {
         if (!dateString) return '-';
